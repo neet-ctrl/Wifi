@@ -1,0 +1,74 @@
+Clone and analyze the following GitHub projects into separate folders first:
+
+- Shizuku
+- aShell You
+- Canta
+- Hail
+- Inure App Manager
+- Blocker
+- ColorBlendr
+- DarQ
+- SmartSpacer
+- SD Maid SE
+- Material Files
+- InstallWithOptions
+- Key Mapper
+- Language Selector
+- Better Internet Tiles
+- RootlessJamesDSP
+- ShizuCallRecorder
+
+After cloning all repositories, fully analyze their source code, architecture, UI, features, modules, settings, permissions, workflows, commands, integrations, hidden options, utilities, and every small functionality available in each project.
+
+Then create a brand-new single Android Studio project that merges and re-implements all features from all of these projects into one unified Android application.
+
+Requirements:
+
+- Do not skip any feature.
+- Do not skip any setting.
+- Do not skip any command.
+- Do not skip any tool.
+- Do not skip any utility.
+- Do not skip any customization option.
+- Do not skip any workflow.
+- Do not skip any hidden or advanced functionality.
+- Include every small feature from every listed project.
+- Preserve the behavior and capabilities of each original project.
+- Resolve conflicts between projects while keeping all functionality available.
+
+UI Requirements:
+
+- Extremely modern UI.
+- Futuristic Android UI.
+- Material 3 Expressive.
+- Dynamic Material You.
+- Advanced animations.
+- Adaptive layouts.
+- Tablet support.
+- Foldable support.
+- Desktop-style dashboard.
+- Command center interface.
+- Global search.
+- Powerful navigation.
+- Professional production-grade design.
+- Real-time previews wherever applicable.
+- Interactive onboarding.
+- Integrated tutorials and guides for every feature.
+- Visual configuration panels.
+- Advanced settings pages.
+- Modern widgets and dashboards.
+- Consistent design language across all modules.
+
+Architecture Requirements:
+
+- Kotlin.
+- Jetpack Compose.
+- MVVM.
+- Modular architecture.
+- Production-ready codebase.
+- Scalable structure.
+- Well-documented code.
+- High performance.
+- Future-ready for newer Android versions.
+
+Before considering the project complete, verify and confirm that every feature from every listed application has been included in the final unified application and that no functionality has been omitted.
