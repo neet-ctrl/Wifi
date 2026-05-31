@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ╔══════════════════════════════════════════════════════════════════════════╗
+    ║              ACCU SDK — AndroidManifest Template                         ║
+    ║                                                                          ║
+    ║  Copy the sections marked with ▶ ADD into your own AndroidManifest.xml  ║
+    ╚══════════════════════════════════════════════════════════════════════════╝
+
+    REQUIRED CHANGES:
+    1. Replace "com.yourcompany.yourapp" with your actual applicationId.
+    2. Add the <queries> block — Android 11+ visibility requirement.
+    3. The BIND_GET_INTENT_SENDER_RESULT permission is NOT needed.
+    4. No extra permissions are required in your manifest. ACCU handles
+       its own privileged operations inside its own process.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.yourcompany.yourapp">
+
+    <!-- ▶ ADD: Tell Android your app wants to talk to ACCU. Required on API 30+. -->
+    <queries>
+        <package android:name="com.accu.controlcenter" />
+    </queries>
+
+    <!--
+        ▶ ADD (optional): If you want to launch ACCU from a button in your app.
+        Not required for API integration.
+    -->
+    <!-- <queries>
+        <intent>
+            <action android:name="com.accu.api.AccuSystemService" />
+        </intent>
+    </queries> -->
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.YourApp">
+
+        <!-- Your main Activity -->
+        <activity android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            ▶ NOTE: Do NOT declare AccuSystemService here.
+            It lives inside the ACCU app (com.accu.controlcenter),
+            not in your app. You only BIND to it.
+        -->
+
+    </application>
+</manifest>

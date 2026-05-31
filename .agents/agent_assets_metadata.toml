@@ -6,3 +6,9 @@ id = "LQrrRTjiVA81YmtPTpk3L"
 uri = "file://AndroidControlCenterUltimate.zip"
 type = "unspecified"
 title = "Android Control Center Ultimate — Full Project"
+
+[[outputs]]
+id = "jAK2-2EH5GFa2UIqtTYLJ"
+uri = "file://exports/accu-sdk.zip"
+type = "unspecified"
+title = "ACCU SDK — accu-sdk.zip"
