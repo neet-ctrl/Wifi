@@ -27,6 +27,7 @@ fun SettingsScreen(
     onNavigateToLearning: () -> Unit,
     onNavigateToAllFeatures: () -> Unit = { navController.navigate("all_features") },
     onNavigateToTutorial: () -> Unit = { navController.navigate("tutorial") },
+    onNavigateToPermissions: () -> Unit = { navController.navigate("permission_center") },
 ) {
     var dynamicColor by remember { mutableStateOf(true) }
     var developerMode by remember { mutableStateOf(false) }
@@ -44,6 +45,8 @@ fun SettingsScreen(
             item { SettingsSectionHeader("Service Access") }
             item {
                 Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                    FeatureRow("Permission Center", "All 57 app permissions — grant via Shizuku or manually", leadingIcon = { Icon(Icons.Default.AdminPanelSettings, null) }, trailingContent = { Icon(Icons.Default.ChevronRight, null) }, onClick = onNavigateToPermissions)
+                    HorizontalDivider()
                     FeatureRow("Shizuku Center", "Manage elevated access", leadingIcon = { Icon(Icons.Default.Hub, null) }, trailingContent = { Icon(Icons.Default.ChevronRight, null) }, onClick = onNavigateToShizuku)
                     HorizontalDivider()
                     FeatureRow("Network Center", "Wi-Fi, mobile data, tiles", leadingIcon = { Icon(Icons.Default.Wifi, null) }, trailingContent = { Icon(Icons.Default.ChevronRight, null) }, onClick = onNavigateToNetwork)

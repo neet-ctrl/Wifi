@@ -186,6 +186,9 @@ sealed class Screen(val route: String) {
 
     // Blocker
     data object BlockerComponentSearch : Screen("blocker_component_search")
+
+    // Advanced Permission Center
+    data object PermissionCenter   : Screen("permission_center")
 }
 
 data class TopLevelDestination(

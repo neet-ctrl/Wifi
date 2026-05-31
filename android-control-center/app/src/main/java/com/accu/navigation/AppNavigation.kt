@@ -55,6 +55,7 @@ import com.accu.ui.features.AllFeaturesScreen
 import com.accu.ui.onboarding.OnboardingScreen
 import com.accu.ui.privacy.PrivacyScreen
 import com.accu.ui.privacy.OnlineRulesScreen
+import com.accu.ui.settings.AccuPermissionsScreen
 import com.accu.ui.settings.SettingsScreen
 import com.accu.ui.shell.ShellScreen
 import com.accu.ui.shizuku.ShizukuCenterScreen
@@ -704,6 +705,11 @@ fun AppNavigation() {
             // Shizuku — Apps using Shizuku
             composable(Screen.ShizukuApps.route) {
                 ShizukuAppsScreen(onBack = { navController.popBackStack() })
+            }
+
+            // Advanced Permission Center
+            composable(Screen.PermissionCenter.route) {
+                AccuPermissionsScreen(onBack = { navController.popBackStack() })
             }
         }
     }

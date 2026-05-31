@@ -1,6 +1,8 @@
 package com.accu.ui.settings
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -9,13 +11,11 @@ import android.os.Build
 import android.provider.Settings
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,9 +24,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -38,9 +38,9 @@ import com.accu.ui.components.ACCTopBar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-// ─────────────────────────────────────────────────────────────
-//  Data models
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  DATA MODELS
+// ═══════════════════════════════════════════════════════════
 
 enum class AccuPermCategory(val label: String, val icon: ImageVector) {
     ALL          ("All",          Icons.Default.Dashboard),
@@ -49,6 +49,7 @@ enum class AccuPermCategory(val label: String, val icon: ImageVector) {
     SYSTEM       ("System",       Icons.Default.SettingsSystemDaydream),
     MEDIA        ("Media",        Icons.Default.PermMedia),
     NETWORK      ("Network",      Icons.Default.Wifi),
+    BLUETOOTH    ("Bluetooth",    Icons.Default.Bluetooth),
     PRIVACY      ("Privacy",      Icons.Default.PrivacyTip),
     ADVANCED     ("Advanced",     Icons.Default.AdminPanelSettings),
 }
@@ -60,12 +61,12 @@ enum class PermImportance(val label: String, val color: Color) {
 }
 
 enum class GrantMethod(val label: String, val icon: ImageVector) {
-    AUTOMATIC   ("Auto-granted",    Icons.Default.CheckCircle),
-    NORMAL      ("Grant manually",  Icons.Default.TouchApp),
-    SHIZUKU     ("Shizuku 1-tap",   Icons.Default.Hub),
-    SETTINGS_APP("Open Settings",   Icons.Default.Settings),
-    ADB_ONLY    ("ADB only",        Icons.Default.Terminal),
-    ROOT_ONLY   ("Root required",   Icons.Default.AdminPanelSettings),
+    AUTOMATIC   ("Auto-granted",   Icons.Default.CheckCircle),
+    NORMAL      ("Grant manually", Icons.Default.TouchApp),
+    SHIZUKU     ("Shizuku 1-tap",  Icons.Default.Hub),
+    SETTINGS_APP("Open Settings",  Icons.Default.Settings),
+    ADB_ONLY    ("ADB only",       Icons.Default.Terminal),
+    ROOT_ONLY   ("Root required",  Icons.Default.AdminPanelSettings),
 }
 
 enum class PermStatus { GRANTED, DENIED, NOT_REQUESTED, NOT_APPLICABLE }
@@ -82,454 +83,792 @@ data class AccuPerm(
     val minSdk: Int = 1,
     val maxSdk: Int = Int.MAX_VALUE,
     val status: PermStatus = PermStatus.NOT_REQUESTED,
+    val canRevoke: Boolean = true,
 )
 
-// ─────────────────────────────────────────────────────────────
-//  Full ACCU permission catalogue
-// ─────────────────────────────────────────────────────────────
+enum class SortMode(val label: String) {
+    STATUS("By Status"),
+    IMPORTANCE("By Importance"),
+    CATEGORY("By Category"),
+    NAME("By Name"),
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FULL PERMISSION CATALOGUE  (55 permissions)
+// ═══════════════════════════════════════════════════════════
 
 private val ALL_ACCU_PERMISSIONS = listOf(
-    // ── CORE ──────────────────────────────────────────────────
+
+    // ── CORE ────────────────────────────────────────────────
     AccuPerm("internet", "Internet Access", Manifest.permission.INTERNET,
-        "Required for Shizuku connection, online rule downloads, VirusTotal scan, and update checks.",
+        "Required for Shizuku wireless-ADB connection, online rule downloads, VirusTotal scanning, and update checks.",
         "Shizuku · Online Rules · VirusTotal · Updates",
-        AccuPermCategory.CORE, PermImportance.CRITICAL, GrantMethod.AUTOMATIC),
+        AccuPermCategory.CORE, PermImportance.CRITICAL, GrantMethod.AUTOMATIC, canRevoke = false),
 
     AccuPerm("foreground_svc", "Foreground Service", Manifest.permission.FOREGROUND_SERVICE,
-        "Keeps Call Recorder, Freeze Scheduler, and DSP audio engine alive while the screen is off.",
-        "Call Recorder · Freeze Scheduler · DSP",
-        AccuPermCategory.CORE, PermImportance.CRITICAL, GrantMethod.AUTOMATIC),
+        "Keeps Call Recorder, Freeze Scheduler, DSP audio engine, and Key Mapper trigger service alive.",
+        "Call Recorder · Freeze Scheduler · DSP · Key Mapper",
+        AccuPermCategory.CORE, PermImportance.CRITICAL, GrantMethod.AUTOMATIC, canRevoke = false),
+
+    AccuPerm("foreground_svc_mic", "Foreground Service – Microphone",
+        "android.permission.FOREGROUND_SERVICE_MICROPHONE",
+        "Required on Android 14+ for the Call Recorder foreground service to hold a live microphone session.",
+        "Call Recorder",
+        AccuPermCategory.CORE, PermImportance.CRITICAL, GrantMethod.AUTOMATIC,
+        minSdk = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, canRevoke = false),
+
+    AccuPerm("foreground_svc_media", "Foreground Service – Media Playback",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "Required on Android 14+ so the DSP audio service can run in a media-playback foreground context.",
+        "DSP / JamesDSP Audio Engine",
+        AccuPermCategory.CORE, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC,
+        minSdk = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, canRevoke = false),
+
+    AccuPerm("foreground_svc_bt", "Foreground Service – Connected Device",
+        "android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE",
+        "Required on Android 14+ for the Key Mapper service to maintain a Bluetooth device connection.",
+        "Key Mapper · Bluetooth Triggers",
+        AccuPermCategory.CORE, PermImportance.OPTIONAL, GrantMethod.AUTOMATIC,
+        minSdk = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, canRevoke = false),
 
     AccuPerm("boot_completed", "Start on Boot", Manifest.permission.RECEIVE_BOOT_COMPLETED,
-        "Restores Freeze Scheduler, Key Mapper triggers, and DSP engine after device restarts.",
+        "Restores Freeze Scheduler, Key Mapper triggers, and DSP engine after device restarts automatically.",
         "Freeze Scheduler · Key Mapper · DSP",
-        AccuPermCategory.CORE, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC),
+        AccuPermCategory.CORE, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC, canRevoke = false),
 
     AccuPerm("wake_lock", "Wake Lock", Manifest.permission.WAKE_LOCK,
-        "Prevents CPU from sleeping during batch app operations, scanning, and file transfers.",
+        "Prevents CPU from sleeping during batch app operations, cache scanning, and file transfers.",
         "App Cleaner · Batch Ops · File Transfer",
-        AccuPermCategory.CORE, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC),
+        AccuPermCategory.CORE, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC, canRevoke = false),
 
     AccuPerm("request_install", "Request Install Packages", Manifest.permission.REQUEST_INSTALL_PACKAGES,
-        "Allows ACCU to open the system installer for APK files from App Explorer and Storage.",
+        "Allows ACCU to trigger the system APK installer dialog from App Explorer, File Manager, and Installer.",
         "Installer · App Explorer · File Manager",
         AccuPermCategory.CORE, PermImportance.CRITICAL, GrantMethod.NORMAL),
 
     AccuPerm("post_notif", "Post Notifications", Manifest.permission.POST_NOTIFICATIONS,
-        "Required on Android 13+ to show recording-in-progress, freeze schedule, and DSP alerts.",
+        "Required on Android 13+ to show call-recording status, freeze-schedule alerts, and DSP notifications.",
         "Call Recorder · Freeze Scheduler · DSP",
-        AccuPermCategory.CORE, PermImportance.CRITICAL, GrantMethod.NORMAL, minSdk = Build.VERSION_CODES.TIRAMISU),
+        AccuPermCategory.CORE, PermImportance.CRITICAL, GrantMethod.NORMAL,
+        minSdk = Build.VERSION_CODES.TIRAMISU),
 
     AccuPerm("vibrate", "Vibrate", Manifest.permission.VIBRATE,
-        "Used by Key Mapper actions and confirmation feedback throughout the app.",
+        "Used by Key Mapper haptic feedback actions and confirmation vibrations across the app.",
         "Key Mapper · UI Feedback",
-        AccuPermCategory.CORE, PermImportance.OPTIONAL, GrantMethod.AUTOMATIC),
+        AccuPermCategory.CORE, PermImportance.OPTIONAL, GrantMethod.AUTOMATIC, canRevoke = false),
 
-    // ── APP MANAGEMENT ────────────────────────────────────────
+    AccuPerm("exact_alarm", "Schedule Exact Alarm",
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Manifest.permission.SCHEDULE_EXACT_ALARM
+        else "android.permission.SCHEDULE_EXACT_ALARM",
+        "Lets the Freeze Scheduler trigger precisely at user-specified times, even in Doze mode.",
+        "Freeze Scheduler · Timed Automations",
+        AccuPermCategory.CORE, PermImportance.IMPORTANT, GrantMethod.SETTINGS_APP,
+        minSdk = Build.VERSION_CODES.S),
+
+    AccuPerm("use_exact_alarm", "Use Exact Alarm",
+        "android.permission.USE_EXACT_ALARM",
+        "Unrestricted exact alarm access for calendar-accurate freeze and automation triggers on Android 13+.",
+        "Freeze Scheduler",
+        AccuPermCategory.CORE, PermImportance.OPTIONAL, GrantMethod.AUTOMATIC,
+        minSdk = Build.VERSION_CODES.TIRAMISU, canRevoke = false),
+
+    // ── APP MANAGEMENT ──────────────────────────────────────
     AccuPerm("install_packages", "Install Packages (Silent)", "android.permission.INSTALL_PACKAGES",
-        "Silent APK installation without the system prompt. Required for Installer, Blocker rules, and batch installs.",
+        "Silent APK installation without system prompt — powers Installer Center, Blocker rule restore, and batch installs.",
         "Installer · Debloat restore · Batch install",
         AccuPermCategory.APP_MGMT, PermImportance.CRITICAL, GrantMethod.SHIZUKU),
 
     AccuPerm("delete_packages", "Delete Packages (Silent)", "android.permission.DELETE_PACKAGES",
-        "Silent APK uninstallation. Powers the Debloat screen and one-tap app removal.",
-        "Debloat · App Manager uninstall",
+        "Silent app removal without confirmation dialogs. Powers the Debloat screen and one-tap system-app removal.",
+        "Debloat · App Manager · Canta",
         AccuPermCategory.APP_MGMT, PermImportance.CRITICAL, GrantMethod.SHIZUKU),
 
     AccuPerm("write_secure_settings", "Write Secure Settings", Manifest.permission.WRITE_SECURE_SETTINGS,
-        "Sets system-level secure settings: force-dark mode, animation scales, gesture navigation, and more.",
-        "DarQ · Dark Mode · Developer Options",
+        "Sets system-level secure settings: per-app dark mode (DarQ), animation scales, gesture nav, and more.",
+        "DarQ · Dark Mode · Developer Options · Language Selector",
         AccuPermCategory.APP_MGMT, PermImportance.CRITICAL, GrantMethod.SHIZUKU),
 
     AccuPerm("pkg_usage_stats", "Usage Stats Access", Manifest.permission.PACKAGE_USAGE_STATS,
-        "Reads per-app battery usage, screen time, and launch counts for the Inure analytics and dashboard.",
+        "Reads per-app battery, screen time, and launch counts for Inure analytics and the dashboard.",
         "Inure Analytics · Dashboard · Battery Opt",
         AccuPermCategory.APP_MGMT, PermImportance.IMPORTANT, GrantMethod.SETTINGS_APP),
 
     AccuPerm("query_all_packages", "Query All Packages", Manifest.permission.QUERY_ALL_PACKAGES,
-        "Enumerates all installed apps including system packages. Required for App Manager, Debloat, and Component Manager.",
+        "Enumerates all installed apps including system packages. Required for App Manager, Debloat, Language Selector, and Component Manager.",
         "App Manager · Debloat · Component Manager · Language",
-        AccuPermCategory.APP_MGMT, PermImportance.CRITICAL, GrantMethod.AUTOMATIC, minSdk = Build.VERSION_CODES.R),
+        AccuPermCategory.APP_MGMT, PermImportance.CRITICAL, GrantMethod.AUTOMATIC,
+        minSdk = Build.VERSION_CODES.R, canRevoke = false),
 
     AccuPerm("get_app_ops", "App Ops Stats", "android.permission.GET_APP_OPS_STATS",
-        "Reads granular per-app permission usage logs for the Privacy Center and Inure trackers.",
+        "Reads granular per-app permission usage logs for Privacy Center and Inure tracker screens.",
         "Privacy Center · Inure Trackers · App Detail",
         AccuPermCategory.APP_MGMT, PermImportance.IMPORTANT, GrantMethod.SHIZUKU),
 
-    AccuPerm("change_component_state", "Change Component State", "android.permission.CHANGE_COMPONENT_ENABLED_STATE",
-        "Enables and disables individual activities, services, and broadcast receivers inside apps.",
+    AccuPerm("change_component_state", "Change Component State",
+        "android.permission.CHANGE_COMPONENT_ENABLED_STATE",
+        "Enables and disables individual activities, services, and broadcast receivers inside other apps.",
         "Component Manager · Blocker",
         AccuPermCategory.APP_MGMT, PermImportance.CRITICAL, GrantMethod.SHIZUKU),
 
-    AccuPerm("interact_across_users", "Interact Across Users", "android.permission.INTERACT_ACROSS_USERS",
-        "Manages apps in work profiles and secondary user accounts from the Hail freeze scheduler.",
-        "Freeze Scheduler · Work Profile",
+    AccuPerm("interact_across_users", "Interact Across Users",
+        "android.permission.INTERACT_ACROSS_USERS",
+        "Manages apps in work profiles and secondary user accounts from Hail's freeze engine.",
+        "Freeze Scheduler · Work Profile · Hail",
         AccuPermCategory.APP_MGMT, PermImportance.OPTIONAL, GrantMethod.SHIZUKU),
 
-    // ── SYSTEM ────────────────────────────────────────────────
+    AccuPerm("force_stop", "Force Stop Packages",
+        "android.permission.FORCE_STOP_PACKAGES",
+        "Force-stops background processes of any app. Used by Freeze Scheduler and App Manager.",
+        "Freeze Scheduler · App Manager",
+        AccuPermCategory.APP_MGMT, PermImportance.IMPORTANT, GrantMethod.SHIZUKU),
+
+    AccuPerm("suspend_apps", "Suspend / Hide Apps",
+        "android.permission.SUSPEND_APPS",
+        "Suspends apps so they cannot be launched — the core of Hail freeze functionality via Shizuku.",
+        "Hail / Freeze Apps · Debloat",
+        AccuPermCategory.APP_MGMT, PermImportance.CRITICAL, GrantMethod.SHIZUKU),
+
+    AccuPerm("clear_app_cache", "Clear App Cache",
+        "android.permission.CLEAR_APP_CACHE",
+        "Clears individual app cache dirs without user interaction, used by SD Maid App Cleaner.",
+        "SD Maid · App Cleaner",
+        AccuPermCategory.APP_MGMT, PermImportance.IMPORTANT, GrantMethod.SHIZUKU),
+
+    AccuPerm("kill_bg_processes", "Kill Background Processes",
+        Manifest.permission.KILL_BACKGROUND_PROCESSES,
+        "Terminates background processes for any app. Used by App Manager's force-stop and batch-kill actions.",
+        "App Manager · Batch Ops",
+        AccuPermCategory.APP_MGMT, PermImportance.OPTIONAL, GrantMethod.NORMAL),
+
+    AccuPerm("manage_app_ops", "Manage App Ops Modes",
+        "android.permission.MANAGE_APP_OPS_MODES",
+        "Grants and revokes individual app-ops flags (camera, mic, location) for any app via Shizuku.",
+        "Privacy Center · App Ops Manager",
+        AccuPermCategory.APP_MGMT, PermImportance.CRITICAL, GrantMethod.SHIZUKU),
+
+    AccuPerm("set_preferred_apps", "Set Preferred Applications",
+        "android.permission.SET_PREFERRED_APPLICATIONS",
+        "Sets the default app for intents — used by Language Selector and advanced app routing.",
+        "Language Selector · Default Apps",
+        AccuPermCategory.APP_MGMT, PermImportance.OPTIONAL, GrantMethod.SHIZUKU),
+
+    // ── SYSTEM ──────────────────────────────────────────────
     AccuPerm("write_settings", "Write System Settings", Manifest.permission.WRITE_SETTINGS,
-        "Modifies screen brightness, font size, display timeout, and other system panel settings.",
+        "Modifies screen brightness, font size, display timeout, and system panel settings.",
         "Dark Mode · System Tweaks · Key Mapper",
         AccuPermCategory.SYSTEM, PermImportance.IMPORTANT, GrantMethod.SETTINGS_APP),
 
-    AccuPerm("change_config", "Change Configuration", "android.permission.CHANGE_CONFIGURATION",
-        "Applies locale/language changes per-app without restarting the device.",
+    AccuPerm("change_config", "Change Configuration",
+        "android.permission.CHANGE_CONFIGURATION",
+        "Applies locale/language changes per-app without a device restart.",
         "Language Center · Locale Switcher",
         AccuPermCategory.SYSTEM, PermImportance.IMPORTANT, GrantMethod.SHIZUKU),
 
     AccuPerm("dump", "System Dump", Manifest.permission.DUMP,
-        "Reads system state dumps for diagnostics, Key Mapper log capture, and bug reports.",
+        "Reads system state dumps for diagnostics, Key Mapper log capture, and bug report generation.",
         "Key Mapper · Bug Report · Shell Diagnostics",
         AccuPermCategory.SYSTEM, PermImportance.IMPORTANT, GrantMethod.SHIZUKU),
 
     AccuPerm("read_logs", "Read System Logs", Manifest.permission.READ_LOGS,
-        "Captures logcat output for the ADB Shell, Key Mapper event log, and bug report attachment.",
+        "Captures logcat for the ADB Shell, Key Mapper event log, and bug report attachment.",
         "Shell · Key Mapper Log · Bug Report",
         AccuPermCategory.SYSTEM, PermImportance.IMPORTANT, GrantMethod.SHIZUKU),
 
     AccuPerm("modify_audio", "Modify Audio Settings", Manifest.permission.MODIFY_AUDIO_SETTINGS,
         "Adjusts audio routing, sample rate, and output device for the DSP audio engine.",
         "DSP Controls · JamesDSP · EQ",
-        AccuPermCategory.SYSTEM, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC),
+        AccuPermCategory.SYSTEM, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC, canRevoke = false),
 
-    AccuPerm("accessibility_svc", "Accessibility Service", "android.permission.BIND_ACCESSIBILITY_SERVICE",
-        "Required for Key Mapper to intercept hardware button events without root.",
+    AccuPerm("accessibility_svc", "Accessibility Service",
+        "android.permission.BIND_ACCESSIBILITY_SERVICE",
+        "Required for Key Mapper to intercept hardware button and gesture events without root.",
         "Key Mapper · Gesture Triggers",
         AccuPermCategory.SYSTEM, PermImportance.CRITICAL, GrantMethod.SETTINGS_APP),
 
-    AccuPerm("notification_policy", "Do Not Disturb Access", Manifest.permission.ACCESS_NOTIFICATION_POLICY,
+    AccuPerm("notification_policy", "Do Not Disturb Access",
+        Manifest.permission.ACCESS_NOTIFICATION_POLICY,
         "Allows Key Mapper actions to toggle DND mode and manage notification filters.",
         "Key Mapper · DND Action",
         AccuPermCategory.SYSTEM, PermImportance.OPTIONAL, GrantMethod.SETTINGS_APP),
 
-    AccuPerm("device_power", "Device Power Control", "android.permission.DEVICE_POWER",
+    AccuPerm("device_power", "Device Power Control",
+        "android.permission.DEVICE_POWER",
         "Grants screen-on/off and reboot control for advanced Key Mapper power button mappings.",
         "Key Mapper · Power Actions",
         AccuPermCategory.SYSTEM, PermImportance.OPTIONAL, GrantMethod.ROOT_ONLY),
 
-    // ── MEDIA & STORAGE ───────────────────────────────────────
+    AccuPerm("status_bar", "Control Status Bar",
+        "android.permission.STATUS_BAR",
+        "Expands/collapses the status bar and quick settings from Key Mapper actions.",
+        "Key Mapper · QS Actions",
+        AccuPermCategory.SYSTEM, PermImportance.OPTIONAL, GrantMethod.SHIZUKU),
+
+    AccuPerm("expand_status_bar", "Expand Status Bar",
+        Manifest.permission.EXPAND_STATUS_BAR,
+        "Opens the notification shade from Key Mapper trigger actions.",
+        "Key Mapper",
+        AccuPermCategory.SYSTEM, PermImportance.OPTIONAL, GrantMethod.NORMAL),
+
+    AccuPerm("manage_media", "Manage Media",
+        "android.permission.MANAGE_MEDIA",
+        "Allows File Manager to delete and modify media files without per-item confirmation on Android 12+.",
+        "File Manager · Storage Cleaner",
+        AccuPermCategory.SYSTEM, PermImportance.OPTIONAL, GrantMethod.SETTINGS_APP,
+        minSdk = Build.VERSION_CODES.S),
+
+    // ── MEDIA & STORAGE ─────────────────────────────────────
     AccuPerm("record_audio", "Record Audio", Manifest.permission.RECORD_AUDIO,
-        "Captures the microphone stream for call recording. Required by ShizuCallRecorder.",
+        "Captures the microphone stream for call recording. Core requirement of ShizuCallRecorder.",
         "Call Recorder · Audio Capture",
         AccuPermCategory.MEDIA, PermImportance.CRITICAL, GrantMethod.NORMAL),
 
-    AccuPerm("read_media_images", "Read Images / Video", Manifest.permission.READ_MEDIA_IMAGES,
+    AccuPerm("capture_audio_output", "Capture Audio Output",
+        "android.permission.CAPTURE_AUDIO_OUTPUT",
+        "Captures the device speaker output for call recording both sides. Requires Shizuku.",
+        "Call Recorder (full duplex)",
+        AccuPermCategory.MEDIA, PermImportance.CRITICAL, GrantMethod.SHIZUKU),
+
+    AccuPerm("read_media_images", "Read Images / Video",
+        Manifest.permission.READ_MEDIA_IMAGES,
         "Reads image and video files for File Manager previews and storage analysis.",
         "File Manager · Storage Analyzer",
-        AccuPermCategory.MEDIA, PermImportance.IMPORTANT, GrantMethod.NORMAL, minSdk = Build.VERSION_CODES.TIRAMISU),
+        AccuPermCategory.MEDIA, PermImportance.IMPORTANT, GrantMethod.NORMAL,
+        minSdk = Build.VERSION_CODES.TIRAMISU),
+
+    AccuPerm("read_media_video", "Read Video Files",
+        Manifest.permission.READ_MEDIA_VIDEO,
+        "Reads video files for File Manager previews and the deduplicator's video scanning.",
+        "File Manager · Deduplicator",
+        AccuPermCategory.MEDIA, PermImportance.OPTIONAL, GrantMethod.NORMAL,
+        minSdk = Build.VERSION_CODES.TIRAMISU),
 
     AccuPerm("read_media_audio", "Read Audio Files", Manifest.permission.READ_MEDIA_AUDIO,
         "Reads audio files for Inure Music player and convolution IR file selection in DSP.",
         "Inure Music · DSP Convolution",
-        AccuPermCategory.MEDIA, PermImportance.OPTIONAL, GrantMethod.NORMAL, minSdk = Build.VERSION_CODES.TIRAMISU),
+        AccuPermCategory.MEDIA, PermImportance.OPTIONAL, GrantMethod.NORMAL,
+        minSdk = Build.VERSION_CODES.TIRAMISU),
 
-    AccuPerm("manage_ext_storage", "Manage All Files", Manifest.permission.MANAGE_EXTERNAL_STORAGE,
+    AccuPerm("manage_ext_storage", "Manage All Files",
+        Manifest.permission.MANAGE_EXTERNAL_STORAGE,
         "Full filesystem access needed by File Manager, APK scanner, and System Cleaner.",
         "File Manager · System Cleaner · App Cleaner",
-        AccuPermCategory.MEDIA, PermImportance.CRITICAL, GrantMethod.SETTINGS_APP, minSdk = Build.VERSION_CODES.R),
+        AccuPermCategory.MEDIA, PermImportance.CRITICAL, GrantMethod.SETTINGS_APP,
+        minSdk = Build.VERSION_CODES.R),
 
-    AccuPerm("read_ext_storage", "Read External Storage (Legacy)", Manifest.permission.READ_EXTERNAL_STORAGE,
-        "Legacy storage access for devices on Android 9–12. Superseded by MANAGE_EXTERNAL_STORAGE on 11+.",
+    AccuPerm("read_ext_storage", "Read External Storage (Legacy)",
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        "Legacy storage access for devices on Android 9–12. Superseded by MANAGE_EXTERNAL_STORAGE on API 30+.",
         "File Manager · APK Scanner",
-        AccuPermCategory.MEDIA, PermImportance.IMPORTANT, GrantMethod.NORMAL, maxSdk = Build.VERSION_CODES.S_V2),
+        AccuPermCategory.MEDIA, PermImportance.IMPORTANT, GrantMethod.NORMAL,
+        maxSdk = Build.VERSION_CODES.S_V2),
 
-    // ── NETWORK ───────────────────────────────────────────────
-    AccuPerm("access_net_state", "Access Network State", Manifest.permission.ACCESS_NETWORK_STATE,
-        "Reads current connectivity (Wi-Fi / mobile data) for status tiles and Shizuku connection.",
+    // ── NETWORK ─────────────────────────────────────────────
+    AccuPerm("access_net_state", "Access Network State",
+        Manifest.permission.ACCESS_NETWORK_STATE,
+        "Reads current connectivity (Wi-Fi / mobile data) for status tiles and Shizuku connection checks.",
         "Better Internet Tiles · Dashboard · Shizuku",
-        AccuPermCategory.NETWORK, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC),
+        AccuPermCategory.NETWORK, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC, canRevoke = false),
 
-    AccuPerm("access_wifi_state", "Access Wi-Fi State", Manifest.permission.ACCESS_WIFI_STATE,
-        "Reads Wi-Fi SSID, signal, and connected state for the Network Center and Wi-Fi ADB.",
+    AccuPerm("access_wifi_state", "Access Wi-Fi State",
+        Manifest.permission.ACCESS_WIFI_STATE,
+        "Reads Wi-Fi SSID, signal strength, and connection state for Network Center and Wi-Fi ADB.",
         "Network Center · Wi-Fi ADB · Tiles",
-        AccuPermCategory.NETWORK, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC),
+        AccuPermCategory.NETWORK, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC, canRevoke = false),
 
-    AccuPerm("change_net_state", "Change Network State", Manifest.permission.CHANGE_NETWORK_STATE,
-        "Switches Wi-Fi and mobile data on/off from Better Internet Tiles and Key Mapper actions.",
+    AccuPerm("change_net_state", "Change Network State",
+        Manifest.permission.CHANGE_NETWORK_STATE,
+        "Switches Wi-Fi and mobile data on/off from Better Internet Tiles and Key Mapper network actions.",
         "Better Internet Tiles · Key Mapper",
-        AccuPermCategory.NETWORK, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC),
+        AccuPermCategory.NETWORK, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC, canRevoke = false),
 
-    AccuPerm("change_wifi_state", "Change Wi-Fi State", Manifest.permission.CHANGE_WIFI_STATE,
-        "Enables/disables Wi-Fi and manages saved networks from the Network Center.",
+    AccuPerm("change_wifi_state", "Change Wi-Fi State",
+        Manifest.permission.CHANGE_WIFI_STATE,
+        "Enables/disables Wi-Fi and manages saved networks from the Network Center screen.",
         "Network Center · Better Internet Tiles",
-        AccuPermCategory.NETWORK, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC),
+        AccuPermCategory.NETWORK, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC, canRevoke = false),
+
+    AccuPerm("change_wifi_multicast", "Wi-Fi Multicast",
+        Manifest.permission.CHANGE_WIFI_MULTICAST_STATE,
+        "Enables multicast/mDNS for the File Manager's SMB server discovery and FTP client.",
+        "File Manager · SMB · FTP",
+        AccuPermCategory.NETWORK, PermImportance.OPTIONAL, GrantMethod.AUTOMATIC, canRevoke = false),
 
     AccuPerm("nfc", "NFC Access", Manifest.permission.NFC,
-        "Optional — used for NFC-triggered Key Mapper automations and tag scanning.",
+        "Optional — used for NFC-tag triggered Key Mapper automations and tag scanning.",
         "Key Mapper · NFC Trigger",
         AccuPermCategory.NETWORK, PermImportance.OPTIONAL, GrantMethod.NORMAL),
 
-    // ── PRIVACY ───────────────────────────────────────────────
-    AccuPerm("read_phone_state", "Read Phone State", Manifest.permission.READ_PHONE_STATE,
-        "Detects when a call starts and ends so Call Recorder can trigger recording automatically.",
+    // ── BLUETOOTH ───────────────────────────────────────────
+    AccuPerm("bt_connect", "Bluetooth Connect",
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Manifest.permission.BLUETOOTH_CONNECT
+        else Manifest.permission.BLUETOOTH,
+        "Connects to paired BT devices for Key Mapper BT-button trigger mappings.",
+        "Key Mapper · BT Triggers",
+        AccuPermCategory.BLUETOOTH, PermImportance.OPTIONAL, GrantMethod.NORMAL),
+
+    AccuPerm("bt_scan", "Bluetooth Scan",
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Manifest.permission.BLUETOOTH_SCAN
+        else Manifest.permission.BLUETOOTH_ADMIN,
+        "Scans for nearby BT devices so Key Mapper can list available trigger sources.",
+        "Key Mapper · BT Device Picker",
+        AccuPermCategory.BLUETOOTH, PermImportance.OPTIONAL, GrantMethod.NORMAL,
+        minSdk = Build.VERSION_CODES.S),
+
+    // ── PRIVACY ─────────────────────────────────────────────
+    AccuPerm("read_phone_state", "Read Phone State",
+        Manifest.permission.READ_PHONE_STATE,
+        "Detects call start/end events so the Call Recorder triggers automatically.",
         "Call Recorder · Call State Detection",
         AccuPermCategory.PRIVACY, PermImportance.CRITICAL, GrantMethod.NORMAL),
 
-    AccuPerm("read_contacts", "Read Contacts", Manifest.permission.READ_CONTACTS,
-        "Resolves phone numbers to contact names in the Call Recorder list and contact exclusion filter.",
+    AccuPerm("modify_phone_state", "Modify Phone State",
+        "android.permission.MODIFY_PHONE_STATE",
+        "Required for advanced call management features in ShizuCallRecorder (hold, mute, routing).",
+        "Call Recorder · Call Control",
+        AccuPermCategory.PRIVACY, PermImportance.IMPORTANT, GrantMethod.SHIZUKU),
+
+    AccuPerm("process_outgoing_calls", "Process Outgoing Calls",
+        Manifest.permission.PROCESS_OUTGOING_CALLS,
+        "Lets the Call Recorder intercept outgoing calls to start recording automatically.",
+        "Call Recorder",
+        AccuPermCategory.PRIVACY, PermImportance.OPTIONAL, GrantMethod.NORMAL),
+
+    AccuPerm("read_contacts", "Read Contacts",
+        Manifest.permission.READ_CONTACTS,
+        "Resolves phone numbers to contact names in the Call Recorder list and contact-exclusion filter.",
         "Call Recorder · Contact Filter",
         AccuPermCategory.PRIVACY, PermImportance.OPTIONAL, GrantMethod.NORMAL),
 
-    AccuPerm("read_call_log", "Read Call Log", Manifest.permission.READ_CALL_LOG,
-        "Reads call history to pre-populate recording metadata and contact names.",
+    AccuPerm("read_call_log", "Read Call Log",
+        Manifest.permission.READ_CALL_LOG,
+        "Reads call history to pre-populate recording metadata and display call durations.",
         "Call Recorder · Call History",
         AccuPermCategory.PRIVACY, PermImportance.OPTIONAL, GrantMethod.NORMAL),
 
-    // ── ADVANCED ──────────────────────────────────────────────
-    AccuPerm("shizuku_api", "Shizuku API", "moe.shizuku.manager.permission.API_V23",
-        "Core Shizuku binding. Without this, all elevated Shizuku features are unavailable.",
+    AccuPerm("read_priv_phone_state", "Privileged Phone State",
+        "android.permission.READ_PRIVILEGED_PHONE_STATE",
+        "Reads IMEI, SIM state, and carrier info for advanced diagnostics in the Shell and Shizuku Center.",
+        "Shell · Diagnostics · Shizuku Center",
+        AccuPermCategory.PRIVACY, PermImportance.OPTIONAL, GrantMethod.SHIZUKU),
+
+    // ── ADVANCED ────────────────────────────────────────────
+    AccuPerm("shizuku_api", "Shizuku API",
+        "moe.shizuku.manager.permission.API_V23",
+        "Core Shizuku binding permission. Without this, ALL elevated Shizuku features are unavailable.",
         "All Shizuku features",
         AccuPermCategory.ADVANCED, PermImportance.CRITICAL, GrantMethod.SHIZUKU),
 
-    AccuPerm("device_owner", "Device Owner / MDM", "android.permission.MANAGE_DEVICE_POLICY_PACKAGES",
-        "Used by Hail's Device Owner freeze mode (DPM setPackagesSuspended). Requires Device Owner setup.",
+    AccuPerm("device_owner", "Device Owner / MDM",
+        "android.permission.MANAGE_DEVICE_POLICY_PACKAGES",
+        "Used by Hail's Device Owner freeze mode (DPM.setPackagesSuspended). Requires Device Owner setup via ADB.",
         "Freeze Scheduler · Device Owner Mode",
-        AccuPermCategory.ADVANCED, PermImportance.OPTIONAL, GrantMethod.ADB_ONLY, minSdk = Build.VERSION_CODES.TIRAMISU),
+        AccuPermCategory.ADVANCED, PermImportance.OPTIONAL, GrantMethod.ADB_ONLY,
+        minSdk = Build.VERSION_CODES.TIRAMISU),
 
-    AccuPerm("battery_stats", "Battery Stats", Manifest.permission.BATTERY_STATS,
-        "Reads detailed per-app battery consumption history for Inure Battery Optimization screen.",
+    AccuPerm("battery_stats", "Battery Stats",
+        Manifest.permission.BATTERY_STATS,
+        "Reads detailed per-app battery consumption for Inure Battery Optimization and Dashboard charts.",
         "Inure · Battery Opt · Dashboard",
         AccuPermCategory.ADVANCED, PermImportance.IMPORTANT, GrantMethod.SHIZUKU),
 
-    AccuPerm("manage_overlay", "Display Over Other Apps", Manifest.permission.SYSTEM_ALERT_WINDOW,
-        "Draws Key Mapper floating button and DSP status overlay on top of other apps.",
-        "Key Mapper · Floating Button",
+    AccuPerm("manage_overlay", "Display Over Other Apps",
+        Manifest.permission.SYSTEM_ALERT_WINDOW,
+        "Draws Key Mapper floating button and DSP status overlay on top of all other apps.",
+        "Key Mapper · Floating Button · DSP Overlay",
         AccuPermCategory.ADVANCED, PermImportance.OPTIONAL, GrantMethod.SETTINGS_APP),
 
-    AccuPerm("use_biometric", "Use Biometric / Fingerprint", Manifest.permission.USE_BIOMETRIC,
+    AccuPerm("hide_overlay_windows", "Hide Overlay Windows",
+        "android.permission.HIDE_OVERLAY_WINDOWS",
+        "Hides all third-party overlay windows when ACCU's security dialogs are displayed.",
+        "Security Dialogs · Install Prompt",
+        AccuPermCategory.ADVANCED, PermImportance.OPTIONAL, GrantMethod.NORMAL,
+        minSdk = Build.VERSION_CODES.S),
+
+    AccuPerm("use_biometric", "Use Biometric / Fingerprint",
+        Manifest.permission.USE_BIOMETRIC,
         "Triggers Key Mapper actions from fingerprint gestures on supported devices.",
         "Key Mapper · Fingerprint Trigger",
-        AccuPermCategory.ADVANCED, PermImportance.OPTIONAL, GrantMethod.AUTOMATIC),
+        AccuPermCategory.ADVANCED, PermImportance.OPTIONAL, GrantMethod.AUTOMATIC, canRevoke = false),
+
+    AccuPerm("manage_users", "Manage Users",
+        "android.permission.MANAGE_USERS",
+        "Creates and manages secondary user accounts for Hail work-profile freeze functionality.",
+        "Hail · Work Profile · Multi-User",
+        AccuPermCategory.ADVANCED, PermImportance.OPTIONAL, GrantMethod.SHIZUKU),
+
+    AccuPerm("camera", "Camera", Manifest.permission.CAMERA,
+        "Used for QR-code scanning during Shizuku wireless-ADB pairing setup.",
+        "Shizuku Setup · QR Pairing",
+        AccuPermCategory.ADVANCED, PermImportance.OPTIONAL, GrantMethod.NORMAL),
 )
 
-// ─────────────────────────────────────────────────────────────
-//  Runtime status check
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  RUNTIME STATUS CHECK
+// ═══════════════════════════════════════════════════════════
 
 private fun checkPermStatus(context: Context, perm: AccuPerm): PermStatus {
-    if (Build.VERSION.SDK_INT < perm.minSdk || Build.VERSION.SDK_INT > perm.maxSdk) return PermStatus.NOT_APPLICABLE
+    if (Build.VERSION.SDK_INT < perm.minSdk || Build.VERSION.SDK_INT > perm.maxSdk)
+        return PermStatus.NOT_APPLICABLE
     return try {
-        if (context.checkSelfPermission(perm.rawPermission) == PackageManager.PERMISSION_GRANTED) PermStatus.GRANTED
+        if (context.checkSelfPermission(perm.rawPermission) == PackageManager.PERMISSION_GRANTED)
+            PermStatus.GRANTED
         else PermStatus.NOT_REQUESTED
     } catch (_: Exception) { PermStatus.NOT_REQUESTED }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  Screen
-// ─────────────────────────────────────────────────────────────
+private fun copyToClipboard(context: Context, text: String) {
+    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    cm.setPrimaryClip(ClipData.newPlainText("adb_command", text))
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SCREEN
+// ═══════════════════════════════════════════════════════════
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccuPermissionsScreen(onBack: () -> Unit = {}) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val scope   = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
 
+    // ── State ──────────────────────────────────────────────
     var perms by remember {
-        mutableStateOf(
-            ALL_ACCU_PERMISSIONS.map { it.copy(status = checkPermStatus(context, it)) }
-        )
+        mutableStateOf(ALL_ACCU_PERMISSIONS.map { it.copy(status = checkPermStatus(context, it)) })
     }
-
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(AccuPermCategory.ALL) }
-    var showGrantAllDialog by remember { mutableStateOf(false) }
-    var expandedId by remember { mutableStateOf<String?>(null) }
+    var searchQuery     by remember { mutableStateOf("") }
+    var selectedCat     by remember { mutableStateOf(AccuPermCategory.ALL) }
+    var sortMode        by remember { mutableStateOf(SortMode.STATUS) }
+    var expandedId      by remember { mutableStateOf<String?>(null) }
+    var showGrantDialog by remember { mutableStateOf(false) }
+    var sortExpanded    by remember { mutableStateOf(false) }
+    var grantingId      by remember { mutableStateOf<String?>(null) }
 
     fun refresh() {
         perms = ALL_ACCU_PERMISSIONS.map { it.copy(status = checkPermStatus(context, it)) }
     }
 
-    val filtered = remember(perms, searchQuery, selectedCategory) {
+    // ── Derived ────────────────────────────────────────────
+    val filtered = remember(perms, searchQuery, selectedCat, sortMode) {
         perms
             .filter { p ->
-                (selectedCategory == AccuPermCategory.ALL || p.category == selectedCategory) &&
+                (selectedCat == AccuPermCategory.ALL || p.category == selectedCat) &&
                 (searchQuery.isBlank() ||
                     p.friendlyName.contains(searchQuery, ignoreCase = true) ||
                     p.description.contains(searchQuery, ignoreCase = true) ||
                     p.usedBy.contains(searchQuery, ignoreCase = true) ||
                     p.rawPermission.contains(searchQuery, ignoreCase = true))
             }
-            .sortedWith(compareBy({ it.status != PermStatus.NOT_REQUESTED }, { it.importance.ordinal }))
+            .sortedWith(when (sortMode) {
+                SortMode.STATUS     -> compareBy({ it.status != PermStatus.NOT_REQUESTED && it.status != PermStatus.DENIED }, { it.importance.ordinal })
+                SortMode.IMPORTANCE -> compareBy({ it.importance.ordinal }, { it.friendlyName })
+                SortMode.CATEGORY   -> compareBy({ it.category.ordinal }, { it.importance.ordinal })
+                SortMode.NAME       -> compareBy { it.friendlyName }
+            })
     }
 
-    val totalGranted = perms.count { it.status == PermStatus.GRANTED }
-    val totalCritical = perms.count { it.importance == PermImportance.CRITICAL }
-    val criticalGranted = perms.count { it.importance == PermImportance.CRITICAL && it.status == PermStatus.GRANTED }
-    val healthPct = if (perms.isNotEmpty()) totalGranted.toFloat() / perms.size else 0f
+    val totalGranted   = perms.count { it.status == PermStatus.GRANTED }
+    val totalCritical  = perms.count { it.importance == PermImportance.CRITICAL }
+    val critGranted    = perms.count { it.importance == PermImportance.CRITICAL && it.status == PermStatus.GRANTED }
+    val shizukuPending = perms.filter { it.grantMethod == GrantMethod.SHIZUKU && it.status == PermStatus.NOT_REQUESTED }
+    val healthPct      = if (perms.isNotEmpty()) totalGranted.toFloat() / perms.size else 0f
 
-    if (showGrantAllDialog) {
-        val shizukuable = filtered.filter { it.grantMethod == GrantMethod.SHIZUKU && it.status != PermStatus.GRANTED && it.status != PermStatus.NOT_APPLICABLE }
+    // ── Grant all dialog ──────────────────────────────────
+    if (showGrantDialog) {
         AlertDialog(
-            onDismissRequest = { showGrantAllDialog = false },
-            icon = { Icon(Icons.Default.Hub, null) },
-            title = { Text("Grant All via Shizuku") },
+            onDismissRequest = { showGrantDialog = false },
+            icon = {
+                Icon(Icons.Default.Hub, null, tint = MaterialTheme.colorScheme.primary)
+            },
+            title = { Text("Grant All via Shizuku", fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("${shizukuable.size} permission(s) can be granted automatically using Shizuku:", style = MaterialTheme.typography.bodySmall)
-                    shizukuable.forEach { p ->
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(Icons.Default.RadioButtonUnchecked, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
-                            Text(p.friendlyName, style = MaterialTheme.typography.bodySmall)
+                    if (shizukuPending.isEmpty()) {
+                        Text(
+                            "All Shizuku-grantable permissions are already granted!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Text(
+                            "${shizukuPending.size} permission(s) will be granted automatically:",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        shizukuPending.forEach { p ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Icon(Icons.Default.Hub, null, Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.primary)
+                                Text(p.friendlyName, style = MaterialTheme.typography.bodySmall)
+                            }
                         }
                     }
-                    if (shizukuable.isEmpty()) Text("No Shizuku-grantable permissions currently missing in this filter.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    showGrantAllDialog = false
-                    scope.launch {
-                        shizukuable.forEachIndexed { i, p ->
-                            delay(300L)
-                            perms = perms.map { if (it.id == p.id) it.copy(status = PermStatus.GRANTED) else it }
+                Button(
+                    onClick = {
+                        showGrantDialog = false
+                        scope.launch {
+                            shizukuPending.forEachIndexed { _, p ->
+                                grantingId = p.id
+                                delay(350L)
+                                perms = perms.map { if (it.id == p.id) it.copy(status = PermStatus.GRANTED) else it }
+                            }
+                            grantingId = null
+                            snackbar.showSnackbar("Granted ${shizukuPending.size} permission(s) via Shizuku ✓")
                         }
-                        snackbar.showSnackbar("Granted ${shizukuable.size} permission(s) via Shizuku ✓")
-                    }
-                }, enabled = shizukuable.isNotEmpty()) { Text("Grant All") }
+                    },
+                    enabled = shizukuPending.isNotEmpty(),
+                ) { Text("Grant All") }
             },
-            dismissButton = { TextButton(onClick = { showGrantAllDialog = false }) { Text("Cancel") } }
+            dismissButton = {
+                TextButton(onClick = { showGrantDialog = false }) { Text("Cancel") }
+            },
         )
     }
 
     Scaffold(
         topBar = {
             ACCTopBar(
-                title = "App Permissions",
+                title = "Permission Center",
                 onBack = onBack,
                 actions = {
-                    IconButton(onClick = { refresh() }) { Icon(Icons.Default.Refresh, "Refresh") }
-                    IconButton(onClick = { showGrantAllDialog = true }) {
-                        Icon(Icons.Default.Hub, "Grant All Shizuku")
+                    // Sort
+                    Box {
+                        IconButton(onClick = { sortExpanded = !sortExpanded }) {
+                            Icon(Icons.Default.Sort, "Sort")
+                        }
+                        DropdownMenu(
+                            expanded = sortExpanded,
+                            onDismissRequest = { sortExpanded = false },
+                        ) {
+                            SortMode.entries.forEach { mode ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            if (sortMode == mode)
+                                                Icon(Icons.Default.Check, null, Modifier.size(16.dp),
+                                                    tint = MaterialTheme.colorScheme.primary)
+                                            else Spacer(Modifier.size(16.dp))
+                                            Text(mode.label)
+                                        }
+                                    },
+                                    onClick = { sortMode = mode; sortExpanded = false },
+                                )
+                            }
+                        }
                     }
-                }
+                    IconButton(onClick = { refresh() }) {
+                        Icon(Icons.Default.Refresh, "Refresh status")
+                    }
+                    IconButton(onClick = { showGrantDialog = true }) {
+                        Icon(Icons.Default.Hub, "Grant all via Shizuku")
+                    }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
 
-            // ── Health card ──────────────────────────────────
+            // ── Hero health card ───────────────────────────
             item {
                 PermHealthCard(
-                    totalGranted = totalGranted,
-                    totalPerms = perms.size,
-                    criticalGranted = criticalGranted,
-                    totalCritical = totalCritical,
-                    healthPct = healthPct,
-                    onGrantAll = { showGrantAllDialog = true },
+                    totalGranted   = totalGranted,
+                    totalPerms     = perms.size,
+                    critGranted    = critGranted,
+                    totalCritical  = totalCritical,
+                    healthPct      = healthPct,
+                    shizukuPending = shizukuPending.size,
+                    onGrantAll     = { showGrantDialog = true },
                 )
             }
 
-            // ── Search ───────────────────────────────────────
+            // ── Search ────────────────────────────────────
             item {
                 OutlinedTextField(
-                    value = searchQuery,
+                    value         = searchQuery,
                     onValueChange = { searchQuery = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search permissions…") },
-                    leadingIcon = { Icon(Icons.Default.Search, null) },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Default.Clear, null) }
+                    modifier      = Modifier.fillMaxWidth(),
+                    placeholder   = { Text("Search permissions, features, or raw names…") },
+                    leadingIcon   = { Icon(Icons.Default.Search, null) },
+                    trailingIcon  = {
+                        if (searchQuery.isNotEmpty())
+                            IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Default.Clear, null) }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
+                    shape      = RoundedCornerShape(16.dp),
                 )
             }
 
-            // ── Category chips ───────────────────────────────
+            // ── Category filter chips ─────────────────────
             item {
-                Row(
-                    Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    AccuPermCategory.entries.forEach { cat ->
-                        val count = if (cat == AccuPermCategory.ALL) perms.size else perms.count { it.category == cat }
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(AccuPermCategory.entries) { cat ->
+                        val count = if (cat == AccuPermCategory.ALL) perms.size
+                                    else perms.count { it.category == cat }
                         FilterChip(
-                            selected = selectedCategory == cat,
-                            onClick = { selectedCategory = cat },
-                            label = { Text("${cat.label} ($count)") },
-                            leadingIcon = {
-                                Icon(cat.icon, null, Modifier.size(14.dp))
-                            },
+                            selected = selectedCat == cat,
+                            onClick  = { selectedCat = cat },
+                            label    = { Text("${cat.label} ($count)", maxLines = 1) },
+                            leadingIcon = { Icon(cat.icon, null, Modifier.size(14.dp)) },
                         )
                     }
                 }
             }
 
-            // ── Summary line ─────────────────────────────────
+            // ── Summary strip ────────────────────────────
             item {
-                Text(
-                    "${filtered.size} permission(s) · ${filtered.count { it.status == PermStatus.GRANTED }} granted · ${filtered.count { it.status == PermStatus.NOT_REQUESTED || it.status == PermStatus.DENIED }} pending",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                PermSummaryStrip(filtered)
             }
 
-            // ── Permission list ──────────────────────────────
+            // ── Permission cards ──────────────────────────
             items(filtered, key = { it.id }) { perm ->
-                PermissionCard(
-                    perm = perm,
-                    isExpanded = expandedId == perm.id,
-                    onToggleExpand = { expandedId = if (expandedId == perm.id) null else perm.id },
-                    onGrant = {
-                        when (perm.grantMethod) {
-                            GrantMethod.SETTINGS_APP -> {
-                                when (perm.id) {
-                                    "pkg_usage_stats" -> context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                                    "write_settings"  -> context.startActivity(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).setData(Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                                    "manage_overlay"  -> context.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).setData(Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                                    "manage_ext_storage" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) context.startActivity(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).setData(Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                                    "accessibility_svc", "notification_policy" -> context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                                    else -> context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).setData(Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                AnimatedVisibility(
+                    visible = true,
+                    enter   = fadeIn() + expandVertically(),
+                ) {
+                    PermissionCard(
+                        perm       = perm,
+                        isExpanded = expandedId == perm.id,
+                        isGranting = grantingId == perm.id,
+                        onToggle   = { expandedId = if (expandedId == perm.id) null else perm.id },
+                        onGrant    = {
+                            when (perm.grantMethod) {
+                                GrantMethod.SETTINGS_APP -> {
+                                    val intent = when (perm.id) {
+                                        "pkg_usage_stats"  -> Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                                        "write_settings"   -> Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
+                                            .setData(Uri.parse("package:${context.packageName}"))
+                                        "manage_overlay"   -> Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                                            .setData(Uri.parse("package:${context.packageName}"))
+                                        "manage_ext_storage" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                                            Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                                                .setData(Uri.parse("package:${context.packageName}"))
+                                            else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                                .setData(Uri.parse("package:${context.packageName}"))
+                                        "accessibility_svc" -> Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                        "notification_policy" -> Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                                        "exact_alarm" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                                            Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                                            else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                                .setData(Uri.parse("package:${context.packageName}"))
+                                        "manage_media" -> Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                            .setData(Uri.parse("package:${context.packageName}"))
+                                        else -> Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                            .setData(Uri.parse("package:${context.packageName}"))
+                                    }
+                                    context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                                }
+                                GrantMethod.SHIZUKU -> {
+                                    scope.launch {
+                                        grantingId = perm.id
+                                        delay(500L)
+                                        perms     = perms.map { if (it.id == perm.id) it.copy(status = PermStatus.GRANTED) else it }
+                                        grantingId = null
+                                        snackbar.showSnackbar("${perm.friendlyName} granted via Shizuku ✓")
+                                    }
+                                }
+                                GrantMethod.NORMAL -> {
+                                    scope.launch {
+                                        delay(200L)
+                                        perms = perms.map { if (it.id == perm.id) it.copy(status = PermStatus.GRANTED) else it }
+                                        snackbar.showSnackbar("${perm.friendlyName}: system dialog opened")
+                                    }
+                                }
+                                GrantMethod.ADB_ONLY -> {
+                                    val cmd = "adb shell pm grant com.accu ${perm.rawPermission}"
+                                    copyToClipboard(context, cmd)
+                                    scope.launch { snackbar.showSnackbar("ADB command copied to clipboard") }
+                                }
+                                else -> {
+                                    scope.launch { snackbar.showSnackbar("${perm.friendlyName}: ${perm.grantMethod.label}") }
                                 }
                             }
-                            GrantMethod.SHIZUKU -> {
-                                scope.launch {
-                                    delay(400)
-                                    perms = perms.map { if (it.id == perm.id) it.copy(status = PermStatus.GRANTED) else it }
-                                    snackbar.showSnackbar("${perm.friendlyName} granted via Shizuku ✓")
-                                }
+                        },
+                        onRevoke = {
+                            scope.launch {
+                                delay(200L)
+                                perms = perms.map { if (it.id == perm.id) it.copy(status = PermStatus.NOT_REQUESTED) else it }
+                                snackbar.showSnackbar("${perm.friendlyName} revoked")
                             }
-                            GrantMethod.NORMAL -> {
-                                scope.launch {
-                                    delay(200)
-                                    perms = perms.map { if (it.id == perm.id) it.copy(status = PermStatus.GRANTED) else it }
-                                    snackbar.showSnackbar("${perm.friendlyName} — grant dialog opened")
-                                }
-                            }
-                            else -> {
-                                scope.launch { snackbar.showSnackbar("${perm.friendlyName}: ${perm.grantMethod.label}") }
-                            }
-                        }
-                    }
-                )
+                        },
+                        onCopyAdb = {
+                            val cmd = "adb shell pm grant com.accu ${perm.rawPermission}"
+                            copyToClipboard(context, cmd)
+                            scope.launch { snackbar.showSnackbar("Copied: $cmd") }
+                        },
+                    )
+                }
             }
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  Health card
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  SUMMARY STRIP
+// ═══════════════════════════════════════════════════════════
+
+@Composable
+private fun PermSummaryStrip(filtered: List<AccuPerm>) {
+    val granted   = filtered.count { it.status == PermStatus.GRANTED }
+    val missing   = filtered.count { it.status == PermStatus.NOT_REQUESTED || it.status == PermStatus.DENIED }
+    val na        = filtered.count { it.status == PermStatus.NOT_APPLICABLE }
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        SummaryPill("$granted Granted",  Color(0xFF43A047), Modifier.weight(1f))
+        SummaryPill("$missing Pending",  Color(0xFFFF8F00), Modifier.weight(1f))
+        SummaryPill("$na N/A",           MaterialTheme.colorScheme.outline, Modifier.weight(1f))
+        SummaryPill("${filtered.size} Total", MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun SummaryPill(text: String, color: Color, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape    = RoundedCornerShape(10.dp),
+        color    = color.copy(alpha = 0.12f),
+    ) {
+        Text(
+            text,
+            modifier   = Modifier.padding(horizontal = 8.dp, vertical = 6.dp).fillMaxWidth(),
+            style      = MaterialTheme.typography.labelSmall,
+            color      = color,
+            fontWeight = FontWeight.SemiBold,
+            maxLines   = 1,
+            overflow   = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HEALTH CARD
+// ═══════════════════════════════════════════════════════════
 
 @Composable
 private fun PermHealthCard(
     totalGranted: Int,
     totalPerms: Int,
-    criticalGranted: Int,
+    critGranted: Int,
     totalCritical: Int,
     healthPct: Float,
+    shizukuPending: Int,
     onGrantAll: () -> Unit,
 ) {
-    val animatedPct by animateFloatAsState(
-        targetValue = healthPct,
-        animationSpec = tween(1200, easing = FastOutSlowInEasing),
-        label = "health_arc",
+    val animPct by animateFloatAsState(
+        targetValue  = healthPct,
+        animationSpec = tween(1400, easing = FastOutSlowInEasing),
+        label        = "health",
     )
     val healthColor = when {
         healthPct >= 0.85f -> Color(0xFF43A047)
@@ -539,65 +878,133 @@ private fun PermHealthCard(
 
     Card(
         Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape  = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        elevation = CardDefaults.cardElevation(2.dp),
+        elevation = CardDefaults.cardElevation(4.dp),
     ) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                // Arc progress indicator
-                Box(Modifier.size(76.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(
-                        progress = { 1f },
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        strokeWidth = 7.dp,
-                        strokeCap = StrokeCap.Round,
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primaryContainer.copy(0.25f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(0.10f),
+                        ),
+                        start = Offset(0f, 0f),
+                        end   = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
                     )
-                    CircularProgressIndicator(
-                        progress = { animatedPct },
-                        modifier = Modifier.fillMaxSize(),
-                        color = healthColor,
-                        strokeWidth = 7.dp,
-                        strokeCap = StrokeCap.Round,
-                    )
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("${(animatedPct * 100).toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = healthColor)
-                        Text("health", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Permission Health", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("$totalGranted / $totalPerms permissions granted", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        StatPill("$criticalGranted/$totalCritical Critical", if (criticalGranted == totalCritical) Color(0xFF43A047) else Color(0xFFE53935))
-                        StatPill("${totalPerms - totalGranted} Missing", if (totalPerms == totalGranted) Color(0xFF43A047) else Color(0xFFFF8F00))
-                    }
-                }
-            }
+                )
+        ) {
+            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
-            // Progress bar per importance level
-            PermImportance.entries.forEach { imp ->
-                val impTotal = ALL_ACCU_PERMISSIONS.count { it.importance == imp }
-                val impGranted = ALL_ACCU_PERMISSIONS.count { it.importance == imp }.let { 0 }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Surface(shape = RoundedCornerShape(4.dp), color = imp.color.copy(0.15f)) {
-                        Text(imp.label, style = MaterialTheme.typography.labelSmall, color = imp.color, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                Row(
+                    verticalAlignment    = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                ) {
+                    // Arc ring
+                    Box(Modifier.size(84.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(
+                            progress = { 1f },
+                            modifier = Modifier.fillMaxSize(),
+                            color    = MaterialTheme.colorScheme.surfaceVariant,
+                            strokeWidth = 8.dp,
+                            strokeCap = StrokeCap.Round,
+                        )
+                        CircularProgressIndicator(
+                            progress = { animPct },
+                            modifier = Modifier.fillMaxSize(),
+                            color    = healthColor,
+                            strokeWidth = 8.dp,
+                            strokeCap = StrokeCap.Round,
+                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "${(animPct * 100).toInt()}%",
+                                style  = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color  = healthColor,
+                            )
+                            Text("health", style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
-                    LinearProgressIndicator(
-                        progress = { if (impTotal > 0) impGranted.toFloat() / impTotal else 0f },
-                        modifier = Modifier.weight(1f).height(6.dp).clip(CircleShape),
-                        color = imp.color,
-                        trackColor = imp.color.copy(0.15f),
-                    )
-                    Text("$impGranted/$impTotal", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
 
-            OutlinedButton(onClick = onGrantAll, Modifier.fillMaxWidth()) {
-                Icon(Icons.Default.Hub, null, Modifier.size(16.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Grant All Missing via Shizuku")
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Permission Health",
+                            style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("$totalGranted / $totalPerms permissions granted",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            StatPill("$critGranted/$totalCritical Critical",
+                                if (critGranted == totalCritical) Color(0xFF43A047) else Color(0xFFE53935))
+                            if (shizukuPending > 0)
+                                StatPill("$shizukuPending Shizuku", MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+
+                // Per-importance mini bars
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    PermImportance.entries.forEach { imp ->
+                        val impTotal   = ALL_ACCU_PERMISSIONS.count { it.importance == imp }
+                        val impGranted = ALL_ACCU_PERMISSIONS.count { it.importance == imp && checkPermStatus(
+                            LocalContext.current, it) == PermStatus.GRANTED }
+                        val barFraction = if (impTotal > 0) impGranted.toFloat() / impTotal else 0f
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment    = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = imp.color.copy(0.15f),
+                                modifier = Modifier.width(72.dp),
+                            ) {
+                                Text(
+                                    imp.label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = imp.color,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                )
+                            }
+                            LinearProgressIndicator(
+                                progress = { barFraction },
+                                modifier = Modifier.weight(1f).height(6.dp).clip(CircleShape),
+                                color      = imp.color,
+                                trackColor = imp.color.copy(0.15f),
+                            )
+                            Text("$impGranted/$impTotal",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+
+                // Grant all CTA
+                if (ALL_ACCU_PERMISSIONS.any { it.grantMethod == GrantMethod.SHIZUKU &&
+                        checkPermStatus(LocalContext.current, it) == PermStatus.NOT_REQUESTED }) {
+                    Button(
+                        onClick  = onGrantAll,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors   = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary),
+                    ) {
+                        Icon(Icons.Default.Hub, null, Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Grant All Missing via Shizuku (1 tap)")
+                    }
+                } else {
+                    OutlinedButton(onClick = onGrantAll, Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.CheckCircle, null, Modifier.size(16.dp),
+                            tint = Color(0xFF43A047))
+                        Spacer(Modifier.width(8.dp))
+                        Text("All Shizuku Permissions Granted")
+                    }
+                }
             }
         }
     }
@@ -605,27 +1012,37 @@ private fun PermHealthCard(
 
 @Composable
 private fun StatPill(text: String, color: Color) {
-    Surface(shape = RoundedCornerShape(6.dp), color = color.copy(0.1f)) {
-        Text(text, style = MaterialTheme.typography.labelSmall, color = color, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+    Surface(shape = RoundedCornerShape(6.dp), color = color.copy(0.12f)) {
+        Text(
+            text,
+            style  = MaterialTheme.typography.labelSmall,
+            color  = color,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+        )
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  Permission card
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  PERMISSION CARD
+// ═══════════════════════════════════════════════════════════
 
 @Composable
 private fun PermissionCard(
     perm: AccuPerm,
     isExpanded: Boolean,
-    onToggleExpand: () -> Unit,
+    isGranting: Boolean,
+    onToggle: () -> Unit,
     onGrant: () -> Unit,
+    onRevoke: () -> Unit,
+    onCopyAdb: () -> Unit,
 ) {
+    val context = LocalContext.current
     val statusColor = when (perm.status) {
-        PermStatus.GRANTED         -> Color(0xFF43A047)
-        PermStatus.DENIED          -> Color(0xFFE53935)
-        PermStatus.NOT_APPLICABLE  -> MaterialTheme.colorScheme.outline
-        PermStatus.NOT_REQUESTED   -> Color(0xFFFF8F00)
+        PermStatus.GRANTED        -> Color(0xFF43A047)
+        PermStatus.DENIED         -> Color(0xFFE53935)
+        PermStatus.NOT_APPLICABLE -> MaterialTheme.colorScheme.outline
+        PermStatus.NOT_REQUESTED  -> Color(0xFFFF8F00)
     }
     val statusLabel = when (perm.status) {
         PermStatus.GRANTED        -> "Granted"
@@ -640,47 +1057,97 @@ private fun PermissionCard(
         PermStatus.NOT_REQUESTED  -> Icons.Default.Warning
     }
 
-    val cardColor = when (perm.status) {
-        PermStatus.GRANTED       -> MaterialTheme.colorScheme.surface
-        PermStatus.NOT_REQUESTED -> if (perm.importance == PermImportance.CRITICAL)
-            MaterialTheme.colorScheme.errorContainer.copy(0.12f)
-            else MaterialTheme.colorScheme.surfaceContainerLow
-        else -> MaterialTheme.colorScheme.surfaceContainerLow
+    val cardBg = when {
+        perm.status == PermStatus.NOT_REQUESTED && perm.importance == PermImportance.CRITICAL ->
+            MaterialTheme.colorScheme.errorContainer.copy(0.10f)
+        perm.status == PermStatus.GRANTED ->
+            MaterialTheme.colorScheme.surface
+        else ->
+            MaterialTheme.colorScheme.surfaceContainerLow
     }
 
+    // Shizuku button scale — hoisted here (top-level) so it's never inside a conditional
+    val shizukuBtnScale by animateFloatAsState(
+        targetValue   = if (isGranting) 0.85f else 1f,
+        animationSpec = tween(300),
+        label         = "shizuku_btn",
+    )
+
+    // Pulsing animation while Shizuku is granting
+    val pulseScale by animateFloatAsState(
+        targetValue   = if (isGranting) 1.04f else 1f,
+        animationSpec = if (isGranting)
+            infiniteRepeatable(tween(500), RepeatMode.Reverse)
+        else tween(200),
+        label = "pulse",
+    )
+
     Card(
-        Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        onClick = onToggleExpand,
+        modifier = Modifier.fillMaxWidth().scale(pulseScale),
+        shape    = RoundedCornerShape(18.dp),
+        colors   = CardDefaults.cardColors(containerColor = cardBg),
+        elevation = CardDefaults.cardElevation(if (isExpanded) 3.dp else 1.dp),
+        onClick  = onToggle,
     ) {
         Column(Modifier.padding(14.dp)) {
 
-            // ── Header row ────────────────────────────────────
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Status dot / icon
+            // ── Header row ────────────────────────────────
+            Row(
+                verticalAlignment    = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 Box(
                     Modifier
-                        .size(42.dp)
+                        .size(44.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(statusColor.copy(0.12f)),
+                        .background(statusColor.copy(0.14f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(statusIcon, null, Modifier.size(22.dp), tint = statusColor)
+                    if (isGranting) {
+                        CircularProgressIndicator(
+                            modifier    = Modifier.size(22.dp),
+                            strokeWidth = 2.dp,
+                            color       = MaterialTheme.colorScheme.primary,
+                        )
+                    } else {
+                        Icon(statusIcon, null, Modifier.size(22.dp), tint = statusColor)
+                    }
                 }
 
                 Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(perm.friendlyName, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                        // Importance badge
-                        Surface(shape = RoundedCornerShape(4.dp), color = perm.importance.color.copy(0.15f)) {
-                            Text(perm.importance.label, style = MaterialTheme.typography.labelSmall, color = perm.importance.color, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
+                    Row(
+                        verticalAlignment    = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            perm.friendlyName,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines   = 1,
+                            overflow   = TextOverflow.Ellipsis,
+                            modifier   = Modifier.weight(1f, fill = false),
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = perm.importance.color.copy(0.15f),
+                        ) {
+                            Text(
+                                perm.importance.label,
+                                style  = MaterialTheme.typography.labelSmall,
+                                color  = perm.importance.color,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                            )
                         }
                     }
-                    Text(perm.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = if (isExpanded) Int.MAX_VALUE else 2, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        perm.description,
+                        style   = MaterialTheme.typography.bodySmall,
+                        color   = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = if (isExpanded) Int.MAX_VALUE else 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
 
-                // Expand chevron
                 Icon(
                     if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     null,
@@ -689,160 +1156,287 @@ private fun PermissionCard(
                 )
             }
 
-            // ── Status + grant row ───────────────────────────
+            // ── Status + action row ───────────────────────
             Spacer(Modifier.height(10.dp))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment    = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 // Status chip
-                Surface(shape = RoundedCornerShape(8.dp), color = statusColor.copy(0.12f)) {
-                    Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(statusIcon, null, Modifier.size(12.dp), tint = statusColor)
-                        Text(statusLabel, style = MaterialTheme.typography.labelSmall, color = statusColor, fontWeight = FontWeight.Bold)
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = statusColor.copy(0.12f),
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(statusIcon, null, Modifier.size(11.dp), tint = statusColor)
+                        Text(statusLabel, style = MaterialTheme.typography.labelSmall,
+                            color = statusColor, fontWeight = FontWeight.Bold)
                     }
                 }
-                // Grant method chip
-                Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
-                    Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(perm.grantMethod.icon, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.secondary)
-                        Text(perm.grantMethod.label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+
+                // Grant-method chip
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(perm.grantMethod.icon, null, Modifier.size(11.dp),
+                            tint = MaterialTheme.colorScheme.secondary)
+                        Text(perm.grantMethod.label, style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.secondary)
                     }
                 }
 
                 Spacer(Modifier.weight(1f))
 
-                // Grant button — only when not granted/n/a
-                if (perm.status != PermStatus.GRANTED && perm.status != PermStatus.NOT_APPLICABLE) {
-                    when (perm.grantMethod) {
-                        GrantMethod.SHIZUKU -> {
-                            Button(
-                                onClick = onGrant,
-                                modifier = Modifier.height(32.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                            ) {
-                                Icon(Icons.Default.Hub, null, Modifier.size(14.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Shizuku", style = MaterialTheme.typography.labelMedium)
-                            }
+                // Action button
+                when {
+                    perm.status == PermStatus.NOT_APPLICABLE -> {
+                        Surface(shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.outline.copy(0.1f)) {
+                            Text("Not applicable", style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
                         }
-                        GrantMethod.NORMAL -> {
-                            Button(
-                                onClick = onGrant,
-                                modifier = Modifier.height(32.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp),
-                            ) {
-                                Icon(Icons.Default.TouchApp, null, Modifier.size(14.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Grant", style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                        GrantMethod.SETTINGS_APP -> {
-                            OutlinedButton(
-                                onClick = onGrant,
-                                modifier = Modifier.height(32.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp),
-                            ) {
-                                Icon(Icons.Default.OpenInNew, null, Modifier.size(14.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Settings", style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                        GrantMethod.ADB_ONLY -> {
-                            OutlinedButton(
-                                onClick = onGrant,
-                                modifier = Modifier.height(32.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp),
-                                border = ButtonDefaults.outlinedButtonBorder(enabled = false),
-                            ) {
-                                Icon(Icons.Default.Terminal, null, Modifier.size(14.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("ADB cmd", style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                        GrantMethod.ROOT_ONLY -> {
-                            OutlinedButton(
-                                onClick = onGrant,
-                                modifier = Modifier.height(32.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp),
-                            ) {
-                                Icon(Icons.Default.AdminPanelSettings, null, Modifier.size(14.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Root", style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                        else -> {}
                     }
-                } else if (perm.status == PermStatus.GRANTED) {
-                    Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF43A047).copy(0.1f)) {
-                        Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Default.CheckCircle, null, Modifier.size(13.dp), tint = Color(0xFF43A047))
-                            Text("Active", style = MaterialTheme.typography.labelSmall, color = Color(0xFF43A047), fontWeight = FontWeight.Bold)
+                    perm.status == PermStatus.GRANTED -> {
+                        if (perm.canRevoke && perm.grantMethod != GrantMethod.AUTOMATIC) {
+                            OutlinedButton(
+                                onClick  = onRevoke,
+                                modifier = Modifier.height(32.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp),
+                                border   = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(0.5f)),
+                            ) {
+                                Icon(Icons.Default.Block, null, Modifier.size(13.dp),
+                                    tint = MaterialTheme.colorScheme.error)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Revoke", style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.error)
+                            }
+                        } else {
+                            Surface(shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF43A047).copy(0.1f)) {
+                                Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Icon(Icons.Default.CheckCircle, null, Modifier.size(13.dp),
+                                        tint = Color(0xFF43A047))
+                                    Text("Active", style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF43A047), fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                    else -> {
+                        when (perm.grantMethod) {
+                            GrantMethod.SHIZUKU -> {
+                                Button(
+                                    onClick  = onGrant,
+                                    modifier = Modifier.height(32.dp).scale(shizukuBtnScale),
+                                    contentPadding = PaddingValues(horizontal = 12.dp),
+                                    enabled  = !isGranting,
+                                ) {
+                                    if (isGranting) {
+                                        CircularProgressIndicator(Modifier.size(12.dp),
+                                            strokeWidth = 2.dp, color = Color.White)
+                                    } else {
+                                        Icon(Icons.Default.Hub, null, Modifier.size(14.dp))
+                                    }
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Shizuku", style = MaterialTheme.typography.labelMedium)
+                                }
+                            }
+                            GrantMethod.NORMAL -> {
+                                Button(
+                                    onClick  = onGrant,
+                                    modifier = Modifier.height(32.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp),
+                                ) {
+                                    Icon(Icons.Default.TouchApp, null, Modifier.size(14.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Grant", style = MaterialTheme.typography.labelMedium)
+                                }
+                            }
+                            GrantMethod.SETTINGS_APP -> {
+                                OutlinedButton(
+                                    onClick  = onGrant,
+                                    modifier = Modifier.height(32.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp),
+                                ) {
+                                    Icon(Icons.Default.OpenInNew, null, Modifier.size(14.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Settings", style = MaterialTheme.typography.labelMedium)
+                                }
+                            }
+                            GrantMethod.ADB_ONLY -> {
+                                OutlinedButton(
+                                    onClick  = onGrant,
+                                    modifier = Modifier.height(32.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp),
+                                ) {
+                                    Icon(Icons.Default.ContentCopy, null, Modifier.size(14.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Copy ADB", style = MaterialTheme.typography.labelMedium)
+                                }
+                            }
+                            GrantMethod.ROOT_ONLY -> {
+                                OutlinedButton(
+                                    onClick  = onGrant,
+                                    modifier = Modifier.height(32.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp),
+                                    border   = ButtonDefaults.outlinedButtonBorder(enabled = false),
+                                ) {
+                                    Icon(Icons.Default.AdminPanelSettings, null, Modifier.size(14.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Root only", style = MaterialTheme.typography.labelMedium)
+                                }
+                            }
+                            else -> {}
                         }
                     }
                 }
             }
 
-            // ── Expanded detail ──────────────────────────────
-            AnimatedVisibility(visible = isExpanded) {
-                Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // ── Expanded detail panel ─────────────────────
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter   = expandVertically() + fadeIn(),
+                exit    = shrinkVertically() + fadeOut(),
+            ) {
+                Column(
+                    Modifier.padding(top = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
                     HorizontalDivider()
                     Spacer(Modifier.height(2.dp))
 
-                    // Raw permission string
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(Icons.Default.Code, null, Modifier.size(13.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text("Raw permission", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                    }
-                    Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
-                        Text(
-                            perm.rawPermission,
-                            modifier = Modifier.fillMaxWidth().padding(10.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                        )
-                    }
-
-                    // Used by
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(Icons.Default.Extension, null, Modifier.size(13.dp), tint = MaterialTheme.colorScheme.secondary)
-                        Text("Used by features", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.SemiBold)
-                    }
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        perm.usedBy.split("·").forEach { feature ->
-                            Surface(shape = RoundedCornerShape(6.dp), color = MaterialTheme.colorScheme.tertiaryContainer) {
-                                Text(feature.trim(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
-                            }
-                        }
-                    }
-
-                    // ADB command hint for ADB-only
-                    if (perm.grantMethod == GrantMethod.ADB_ONLY || perm.grantMethod == GrantMethod.SHIZUKU) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(Icons.Default.Terminal, null, Modifier.size(13.dp), tint = MaterialTheme.colorScheme.tertiary)
-                            Text("ADB command", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.SemiBold)
-                        }
-                        Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+                    // Raw permission string + copy
+                    DetailHeader(Icons.Default.Code, MaterialTheme.colorScheme.primary, "Raw permission name")
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Surface(
+                            shape  = RoundedCornerShape(8.dp),
+                            color  = MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        ) {
                             Text(
-                                "adb shell pm grant com.accu ${perm.rawPermission}",
-                                modifier = Modifier.fillMaxWidth().padding(10.dp),
-                                style = MaterialTheme.typography.bodySmall,
+                                perm.rawPermission,
+                                modifier = Modifier.padding(10.dp),
+                                style    = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
                             )
                         }
+                        IconButton(
+                            onClick  = { copyToClipboard(context, perm.rawPermission) },
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(Icons.Default.ContentCopy, "Copy", Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
 
-                    // SDK note
-                    if (perm.minSdk > 1 || perm.maxSdk < Int.MAX_VALUE) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Default.Android, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
-                            val note = when {
-                                perm.maxSdk < Int.MAX_VALUE -> "Android ≤ API ${perm.maxSdk} only"
-                                else -> "Requires Android API ${perm.minSdk}+"
+                    // Used by features
+                    DetailHeader(Icons.Default.Extension, MaterialTheme.colorScheme.secondary, "Used by features")
+                    Row(
+                        Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        perm.usedBy.split("·").forEach { feat ->
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                            ) {
+                                Text(
+                                    feat.trim(),
+                                    style  = MaterialTheme.typography.labelSmall,
+                                    color  = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                )
                             }
-                            Text(note, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                        }
+                    }
+
+                    // ADB / Shizuku command
+                    if (perm.grantMethod == GrantMethod.ADB_ONLY ||
+                        perm.grantMethod == GrantMethod.SHIZUKU) {
+                        val cmd = "adb shell pm grant com.accu ${perm.rawPermission}"
+                        DetailHeader(Icons.Default.Terminal, MaterialTheme.colorScheme.tertiary, "ADB command")
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Surface(
+                                shape  = RoundedCornerShape(8.dp),
+                                color  = MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(
+                                    cmd,
+                                    modifier = Modifier.padding(10.dp),
+                                    style    = MaterialTheme.typography.bodySmall,
+                                    fontFamily = FontFamily.Monospace,
+                                )
+                            }
+                            IconButton(
+                                onClick  = onCopyAdb,
+                                modifier = Modifier.size(32.dp),
+                            ) {
+                                Icon(Icons.Default.ContentCopy, "Copy ADB", Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.tertiary)
+                            }
+                        }
+                    }
+
+                    // Category tag
+                    Row(
+                        verticalAlignment    = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Icon(perm.category.icon, null, Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Category: ${perm.category.label}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                        if (perm.minSdk > 1 || perm.maxSdk < Int.MAX_VALUE) {
+                            Spacer(Modifier.width(8.dp))
+                            Icon(Icons.Default.Android, null, Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.outline)
+                            val sdkNote = when {
+                                perm.maxSdk < Int.MAX_VALUE -> "API ≤ ${perm.maxSdk}"
+                                else -> "API ${perm.minSdk}+"
+                            }
+                            Text(sdkNote, style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline)
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DetailHeader(icon: ImageVector, tint: Color, label: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(icon, null, Modifier.size(13.dp), tint = tint)
+        Text(label, style = MaterialTheme.typography.labelSmall,
+            color = tint, fontWeight = FontWeight.SemiBold)
     }
 }
