@@ -85,11 +85,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-accu-
 
-      - name: "🧹 Clear stale JitPack resolution cache"
-        run: |
-          rm -rf ~/.gradle/caches/modules-*/files-*/com.github.ThePBone* 2>/dev/null || true
-          rm -rf ~/.gradle/caches/modules-*/metadata-*/descriptors/com.github.ThePBone* 2>/dev/null || true
-
       - name: "🔨 Build DEBUG APK"
         working-directory: android-control-center
         run: |
@@ -101,7 +96,6 @@ jobs:
         env:
           JAVA_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g"
           GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-          JITPACK_TOKEN: ${{ secrets.JITPACK_TOKEN }}
 
       - name: "✅ Verify APK exists"
         working-directory: android-control-center
@@ -247,7 +241,6 @@ jobs:
         continue-on-error: true
         env:
           JAVA_OPTS: "-Xmx4g"
-          JITPACK_TOKEN: ${{ secrets.JITPACK_TOKEN }}
       - name: "📤 Upload Lint Report"
         uses: actions/upload-artifact@v4
         if: always()

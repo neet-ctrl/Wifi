@@ -191,9 +191,6 @@ dependencies {
     implementation(libs.libsu.service)
     implementation(libs.libsu.io)
 
-    // Audio DSP
-    implementation(libs.jdsp)
-
     // Utils
     implementation(libs.timber)
     implementation(libs.moshi)

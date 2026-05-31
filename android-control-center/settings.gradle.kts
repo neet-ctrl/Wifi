@@ -17,19 +17,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven {
-            url = uri("https://jitpack.io")
-            val jitpackToken = System.getenv("JITPACK_TOKEN") ?: ""
-            if (jitpackToken.isNotEmpty()) {
-                credentials(HttpHeaderCredentials::class) {
-                    name = "Authorization"
-                    value = "Token $jitpackToken"
-                }
-                authentication {
-                    create<HttpHeaderAuthentication>("header")
-                }
-            }
-        }
+        maven { url = uri("https://jitpack.io") }
         maven { url = uri("https://api.xposed.info/") }
     }
 }
