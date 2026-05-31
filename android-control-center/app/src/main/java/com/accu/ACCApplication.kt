@@ -62,7 +62,7 @@ class ACCApplication : Application(), Configuration.Provider {
                 description = "JamesDSP processing service status and preset changes"
                 setShowBadge(false)
             },
-            // ACCU Connection replaces the old Shizuku service channel
+            // ACCU Connection — self-sufficient privilege engine
             NotificationChannel(AccuConnectionManager.CHANNEL_ID, AccuConnectionManager.CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "ACCU wireless ADB connection status, pairing codes, and privilege alerts"
                 setShowBadge(true)

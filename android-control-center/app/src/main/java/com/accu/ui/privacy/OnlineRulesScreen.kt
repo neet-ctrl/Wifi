@@ -121,7 +121,7 @@ fun OnlineRulesScreen(onBack: () -> Unit) {
                     }
                     InfoTooltipIcon(
                         title = "Tracker Rules",
-                        description = "Tracker rules let you block advertising, analytics, and data-collection SDKs in any installed app — no root required (uses Shizuku to apply package-level firewall rules).\n\nCategories:\n• Advertising — Ad networks (Google AdMob, Meta Ads, etc.)\n• Analytics — Usage tracking (Adjust, AppsFlyer, Segment, etc.)\n• Crash Reporting — Error reporting (Firebase Crashlytics, etc.)\n• Identification — Fingerprinting/device ID SDKs\n\nApplied rules survive app updates. Toggle individual rules to unblock specific SDKs.",
+                        description = "Tracker rules let you block advertising, analytics, and data-collection SDKs in any installed app — no root required (uses ACCU to apply package-level firewall rules).\n\nCategories:\n• Advertising — Ad networks (Google AdMob, Meta Ads, etc.)\n• Analytics — Usage tracking (Adjust, AppsFlyer, Segment, etc.)\n• Crash Reporting — Error reporting (Firebase Crashlytics, etc.)\n• Identification — Fingerprinting/device ID SDKs\n\nApplied rules survive app updates. Toggle individual rules to unblock specific SDKs.",
                     )
                     IconButton(onClick = {
                         scope.launch {

@@ -89,7 +89,7 @@ fun PermissionManagerScreen(
                 actions = {
                     InfoTooltipIcon(
                         title = "Permission Manager",
-                        description = "View and revoke runtime permissions across all apps.\n\nSearch any permission (CAMERA, LOCATION, MICROPHONE, etc.) to see which apps have it granted.\n\n• Revoke: removes a granted permission from an app\n• Grant: re-grants a previously revoked permission\n• Protected permissions (signature-level) cannot be changed\n\nChanges apply instantly via Shizuku (pm revoke / pm grant)."
+                        description = "View and revoke runtime permissions across all apps.\n\nSearch any permission (CAMERA, LOCATION, MICROPHONE, etc.) to see which apps have it granted.\n\n• Revoke: removes a granted permission from an app\n• Grant: re-grants a previously revoked permission\n• Protected permissions (signature-level) cannot be changed\n\nChanges apply instantly via ACCU (pm revoke / pm grant)."
                     )
                 }
             )

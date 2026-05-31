@@ -51,7 +51,7 @@ fun LearningCenterScreen(onNavigateTo: (String) -> Unit = {}) {
                             Text("Learning Center", fontWeight = FontWeight.Bold)
                             InfoTooltipIcon(
                                 title = "Learning Center",
-                                description = "In-depth guides for every feature area. Each article explains concepts, step-by-step usage, and advanced tips. Start with 'Getting Started with Shizuku' if you're new."
+                                description = "In-depth guides for every feature area. Each article explains concepts, step-by-step usage, and advanced tips. Start with 'ACCU Quick Start' if you're new."
                             )
                         }
                     }
@@ -143,30 +143,28 @@ fun buildLearningSections(): List<LearningSection> = listOf(
         "Getting Started",
         listOf(
             LearningArticle(
-                title = "What is Shizuku and Why Do I Need It?",
-                summary = "Understand the foundation of most ACC features",
-                content = """WHAT IS SHIZUKU?
-Shizuku is an Android service that acts as a bridge between user-installed apps and the Android system API. Normally, only system-privileged apps can call sensitive APIs (like toggling Wi-Fi, disabling components, or running pm commands). Shizuku lets you authorize specific apps to call those APIs using your own ADB authorization.
+                title = "ACCU Quick Start — Elevated Access Without Root",
+                summary = "Understand how ACCU gains elevated access and how to connect",
+                content = """WHAT IS ACCU?
+ACCU (Android Control Center) is a self-contained management suite. It uses its own privilege engine — AccuConnectionManager — to execute elevated ADB shell commands without depending on any third-party app.
 
-SHIZUKU vs ROOT:
-• Shizuku: No permanent system modification. Works with the official Android security model. Can be revoked at any time. Safer.
+ACCU vs ROOT:
+• ACCU (wireless ADB): No permanent system modification. Uses the official Android ADB/Wireless Debugging API. Can be revoked at any time. Safer.
 • Root: Grants full unrestricted system access. Requires a modified bootloader/system. More powerful but higher risk.
 
-ACC uses Shizuku for most features because it provides 90% of the power with much less risk.
+ACCU supports both — it automatically detects root and uses it if available, falling back to wireless ADB otherwise.
 
-HOW SHIZUKU WORKS:
-1. You start the Shizuku service once (via ADB command or Wireless Debugging pairing)
-2. Shizuku runs as a background service with "shell" user privileges (same as ADB)
-3. When ACC needs elevated access, it requests permission from Shizuku
-4. Shizuku proxies the API call with the shell user's permissions
+HOW ACCU CONNECTS:
+1. Root mode: if your device is rooted, ACCU uses LibSU to run commands as root — no setup needed.
+2. Wireless ADB mode (Android 11+): ACCU pairs with Android's built-in Wireless Debugging service to run commands with shell-level privileges.
 
-STARTING SHIZUKU (Android 11+):
+SETTING UP WIRELESS ADB (Android 11+):
 1. Settings → Developer Options → Wireless Debugging → Enable
 2. Tap "Pair device with pairing code" → note the IP:port and code
-3. Open Shizuku app → Pairing → enter code
-4. Shizuku starts automatically
+3. Open ACCU → Settings → ACCU Center → tap "Start Pairing Discovery"
+4. Enter the 6-digit code — ACCU connects automatically
 
-After reboot, Wireless Debugging mode re-enables quickly without re-pairing.""",
+After pairing, ACCU reconnects automatically on the next launch. No re-pairing needed unless you clear credentials.""",
                 icon = Icons.Outlined.Security,
                 accentColor = Color(0xFF6750A4),
                 readTimeMin = 4
@@ -177,7 +175,7 @@ After reboot, Wireless Debugging mode re-enables quickly without re-pairing.""",
                 content = """THE DASHBOARD is your command center. It shows:
 
 STATUS CARDS:
-• Shizuku Status — Green = running, Red = stopped. Tap to go to Shizuku Center.
+• ACCU Status — Green = active (root or wireless ADB), Red = stopped. Tap to go to ACCU Center.
 • Root Access — Shows if root is available and which method (LibSU/Magisk)
 • Battery — Level, charging status, temperature
 • Network — Active connection, IP address, signal strength
@@ -210,7 +208,7 @@ TIPS:
                 summary = "The most useful ADB commands organized by category",
                 content = """PACKAGE MANAGEMENT:
 pm list packages -3          List user-installed apps
-pm disable-user --user 0 <pkg>  Freeze an app (Shizuku)
+pm disable-user --user 0 <pkg>  Freeze an app (ACCU)
 pm enable <pkg>              Unfreeze an app
 pm uninstall --user 0 <pkg>  Remove for current user
 pm clear <pkg>               Clear app data
@@ -340,7 +338,7 @@ COMMON USE CASES:
 • Stop an app from sharing data with others: Providers → disable
 
 TWO BLOCKING METHODS:
-1. PM Disable (via Shizuku): Uses pm disable-user. Works without root. May not work on all Samsung/MIUI devices.
+1. PM Disable (via ACCU): Uses pm disable-user. Works without root. May not work on all Samsung/MIUI devices.
 2. IFW (Intent Firewall): Adds rules to Android's Intent Firewall. More effective, requires root.
 
 IMPORTING ONLINE RULES:
@@ -388,15 +386,15 @@ Audio Center → DSP Blocklist → Add app""",
             ),
             LearningArticle(
                 title = "Call Recording Setup & Legality",
-                summary = "How to set up ShizuCallRecorder and legal considerations",
+                summary = "How to set up call recording and legal considerations",
                 content = """TECHNICAL SETUP:
-1. Ensure Shizuku is running
+1. Ensure ACCU is connected (root or wireless ADB)
 2. Call Recorder → grant microphone permission
 3. Grant READ_PHONE_STATE permission
 4. Enable Auto-record (or use manual mode)
 
 HOW SCRCPY RECORDING WORKS:
-The app bundles the scrcpy server binary. When a call starts, Shizuku launches the scrcpy server which can capture the device's audio output stream (including the earpiece/speaker audio). This is combined with microphone input to produce a stereo recording: left=microphone, right=device output.
+The app bundles the scrcpy server binary. When a call starts, ACCU launches the scrcpy server which can capture the device's audio output stream (including the earpiece/speaker audio). This is combined with microphone input to produce a stereo recording: left=microphone, right=device output.
 
 RECOMMENDED FORMAT SETTINGS:
 • Daily use: OPUS, 128kbps — best quality/size balance

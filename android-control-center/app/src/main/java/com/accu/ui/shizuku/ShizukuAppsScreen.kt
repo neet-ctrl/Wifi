@@ -25,7 +25,7 @@ data class ShizukuApp(
 )
 
 @Composable
-fun ShizukuAppsScreen(onBack: () -> Unit = {}) {
+fun AccuAppsScreen(onBack: () -> Unit = {}) {
     var apps by remember {
         mutableStateOf(listOf(
             ShizukuApp("Android Control Center", "com.accu.controlcenter", "1.0.0", "full", true, "Now"),
@@ -74,7 +74,7 @@ fun ShizukuAppsScreen(onBack: () -> Unit = {}) {
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            // Shizuku status
+            // ACCU connection status
             ElevatedCard(
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)

@@ -15,16 +15,15 @@ data class Guide(val title: String, val description: String, val steps: List<Str
 
 val guides = listOf(
     Guide(
-        "Setting Up Shizuku",
-        "Enable elevated ADB access without root using Shizuku",
+        "Setting Up ACCU Connection",
+        "Enable elevated ADB access without root using ACCU's built-in wireless ADB",
         listOf(
-            "Install Shizuku from F-Droid or Play Store",
             "Enable Developer Options: Settings → About Phone → tap Build Number 7 times",
             "Enable Wireless Debugging: Settings → Developer Options → Wireless debugging",
-            "Open Shizuku app → 'Pairing via wireless debugging'",
-            "Enter the pairing code shown on your device",
-            "Grant ACC permission when prompted by Shizuku",
-            "Return to ACC — Shizuku Center should show 'Active'",
+            "Open ACCU → Settings → ACCU Center → tap 'Start Pairing Discovery'",
+            "On your device, tap 'Pair device with pairing code'",
+            "Enter the 6-digit pairing code shown on your device",
+            "ACCU connects automatically — ACCU Center should show 'Active'",
         ),
         Icons.Default.Hub, "Beginner",
     ),
@@ -32,7 +31,7 @@ val guides = listOf(
         "Debloating Your Device",
         "Safely remove Samsung, Google, and carrier bloatware",
         listOf(
-            "Ensure Shizuku is running (ACC will show 'Active')",
+            "Ensure ACCU is connected (ACC will show 'Active')",
             "Go to App Manager → Debloat tab",
             "Select a preset category (Google, Samsung, Carrier Bloat)",
             "Review the list — uncheck apps you want to keep",
@@ -72,9 +71,9 @@ val guides = listOf(
     ),
     Guide(
         "Setting Up Call Recording",
-        "Record calls rootlessly via Shizuku + scrcpy",
+        "Record calls rootlessly via ACCU + scrcpy",
         listOf(
-            "Ensure Shizuku is running",
+            "Ensure ACCU is connected",
             "Go to Call Recorder",
             "Toggle 'Call Recording' ON",
             "Select audio source (VOICE_CALL recommended)",
@@ -86,14 +85,14 @@ val guides = listOf(
     ),
     Guide(
         "Network Toggles Without Root",
-        "Control Wi-Fi, mobile data, and more via Shizuku",
+        "Control Wi-Fi, mobile data, and more via ACCU",
         listOf(
-            "Ensure Shizuku is running with permission granted",
+            "Ensure ACCU is connected",
             "Go to Network Center",
             "Use the toggle tiles to control Wi-Fi, data, BT, NFC",
-            "ACC uses 'svc' command via Shizuku for rootless toggles",
+            "ACC uses 'svc' command via ACCU for rootless toggles",
             "Add ACC Quick Settings tiles via Network Center → QS Tiles",
-            "For wireless ADB setup, use Shizuku Center → Wireless ADB",
+            "For wireless ADB setup, use ACCU Center → Wireless ADB",
         ),
         Icons.Default.Wifi, "Beginner",
     ),
@@ -120,7 +119,7 @@ val guides = listOf(
             "Tap the language icon on the right",
             "Select the desired language from the list",
             "The app will use the selected language on next launch",
-            "Works on Android 13+ natively; older versions use Shizuku",
+            "Works on Android 13+ natively; older versions use ACCU",
             "Reset to system language by tapping the reset icon",
         ),
         Icons.Default.Language, "Beginner",

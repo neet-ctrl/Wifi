@@ -616,7 +616,7 @@ private fun PermissionsSection(permissions: List<AppPermission>, onToggle: (Stri
                 }
                 if (prot == PermProtection.DANGEROUS) {
                     Spacer(Modifier.weight(1f))
-                    Text("Toggle directly via Shizuku ↓", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                    Text("Toggle directly via ACCU ↓", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -653,7 +653,7 @@ private fun PermissionRow(perm: AppPermission, onToggle: (String, Boolean) -> Un
                     }
                 }
                 if (perm.isToggleable) {
-                    // Direct Shizuku grant/revoke — no popup
+                    // Direct ACCU grant/revoke — no popup
                     Switch(
                         checked = perm.isGranted,
                         onCheckedChange = { onToggle(perm.name, it) },

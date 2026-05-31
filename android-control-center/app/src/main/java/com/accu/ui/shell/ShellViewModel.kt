@@ -210,7 +210,7 @@ class ShellViewModel @Inject constructor(
         cmd.startsWith("cat") -> "Outputs file contents to the terminal."
         cmd.startsWith("ip ") -> "IP routing/interface management. View addresses, routes, and rules."
         cmd.startsWith("netstat") || cmd.startsWith("ss ") -> "Shows network connections and listening ports."
-        else -> "ADB shell command. Executes in the Android shell with Shizuku-level privileges (uid=2000)."
+        else -> "ADB shell command. Executes in the Android shell with ADB shell privileges (uid=2000)."
     }
 
     private fun generateSuggestions(cmd: String): List<String> {

@@ -193,7 +193,7 @@ fun FreezeAppsScreen(
                 actions = {
                     InfoTooltipIcon(
                         title = "Freeze Apps — Hail",
-                        description = "Freeze, suspend, or hide apps without uninstalling them.\n\nBased on Hail — three freeze methods available:\n\n• Disable (pm disable): app hidden from launcher, data kept\n• Suspend (pm suspend): greyed-out icon visible but can't be opened\n• Hide (pm hide): fully invisible, all data preserved\n\nAll methods use Shizuku (no root). Reversible at any time.\n\nFeatures: tags, auto-freeze on screen-off, biometric lock, fuzzy/T9 search, QS tile action, grayscale frozen icons."
+                        description = "Freeze, suspend, or hide apps without uninstalling them.\n\nBased on Hail — three freeze methods available:\n\n• Disable (pm disable): app hidden from launcher, data kept\n• Suspend (pm suspend): greyed-out icon visible but can't be opened\n• Hide (pm hide): fully invisible, all data preserved\n\nAll methods use ACCU privilege (no root required). Reversible at any time.\n\nFeatures: tags, auto-freeze on screen-off, biometric lock, fuzzy/T9 search, QS tile action, grayscale frozen icons."
                     )
                     Box {
                         IconButton(onClick = { showSortMenu = true }) { Icon(Icons.Default.Sort, "Sort") }
@@ -476,7 +476,7 @@ fun FreezeAppsScreen(
                             }
                         }
                     }
-                    Text("All methods require Shizuku or root access and are fully reversible.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("All methods require ACCU or root access and are fully reversible.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
             confirmButton = { Button(onClick = { showMethodInfo = false }) { Text("Got it") } },

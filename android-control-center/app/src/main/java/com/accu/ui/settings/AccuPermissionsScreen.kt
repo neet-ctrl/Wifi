@@ -1154,14 +1154,14 @@ private fun PermissionCard(
             MaterialTheme.colorScheme.surfaceContainerLow
     }
 
-    // Shizuku button scale — hoisted here (top-level) so it's never inside a conditional
+    // ACCU button scale — hoisted here (top-level) so it's never inside a conditional
     val shizukuBtnScale by animateFloatAsState(
         targetValue   = if (isGranting) 0.85f else 1f,
         animationSpec = tween(300),
         label         = "shizuku_btn",
     )
 
-    // Pulsing animation while Shizuku is granting
+    // Pulsing animation while ACCU is granting
     val pulseScale by animateFloatAsState(
         targetValue   = if (isGranting) 1.04f else 1f,
         animationSpec = if (isGranting)

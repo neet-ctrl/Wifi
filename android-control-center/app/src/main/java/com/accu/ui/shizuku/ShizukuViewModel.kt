@@ -245,7 +245,7 @@ class ShizukuViewModel @Inject constructor(
         addLog("Discovery stopped", LogLevel.INFO)
     }
 
-    // ── Legacy pair-with-code (keeps call site in ShizukuCenterScreen working) ─
+    // ── Legacy pair-with-code (keeps call site in AccuCenterScreen working) ─
 
     fun pairWithCode(host: String, port: String, code: String) {
         viewModelScope.launch {

@@ -2,6 +2,6 @@
 <full-backup-content>
     <include domain="sharedpref" path="." />
     <include domain="database" path="acc_database.db" />
-    <exclude domain="sharedpref" path="shizuku.xml" />
+    <exclude domain="sharedpref" path="accu_prefs.xml" />
     <exclude domain="cache" path="." />
 </full-backup-content>

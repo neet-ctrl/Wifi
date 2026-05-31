@@ -26,7 +26,7 @@ enum class AudioCodec(val label: String, val extension: String, val description:
 enum class ScrcpyAudioSource(val label: String, val description: String) {
     SCRCPY_AUDIO("scrcpy Audio Capture", "Routes system audio via scrcpy — works without root"),
     MIC_ONLY("Microphone Only", "Records from microphone — no caller audio"),
-    MERGED("Microphone + System", "Merges both streams — requires root or Shizuku"),
+    MERGED("Microphone + System", "Merges both streams — requires root or ACCU"),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -463,7 +463,7 @@ fun DarkModeScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Force dark mode applies a dark color filter to app UIs that don't support dark mode natively. Works best on white/light apps.", style = MaterialTheme.typography.bodySmall)
-                    Text("Methods: ACCU uses Android's HWUI force_dark flag via Shizuku (no root needed). Results vary by app.", style = MaterialTheme.typography.bodySmall)
+                    Text("Methods: ACCU uses Android's HWUI force_dark flag via ACCU IPC (no root needed). Results vary by app.", style = MaterialTheme.typography.bodySmall)
                     Text("Backup & Restore", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilledTonalButton(onClick = { viewModel.exportSettings(); showAdvancedInfo = false }, Modifier.weight(1f)) { Text("Export") }

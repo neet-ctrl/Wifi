@@ -105,7 +105,7 @@ class PrivacyViewModel @Inject constructor(
             if (ok) {
                 viewModelScope.launch { blockedComponentDao.deleteByComponent(packageName, componentName) }
             }
-            _state.update { it.copy(snackbarMessage = if (ok) "Component enabled" else "Failed — Shizuku/root required") }
+            _state.update { it.copy(snackbarMessage = if (ok) "Component enabled" else "Failed — ACCU/root required") }
         }
     }
 

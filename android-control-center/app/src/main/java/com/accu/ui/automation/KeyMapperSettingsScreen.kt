@@ -17,7 +17,7 @@ fun KeyMapperSettingsScreen(onBack: () -> Unit = {}) {
     var autoShowKeyboard by remember { mutableStateOf(true) }
     var showCursorMode by remember { mutableStateOf(false) }
     var rootMode by remember { mutableStateOf(false) }
-    var shizukuMode by remember { mutableStateOf(true) }
+    var accuMode by remember { mutableStateOf(true) }
     var deviceId by remember { mutableStateOf("") }
     var longPressDefault by remember { mutableStateOf("500") }
     var doublePressTimeout by remember { mutableStateOf("300") }
@@ -31,14 +31,14 @@ fun KeyMapperSettingsScreen(onBack: () -> Unit = {}) {
         LazyColumn(Modifier.fillMaxSize().padding(padding)) {
             item {
                 SectionHeader("Accessibility / Permission Mode")
-                PreferenceToggle("Use Shizuku (recommended)", "ADB commands without root", shizukuMode) { shizukuMode = it }
+                PreferenceToggle("Use ACCU (recommended)", "ADB commands without root", accuMode) { accuMode = it }
                 PreferenceToggle("Root mode", "Use root shell for privileged actions", rootMode) { rootMode = it }
                 HorizontalDivider()
             }
             item {
                 SectionHeader("Keyboard / IME")
                 PreferenceToggle("Auto show/hide keyboard", "Automatically switch IME when triggered", autoShowKeyboard) { autoShowKeyboard = it }
-                PreferenceToggle("Cursor mode for Shizuku", "Use InputManager for cursor control", showCursorMode) { showCursorMode = it }
+                PreferenceToggle("Cursor mode", "Use InputManager for cursor control", showCursorMode) { showCursorMode = it }
                 HorizontalDivider()
             }
             item {

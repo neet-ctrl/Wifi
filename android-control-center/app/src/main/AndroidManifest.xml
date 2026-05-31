@@ -142,7 +142,7 @@
                 android:value="callRecording" />
         </service>
 
-        <!-- Shizuku UserService (elevated IPC) -->
+        <!-- ACCU UserService stub (elevated IPC) -->
         <service
             android:name=".services.ShizukuUserService"
             android:exported="false" />

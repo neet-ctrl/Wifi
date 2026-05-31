@@ -11,7 +11,7 @@ import timber.log.Timber
 
 /**
  * Quick Settings tile for Wi-Fi toggle (BetterInternetTiles).
- * Toggles Wi-Fi via Shizuku without opening Settings.
+ * Toggles Wi-Fi via ACCU without opening Settings.
  */
 class WiFiTileService : TileService() {
 

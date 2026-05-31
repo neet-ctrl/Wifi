@@ -72,7 +72,7 @@ fun AdbScreenCaptureScreen(onBack: () -> Unit = {}) {
                 actions = {
                     InfoTooltipIcon(
                         title = "How it works",
-                        description = "Screenshots use:\nadb shell screencap -p /sdcard/screenshot.png\nadb pull /sdcard/screenshot.png\n\nScreen recording uses:\nadb shell screenrecord /sdcard/record.mp4\n\nThe device must be connected (OTG, Wi-Fi ADB, or Shizuku).",
+                        description = "Screenshots use:\nadb shell screencap -p /sdcard/screenshot.png\nadb pull /sdcard/screenshot.png\n\nScreen recording uses:\nadb shell screenrecord /sdcard/record.mp4\n\nThe device must be connected (OTG, Wi-Fi ADB, or ACCU).",
                     )
                 },
             )

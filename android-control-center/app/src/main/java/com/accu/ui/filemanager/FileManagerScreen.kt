@@ -80,7 +80,7 @@ class FileManagerViewModel @Inject constructor(
                 val breadcrumbs = buildBreadcrumbs(path)
                 _state.update { it.copy(currentPath = path, files = files, breadcrumbs = breadcrumbs, isLoading = false) }
             } catch (e: Exception) {
-                // Try via Shizuku for restricted dirs
+                // Try via ACCU for restricted dirs
                 val result = shizukuUtils.execShizuku("ls -la $path")
                 val items = parseLsOutput(result.output, path)
                 _state.update { it.copy(currentPath = path, files = items, isLoading = false) }

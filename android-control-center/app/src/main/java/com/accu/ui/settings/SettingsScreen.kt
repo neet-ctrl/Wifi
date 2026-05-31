@@ -23,7 +23,7 @@ import com.accu.ui.components.InfoTooltipIcon
 @Composable
 fun SettingsScreen(
     navController: NavController,
-    onNavigateToShizuku: () -> Unit,
+    onNavigateToAccuCenter: () -> Unit,
     onNavigateToCustomization: () -> Unit,
     onNavigateToPrivacy: () -> Unit,
     onNavigateToNetwork: () -> Unit,
@@ -48,7 +48,7 @@ fun SettingsScreen(
                 actions = {
                     InfoTooltipIcon(
                         title = "ACC Settings",
-                        description = "Global settings for Android Control Center.\n\n• Shizuku: configure connection mode and permissions\n• Theme: Material You dynamic color, dark/light mode, pure black\n• Privacy: control what data ACC stores locally\n• Backup & Restore: export/import all ACC settings and data\n• About: version info, open-source licenses, contributors"
+                        description = "Global settings for Android Control Center.\n\n• ACCU: configure connection mode and permissions\n• Theme: Material You dynamic color, dark/light mode, pure black\n• Privacy: control what data ACC stores locally\n• Backup & Restore: export/import all ACC settings and data\n• About: version info, open-source licenses, contributors"
                     )
                 }
             )
@@ -111,11 +111,11 @@ fun SettingsScreen(
             item { SettingsSectionHeader("Service Access") }
             item {
                 Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    FeatureRow("Permission Center", "All 57 app permissions — grant via Shizuku or manually", leadingIcon = { Icon(Icons.Default.AdminPanelSettings, null) }, trailingContent = { Icon(Icons.Default.ChevronRight, null) }, onClick = onNavigateToPermissions)
+                    FeatureRow("Permission Center", "All 57 app permissions — grant via ACCU or manually", leadingIcon = { Icon(Icons.Default.AdminPanelSettings, null) }, trailingContent = { Icon(Icons.Default.ChevronRight, null) }, onClick = onNavigateToPermissions)
                     HorizontalDivider()
                     FeatureRow("Notification Center", "Control alerts per feature — 11 channels with snooze & test", leadingIcon = { Icon(Icons.Default.NotificationsActive, null) }, trailingContent = { Icon(Icons.Default.ChevronRight, null) }, onClick = onNavigateToNotifications)
                     HorizontalDivider()
-                    FeatureRow("Shizuku Center", "Manage elevated access", leadingIcon = { Icon(Icons.Default.Hub, null) }, trailingContent = { Icon(Icons.Default.ChevronRight, null) }, onClick = onNavigateToShizuku)
+                    FeatureRow("ACCU Center", "Manage elevated access", leadingIcon = { Icon(Icons.Default.Hub, null) }, trailingContent = { Icon(Icons.Default.ChevronRight, null) }, onClick = onNavigateToAccuCenter)
                     HorizontalDivider()
                     FeatureRow("Network Center", "Wi-Fi, mobile data, tiles", leadingIcon = { Icon(Icons.Default.Wifi, null) }, trailingContent = { Icon(Icons.Default.ChevronRight, null) }, onClick = onNavigateToNetwork)
                     HorizontalDivider()
@@ -193,7 +193,7 @@ fun SettingsScreen(
                     HorizontalDivider()
                     ListItem(headlineContent = { Text("Android ${Build.VERSION.RELEASE}") }, supportingContent = { Text("API ${Build.VERSION.SDK_INT} · ${Build.MODEL}") }, leadingContent = { Icon(Icons.Default.Android, null) })
                     HorizontalDivider()
-                    ListItem(headlineContent = { Text("Licenses") }, supportingContent = { Text("Shizuku, LibSU, JamesDSP, Coil, Room, Hilt…") }, leadingContent = { Icon(Icons.Default.Article, null) })
+                    ListItem(headlineContent = { Text("Licenses") }, supportingContent = { Text("LibSU, JamesDSP, Coil, Room, Hilt…") }, leadingContent = { Icon(Icons.Default.Article, null) })
                 }
             }
 
@@ -204,7 +204,6 @@ fun SettingsScreen(
                         Text("Built on the work of", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(8.dp))
                         val credits = listOf(
-                            "Shizuku" to "rikka.app",
                             "aShellYou" to "iamr0s",
                             "Canta" to "samolego",
                             "Hail" to "aistra",

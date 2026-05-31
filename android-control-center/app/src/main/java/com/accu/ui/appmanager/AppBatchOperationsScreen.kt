@@ -155,7 +155,7 @@ private fun BatchOpCard(op: BatchOperation, isCompleted: Boolean, isRunning: Boo
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Shield, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
                         Spacer(Modifier.width(4.dp))
-                        Text("Requires Shizuku/Root", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                        Text("Requires ACCU/Root", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                     }
                 }
             }

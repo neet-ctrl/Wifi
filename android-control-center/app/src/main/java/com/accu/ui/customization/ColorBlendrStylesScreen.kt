@@ -53,8 +53,8 @@ enum class MonetStyle(val label: String, val description: String) {
 
 enum class ColorBlendrWorkMethod(val label: String, val description: String) {
     ROOT("Root", "Uses root access for highest reliability across all Android versions"),
-    SHIZUKU("Shizuku", "Uses Shizuku IPC — no root needed, requires Shizuku service running"),
-    WIRELESS_ADB("Wireless ADB", "Commands over wireless ADB — slower but doesn't need root or Shizuku"),
+    SHIZUKU("ACCU IPC", "Uses ACCU IPC — no root needed, requires ACCU service running"),
+    WIRELESS_ADB("Wireless ADB", "Commands over wireless ADB — slower but doesn't need root"),
 }
 
 data class CustomColorStyle(

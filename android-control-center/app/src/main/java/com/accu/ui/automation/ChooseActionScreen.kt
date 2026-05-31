@@ -104,7 +104,7 @@ fun ChooseActionScreen(onBack: () -> Unit = {}, onActionSelected: (String) -> Un
                 ActionEntry("Set Ringtone Volume", "Set ringtone stream level", Icons.Default.NotificationsActive),
             )),
             ActionCategory("Advanced / Shell", Icons.Default.Terminal, listOf(
-                ActionEntry("Shell Command (ADB)", "Run ADB shell command via Shizuku", Icons.Default.Terminal),
+                ActionEntry("Shell Command (ADB)", "Run ADB shell command via ACCU", Icons.Default.Terminal),
                 ActionEntry("HTTP Request", "Send HTTP GET/POST request", Icons.Default.Http),
                 ActionEntry("Intent", "Send a custom Android intent", Icons.Default.Send),
                 ActionEntry("Create Notification", "Show a custom notification", Icons.Default.AddAlert),

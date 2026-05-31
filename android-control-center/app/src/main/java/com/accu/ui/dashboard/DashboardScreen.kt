@@ -49,9 +49,9 @@ fun DashboardScreen(
         ) {
             // ── Header ──
             DashboardHeader(
-                shizukuStatus = state.shizukuStatus,
+                accuStatus = state.accuStatus,
                 onSearchClick = { viewModel.toggleCommandPalette() },
-                onShizukuClick = { navController.navigate(Screen.ShizukuCenter.route) },
+                onAccuClick = { navController.navigate(Screen.AccuCenter.route) },
             )
 
             // ── Stats Row ──
@@ -124,9 +124,9 @@ fun DashboardScreen(
 
 @Composable
 private fun DashboardHeader(
-    shizukuStatus: ShizukuStatus,
+    accuStatus: AccuConnectionStatus,
     onSearchClick: () -> Unit,
-    onShizukuClick: () -> Unit,
+    onAccuClick: () -> Unit,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "glow")
     val glowAlpha by infiniteTransition.animateFloat(
@@ -164,10 +164,10 @@ private fun DashboardHeader(
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
-                // Shizuku status badge
+                // ACCU connection status badge
                 StatusBadge(
-                    status = shizukuStatus,
-                    onClick = onShizukuClick,
+                    status = accuStatus,
+                    onClick = onAccuClick,
                     glowAlpha = glowAlpha,
                 )
             }
@@ -804,7 +804,7 @@ fun iconForName(name: String) = when (name) {
     "settings"              -> Icons.Default.Settings
     "home"                  -> Icons.Default.Home
     "admin_panel_settings"  -> Icons.Default.AdminPanelSettings
-    "shizuku"               -> Icons.Default.Hub
+    "accu"                  -> Icons.Default.Hub
     "search"                -> Icons.Default.Search
     // ── Extended for global search ─────────────────────────────
     "schedule"              -> Icons.Default.Schedule

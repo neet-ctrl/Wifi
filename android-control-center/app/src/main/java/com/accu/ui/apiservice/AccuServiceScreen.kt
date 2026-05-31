@@ -57,7 +57,7 @@ fun AccuServiceScreen(
                 actions = {
                     InfoTooltipIcon(
                         title = "ACCU System Service",
-                        description = "ACCU acts as a privileged broker — just like Shizuku, but built on top of it.\n\nOther apps bind to ACCU's IPC service and call shell commands, install APKs, grant permissions, and control system settings — all through ACCU's permission model.\n\nTap the Docs tab for the full integration guide."
+                        description = "ACCU acts as a self-sufficient privileged broker — no external dependencies needed.\n\nOther apps bind to ACCU's IPC service and call shell commands, install APKs, grant permissions, and control system settings — all through ACCU's permission model.\n\nTap the Docs tab for the full integration guide."
                     )
                     IconButton(onClick = onNavigateToDocs) { Icon(Icons.Default.MenuBook, "SDK Docs") }
                 },

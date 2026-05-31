@@ -41,7 +41,7 @@ fun NetworkCenterScreen(
                 actions = {
                     InfoTooltipIcon(
                         title = "Network Center",
-                        description = "Control all network connections and add Quick Settings tiles.\n\nBetter Internet Tiles features:\n• Wi-Fi, Mobile Data, Hotspot tiles\n• Bluetooth and NFC tiles\n• Airplane Mode tile\n\nAll tiles use Shizuku to actually toggle (unlike stock Android tiles that open settings).\n\nHow to add tiles: Pull down notification shade → tap pencil icon → drag ACC tiles to active area."
+                        description = "Control all network connections and add Quick Settings tiles.\n\nBetter Internet Tiles features:\n• Wi-Fi, Mobile Data, Hotspot tiles\n• Bluetooth and NFC tiles\n• Airplane Mode tile\n\nAll tiles use ACCU to actually toggle (unlike stock Android tiles that open settings).\n\nHow to add tiles: Pull down notification shade → tap pencil icon → drag ACC tiles to active area."
                     )
                 }
             )
@@ -62,7 +62,7 @@ fun NetworkCenterScreen(
                 SectionHeaderWithInfo(
                     title = "Quick Toggles",
                     infoTitle = "Quick Toggles",
-                    infoDescription = "Direct network toggles powered by Shizuku. These actually enable/disable radios — no dialog boxes.\n\nRequires Shizuku to be running.",
+                    infoDescription = "Direct network toggles powered by ACCU. These actually enable/disable radios — no dialog boxes.\n\nRequires ACCU to be connected.",
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(8.dp))
@@ -75,7 +75,7 @@ fun NetworkCenterScreen(
                             subtitle = uiState.wifiSsid ?: "Off",
                             onToggle = { viewModel.toggleWifi() },
                             modifier = Modifier.weight(1f),
-                            infoText = "Directly enables/disables Wi-Fi via Shizuku. No Settings dialog."
+                            infoText = "Directly enables/disables Wi-Fi via ACCU. No Settings dialog."
                         )
                         NetworkToggleCard(
                             label = "Mobile Data",
@@ -84,7 +84,7 @@ fun NetworkCenterScreen(
                             subtitle = uiState.carrierName ?: "Off",
                             onToggle = { viewModel.toggleMobileData() },
                             modifier = Modifier.weight(1f),
-                            infoText = "Directly enables/disables mobile data via Shizuku."
+                            infoText = "Directly enables/disables mobile data via ACCU."
                         )
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -95,7 +95,7 @@ fun NetworkCenterScreen(
                             subtitle = if (uiState.isHotspotEnabled) "Active" else "Off",
                             onToggle = { viewModel.toggleHotspot() },
                             modifier = Modifier.weight(1f),
-                            infoText = "Enables/disables Wi-Fi hotspot sharing via Shizuku."
+                            infoText = "Enables/disables Wi-Fi hotspot sharing via ACCU."
                         )
                         NetworkToggleCard(
                             label = "Bluetooth",
@@ -115,7 +115,7 @@ fun NetworkCenterScreen(
                             subtitle = if (uiState.isNfcEnabled) "On" else "Off",
                             onToggle = { viewModel.toggleNfc() },
                             modifier = Modifier.weight(1f),
-                            infoText = "Directly enables/disables NFC via Shizuku."
+                            infoText = "Directly enables/disables NFC via ACCU."
                         )
                         NetworkToggleCard(
                             label = "Airplane",
@@ -124,7 +124,7 @@ fun NetworkCenterScreen(
                             subtitle = if (uiState.isAirplaneModeEnabled) "On" else "Off",
                             onToggle = { viewModel.toggleAirplaneMode() },
                             modifier = Modifier.weight(1f),
-                            infoText = "Toggles airplane mode directly via Shizuku (settings + broadcast)."
+                            infoText = "Toggles airplane mode directly via ACCU (settings + broadcast)."
                         )
                     }
                 }

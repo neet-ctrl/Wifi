@@ -242,7 +242,7 @@ fun LanguageCenterScreen(
                 actions = {
                     InfoTooltipIcon(
                         title = "Language Center — Language Selector",
-                        description = "Per-app language overrides without root.\n\nBased on Language Selector — set any language for any app independently of system locale.\n\n• Set locale per-app (e.g. Twitter in English, WhatsApp in Spanish)\n• Pin locales for QS Tile cycling — tap tile to cycle the foreground app through pinned locales\n• Long-press any locale in the picker to pin it\n• Supports all BCP 47 language tags\n• Changes apply immediately — no restart needed\n\nUses Shizuku to call ActivityManager setApplicationLocales API."
+                        description = "Per-app language overrides without root.\n\nBased on Language Selector — set any language for any app independently of system locale.\n\n• Set locale per-app (e.g. Twitter in English, WhatsApp in Spanish)\n• Pin locales for QS Tile cycling — tap tile to cycle the foreground app through pinned locales\n• Long-press any locale in the picker to pin it\n• Supports all BCP 47 language tags\n• Changes apply immediately — no restart needed\n\nUses ACCU to call ActivityManager setApplicationLocales API."
                     )
                     IconButton(onClick = viewModel::toggleShowSystemApps) {
                         Icon(
@@ -459,7 +459,7 @@ private fun QsTileTab(
                     HorizontalDivider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(0.15f))
                     Text(
                         "Add the Language Selector tile to Quick Settings to cycle through pinned locales for the current foreground app.\n\n" +
-                        "Tap tile → cycles to next pinned locale\nLong-press tile → opens Language Center\n\nNo root or Shizuku required for QS Tile display; Shizuku is required to apply locale changes.",
+                        "Tap tile → cycles to next pinned locale\nLong-press tile → opens Language Center\n\nNo root or ACCU required for QS Tile display; ACCU is required to apply locale changes.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
@@ -559,7 +559,7 @@ private fun QsTileTab(
                         Text("Tile Behavior Details", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
                     }
                     Text(
-                        "• Tile reads foreground app via UsageStats/ActivityManager (requires Shizuku)\n" +
+                        "• Tile reads foreground app via UsageStats/ActivityManager (requires ACCU)\n" +
                         "• System apps and ACCU itself are excluded from cycling\n" +
                         "• If foreground app has no custom locale, cycling starts from the first pinned locale\n" +
                         "• Cycling wraps around back to System Default after the last pinned locale\n" +

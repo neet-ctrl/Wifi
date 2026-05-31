@@ -18,12 +18,12 @@ class NfcTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
-        // NFC toggle requires WRITE_SECURE_SETTINGS via Shizuku
+        // NFC toggle requires WRITE_SECURE_SETTINGS via ACCU
         // Toggle via "svc nfc enable/disable"
         try {
             val adapter = NfcAdapter.getDefaultAdapter(this)
             if (adapter != null) {
-                // Actual toggle needs elevated permission — trigger via Shizuku shell
+                // Actual toggle needs elevated permission — trigger via ACCU shell
                 Log.d(TAG, "NFC toggle requested — current: ${adapter.isEnabled}")
             }
             updateTile()

@@ -31,7 +31,7 @@ const val SCOPE_PERMISSIONS     = "PERMISSIONS"
 const val SCOPE_SETTINGS        = "SETTINGS"
 /** Set per-app locale via ActivityManager. */
 const val SCOPE_LOCALE          = "LOCALE"
-/** Grants ALL scopes — equivalent to root/Shizuku full access. */
+/** Grants ALL scopes — equivalent to root/ACCU full access. */
 const val SCOPE_ALL             = "ALL"
 
 val ALL_SCOPES = setOf(

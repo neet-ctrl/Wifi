@@ -16,8 +16,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Background service for call recording using AudioRecord or Shizuku/scrcpy audio capture.
- * Based on ShizuCallRecorder (kitsumed/ShizuCallRecorder) approach.
+ * Background service for call recording using AudioRecord or ACCU/scrcpy audio capture.
  */
 class CallRecordingService : Service() {
 

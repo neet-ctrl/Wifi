@@ -35,7 +35,7 @@ data class FeatureItem(val title: String, val detail: String = "", val isImpleme
 fun AllFeaturesScreen(onBack: () -> Unit) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
-    val filters = listOf("All", "Shizuku", "Shell", "Apps", "Privacy", "Audio", "Files", "UI", "Network", "Input")
+    val filters = listOf("All", "ACCU", "Shell", "Apps", "Privacy", "Audio", "Files", "UI", "Network", "Input")
     val apps = remember { buildSourceApps() }
     val filteredApps = remember(searchQuery, selectedFilter) {
         apps.filter { app ->
@@ -241,25 +241,25 @@ private fun FeatureItemRow(feature: FeatureItem, accentColor: Color) {
 }
 
 private fun buildSourceApps(): List<SourceApp> = listOf(
-    // ── 1. SHIZUKU ──────────────────────────────────────────────────────────
+    // ── 1. ACCU CONNECTION ──────────────────────────────────────────────────
     SourceApp(
-        name = "Shizuku", github = "github.com/RikkaApps/Shizuku",
+        name = "ACCU Connection", github = "github.com/accu-android/ACCU",
         icon = Icons.Outlined.AdminPanelSettings, color = Color(0xFF6366F1),
-        description = "Privilege escalation framework for rootless elevated API access via ADB or Root.",
+        description = "Self-contained privilege engine for rootless elevated API access via wireless ADB or Root.",
         categories = listOf(
             FeatureCategory("Service Management", listOf(
                 FeatureItem("Start via Wireless ADB", "Rootless startup using Android 11+ wireless debugging"),
                 FeatureItem("Start via USB ADB", "Connect PC via USB and run start script"),
                 FeatureItem("Start via Root", "Automatic startup using root shell"),
-                FeatureItem("Stop Server", "Kill the running Shizuku process"),
+                FeatureItem("Stop Server", "Kill the running ACCU connection"),
                 FeatureItem("Restart Server", "Stop then restart the service"),
                 FeatureItem("Server Status (version, UID, PID)", "Full runtime info display"),
                 FeatureItem("Auto-Start on Boot", "Root-only: restart automatically after reboot"),
             )),
             FeatureCategory("Authorization Management", listOf(
-                FeatureItem("Authorized Apps List", "View all apps granted Shizuku API access"),
+                FeatureItem("Authorized Apps List", "View all apps granted ACCU API access"),
                 FeatureItem("Revoke App Access", "Immediately remove elevated permission"),
-                FeatureItem("Grant App Access", "Manually grant Shizuku permission to any app"),
+                FeatureItem("Grant App Access", "Manually grant ACCU permission to any app"),
                 FeatureItem("Per-App Permission Toggle", "Enable/disable access per app individually"),
                 FeatureItem("App UID Display", "Show the UID of each authorized app"),
             )),
@@ -297,7 +297,7 @@ private fun buildSourceApps(): List<SourceApp> = listOf(
         description = "Full-featured ADB shell with 130+ preloaded commands, 3 modes, history, bookmarks, AI analysis.",
         categories = listOf(
             FeatureCategory("Shell Modes", listOf(
-                FeatureItem("Local ADB Mode", "Shizuku-powered — no USB needed"),
+                FeatureItem("Local ADB Mode", "ACCU-powered — no USB needed"),
                 FeatureItem("Wi-Fi ADB Mode", "Connect to any device over network"),
                 FeatureItem("OTG ADB Mode", "Connect via USB OTG cable"),
                 FeatureItem("Tab Completion", "Auto-complete from 130+ command library"),
@@ -354,7 +354,7 @@ private fun buildSourceApps(): List<SourceApp> = listOf(
             FeatureCategory("Script Manager (ACCU+)", listOf(
                 FeatureItem("Multi-line Shell Script Editor", "Write and save full ADB shell scripts with dark code editor"),
                 FeatureItem("Script Name, Description, Tags", "Organize scripts with metadata"),
-                FeatureItem("Run Script via Shizuku", "Line-by-line execution with live output stream"),
+                FeatureItem("Run Script via ACCU", "Line-by-line execution with live output stream"),
                 FeatureItem("8 Built-in Templates", "Debloat, Wi-Fi diagnostics, battery stats, freeze bg apps, storage report, network control, grant permissions, disable components"),
                 FeatureItem("Script History (Run Count + Last Run)", "Track which scripts you use most"),
                 FeatureItem("Favorite Scripts", "Pin important scripts to top"),
@@ -369,7 +369,7 @@ private fun buildSourceApps(): List<SourceApp> = listOf(
     SourceApp(
         name = "Canta", github = "github.com/samolego/Canta",
         icon = Icons.Outlined.CleaningServices, color = Color(0xFFF59E0B),
-        description = "Rootless debloater using Shizuku to safely remove system apps via UADS recommendations.",
+        description = "Rootless debloater using ACCU to safely remove system apps via UADS recommendations.",
         categories = listOf(
             FeatureCategory("Debloating", listOf(
                 FeatureItem("Uninstall System App for User 0", "Remove bloatware without root"),
@@ -399,7 +399,7 @@ private fun buildSourceApps(): List<SourceApp> = listOf(
         description = "Freeze, hide, and suspend apps to save battery and improve performance.",
         categories = listOf(
             FeatureCategory("Freeze Modes", listOf(
-                FeatureItem("Shizuku: Force Stop, Disable, Hide, Suspend", "4 methods via Shizuku"),
+                FeatureItem("ACCU: Force Stop, Disable, Hide, Suspend", "4 methods via ACCU"),
                 FeatureItem("Root: Force Stop, Disable, Hide, Suspend", "4 methods via root shell"),
                 FeatureItem("Device Owner: Hide, Suspend", "Via device administrator API"),
                 FeatureItem("Dhizuku: Hide, Suspend", "Device owner without rooting"),
@@ -526,7 +526,7 @@ private fun buildSourceApps(): List<SourceApp> = listOf(
             FeatureCategory("Search & Settings", listOf(
                 FeatureItem("Global App + Component Search", "Find anything across all apps"),
                 FeatureItem("Sort by Name / Install / Update Date", "Multiple sort modes"),
-                FeatureItem("Controller: IFW / PM / Shizuku", "Select blocking method"),
+                FeatureItem("Controller: IFW / PM / ACCU", "Select blocking method"),
                 FeatureItem("Dynamic Color / Dark Mode / Language", "UI preferences"),
             )),
         )
@@ -621,7 +621,7 @@ private fun buildSourceApps(): List<SourceApp> = listOf(
                 FeatureItem("Material You Style", "M3 styling for widget"),
                 FeatureItem("Pin to Page Position", "Lock to specific home screen page"),
             )),
-            FeatureCategory("Enhanced Mode (Shizuku/Root)", listOf(
+            FeatureCategory("Enhanced Mode (ACCU/Root)", listOf(
                 FeatureItem("Native SystemUI/Launcher Smartspace", "Replace at the system level"),
                 FeatureItem("OEM Smartspace Override", "Override manufacturer Smartspace"),
                 FeatureItem("A14+ Split Smartspace", "Android 14 split layout"),
@@ -744,7 +744,7 @@ private fun buildSourceApps(): List<SourceApp> = listOf(
         categories = listOf(
             FeatureCategory("Install Flags", listOf(
                 FeatureItem("Replace Existing (MODE_FULL_INSTALL)", "Overwrite existing installation"),
-                FeatureItem("Allow Version Downgrade (INSTALL_ALLOW_DOWNGRADE)", "Requires Shizuku/Root"),
+                FeatureItem("Allow Version Downgrade (INSTALL_ALLOW_DOWNGRADE)", "Requires ACCU/Root"),
                 FeatureItem("Grant All Runtime Permissions", "INSTALL_GRANT_RUNTIME_PERMISSIONS"),
                 FeatureItem("Allow Test APKs (INSTALL_ALLOW_TEST)", "Install debug APKs"),
                 FeatureItem("Don't Kill App (INSTALL_DONT_KILL_APP)", "Replace without restart"),
@@ -798,7 +798,7 @@ private fun buildSourceApps(): List<SourceApp> = listOf(
                 FeatureItem("Repeat Rate/Delay, Vibration, Action Multiplier", "Trigger fine-tuning"),
                 FeatureItem("Hold-Down Mode, Stop Repeating Condition", "Repeat behavior control"),
                 FeatureItem("Auto-Switch IME on Device Connect", "Keyboard switching"),
-                FeatureItem("Expert Mode (Shizuku/Root, WRITE_SECURE_SETTINGS)", "Advanced privilege"),
+                FeatureItem("Expert Mode (ACCU/Root, WRITE_SECURE_SETTINGS)", "Advanced privilege"),
                 FeatureItem("Global Delay Defaults (Long/Double/Sequence Timeout)", "Timing defaults"),
                 FeatureItem("Automatic Backup + Import/Export Mappings", "Configuration portability"),
                 FeatureItem("Reset Settings, Device ID Display", "Utilities"),
@@ -809,7 +809,7 @@ private fun buildSourceApps(): List<SourceApp> = listOf(
     SourceApp(
         name = "Language Selector", github = "github.com/VegaBobo/Language-Selector",
         icon = Icons.Outlined.Language, color = Color(0xFF06B6D4),
-        description = "Per-app language selection using Android 13+ APIs or Shizuku for older versions.",
+        description = "Per-app language selection using Android 13+ APIs or ACCU for older versions.",
         categories = listOf(
             FeatureCategory("Core Features", listOf(
                 FeatureItem("Per-App Language Override", "Change language for any individual app"),
@@ -817,7 +817,7 @@ private fun buildSourceApps(): List<SourceApp> = listOf(
                 FeatureItem("App Search / Real-Time Filter", "Find app by name"),
                 FeatureItem("Reset to System Default", "Quick-reset individual app"),
                 FeatureItem("LocaleManager API (Android 13+)", "Native setApplicationLocales()"),
-                FeatureItem("Hidden API via Shizuku (Android 12-)", "cmd locale set-app-locales"),
+                FeatureItem("Hidden API via ACCU (Android 12-)", "cmd locale set-app-locales"),
             )),
             FeatureCategory("20+ Supported Locales", listOf(
                 FeatureItem("English US/UK, Japanese, Korean, Chinese Simplified/Traditional", "Asian locales"),
@@ -848,7 +848,7 @@ private fun buildSourceApps(): List<SourceApp> = listOf(
                 FeatureItem("Standard Tap Toggle", "Execute via selected shell method"),
                 FeatureItem("Long-Press Opens Settings", "Deep link to system settings page"),
                 FeatureItem("Require Device Unlock", "Biometric/PIN before toggling from lock screen"),
-                FeatureItem("Shizuku Execution (recommended)", "Fast IPC-based toggle"),
+                FeatureItem("ACCU Execution (recommended)", "Fast IPC-based toggle"),
                 FeatureItem("Root (libsu) Execution", "Direct root shell command"),
                 FeatureItem("Wireless ADB Execution", "Execute over ADB"),
                 FeatureItem("Accessibility Service Execution", "UI automation fallback"),
@@ -890,15 +890,15 @@ private fun buildSourceApps(): List<SourceApp> = listOf(
                 FeatureItem("Per-App Audio Exclusion List", "Exclude specific apps from DSP"),
                 FeatureItem("Limiter (threshold + release) + Post Gain", "Output protection"),
                 FeatureItem("Save/Load/Manage Named Presets", "Audio profile management"),
-                FeatureItem("Root / Shizuku / ADB Setup Methods", "Privilege configuration"),
+                FeatureItem("Root / ACCU / ADB Setup Methods", "Privilege configuration"),
             )),
         )
     ),
-    // ── 17. SHIZU CALL RECORDER ─────────────────────────────────────────────
+    // ── 17. CALL RECORDER ───────────────────────────────────────────────────
     SourceApp(
-        name = "ShizuCallRecorder", github = "github.com/CHNwangjie/ShizuCallRecorder",
+        name = "ACCU Call Recorder", github = "github.com/accu-android/ACCU",
         icon = Icons.Outlined.PhoneCallback, color = Color(0xFF059669),
-        description = "Rootless call recording using Shizuku for system-level audio capture.",
+        description = "Rootless call recording using ACCU for system-level audio capture.",
         categories = listOf(
             FeatureCategory("Recording Controls", listOf(
                 FeatureItem("Auto-Record Incoming Calls", "All incoming calls recorded automatically"),

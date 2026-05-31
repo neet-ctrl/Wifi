@@ -18,7 +18,7 @@ import javax.inject.Singleton
 object AccuChannels {
     const val CALL_RECORDING    = "call_recording"
     const val AUDIO_DSP         = "audio_dsp"
-    const val ACCU_CONNECTION   = AccuConnectionManager.CHANNEL_ID  // replaces old shizuku_service
+    const val ACCU_CONNECTION   = AccuConnectionManager.CHANNEL_ID
     const val STORAGE_ALERTS    = "storage_alerts"
     const val CLEANUP_WORKER    = "cleanup_worker"
     const val PRIVACY_TRACKER   = "privacy_tracker"
@@ -154,7 +154,7 @@ class AccuNotificationHelper @Inject constructor(
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
-    // ── ACCU Connection (replaces Shizuku notifications) ──────────
+    // ── ACCU Connection notifications ─────────────────────────────
     fun notifyAccuDisconnected() = post(AccuChannels.ACCU_CONNECTION, AccuChannels.ID_ACCU_DISCONNECTED) {
         setContentTitle("ACCU Disconnected")
         setContentText("Privileged access lost. Tap to reconnect.")

@@ -28,11 +28,11 @@ import javax.inject.Singleton
  * ║                    ACCU CONNECTION MANAGER                               ║
  * ║                                                                          ║
  * ║  Single global privilege source for all ACCU features.                  ║
- * ║  Replaces Shizuku entirely — ACCU IS its own broker.                    ║
+ * ║  ACCU is its own self-sufficient privilege broker.                       ║
  * ║                                                                          ║
  * ║  Privilege priority:                                                     ║
  * ║    1. Root (LibSU)        — preferred, no setup needed on rooted devices ║
- * ║    2. Wireless ADB        — auto-discovered via mDNS, Shizuku-like flow  ║
+ * ║    2. Wireless ADB        — auto-discovered via mDNS, standard ADB flow  ║
  * ║    3. Plain shell         — unprivileged fallback                        ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  */
@@ -146,7 +146,7 @@ class AccuConnectionManager @Inject constructor(
         ShellResult("", e.message ?: "error", -1)
     }
 
-    // ─── Pairing flow (Shizuku-equivalent setup) ───────────────────────────────
+    // ─── Pairing flow (wireless ADB setup) ────────────────────────────────────
 
     /**
      * Step 1 — Start auto-discovery of Android Wireless Debugging pairing service.

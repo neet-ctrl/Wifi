@@ -22,7 +22,7 @@ val DARK_MODE_FAQ = listOf(
     ),
     FaqItem(
         question = "Does this require root?",
-        answer = "No! Both Shizuku and ADB modes are supported for rootless operation. Root is optional and provides enhanced compatibility."
+        answer = "No! Both ACCU (wireless ADB) and root modes are supported. Root is optional and provides enhanced compatibility."
     ),
     FaqItem(
         question = "What is auto dark mode scheduling?",
@@ -46,7 +46,7 @@ val DARK_MODE_FAQ = listOf(
     ),
     FaqItem(
         question = "Dark mode flickers on app launch — why?",
-        answer = "This is a known timing issue with force-dark. The Shizuku method is fastest. You can also try enabling 'Apply on window create' in advanced settings."
+        answer = "This is a known timing issue with force-dark. The ACCU IPC method is fastest. You can also try enabling 'Apply on window create' in advanced settings."
     ),
     FaqItem(
         question = "Which apps should I NOT force dark?",

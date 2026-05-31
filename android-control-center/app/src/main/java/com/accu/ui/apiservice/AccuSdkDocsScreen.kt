@@ -205,8 +205,8 @@ private fun buildDocSections(clipboard: androidx.compose.ui.platform.ClipboardMa
 
     // 1. Overview
     DocSection("overview", Icons.Default.Info, "Overview", "What is ACCU System Service?") {
-        Para("ACCU System Service is a privilege-brokering IPC daemon that works exactly like Shizuku — but you never need to ask users to install a separate app. If they have ACCU installed and running, any third-party app can bind to it and get full elevated shell + system API access through a familiar permission model.")
-        Para("Architecture:\n• Your app → binds via AIDL → AccuSystemService (runs in ACCU process)\n• AccuSystemService → executes via Shizuku / root → Android system\n\nACCU bridges the privilege gap. Your app stays unprivileged but can request specific scopes that the user approves.")
+        Para("ACCU System Service is a privilege-brokering IPC daemon built directly into ACCU — users never need to install a separate app. If they have ACCU installed and running, any third-party app can bind to it and get full elevated shell + system API access through a familiar permission model.")
+        Para("Architecture:\n• Your app → binds via AIDL → AccuSystemService (runs in ACCU process)\n• AccuSystemService → executes via root / wireless ADB → Android system\n\nACCU bridges the privilege gap. Your app stays unprivileged but can request specific scopes that the user approves.")
         Note("Supported Android versions: 10+ (API 29). ACCU must be installed and the service must be running.")
         Heading("Permission Scopes")
         listOf(
@@ -771,7 +771,7 @@ class MyViewModel @Inject constructor(
     DocSection("reference", Icons.Default.List, "Full API Reference", "Every method in IAccuService — signature + scope") {
         Heading("Identity")
         MethodRow("getVersion(): Int", "—", "IPC protocol version. Currently 1.")
-        MethodRow("getUid(): Int", "—", "UID of ACCU's process (0=root, 2000=shell via Shizuku).")
+        MethodRow("getUid(): Int", "—", "UID of ACCU's process (0=root, 2000=shell via wireless ADB).")
         MethodRow("getPid(): Int", "—", "PID of AccuSystemService.")
         MethodRow("getAccuVersion(): String", "—", "ACCU app version string, e.g. \"2.0.0\".")
         MethodRow("ping(): Boolean", "—", "Returns true if the service is alive.")

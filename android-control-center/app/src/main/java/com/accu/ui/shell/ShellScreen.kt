@@ -102,7 +102,7 @@ fun ShellScreen(
                             Text("Shell", fontWeight = FontWeight.Bold)
                             InfoTooltipIcon(
                                 title = "Shell — aShellYou Mode",
-                                description = "Full-featured ADB shell with 3 modes:\n\n• Local ADB: Runs via Shizuku (no USB needed)\n• Wi-Fi ADB: Connect to remote device over network (port 5555)\n• OTG ADB: Connect via USB OTG cable\n\nFeatures: command history, bookmarks, AI analysis, file browser, output search, save to file, and 200+ preloaded command examples."
+                                description = "Full-featured ADB shell with 3 modes:\n\n• Local ADB: Runs via ACCU (no USB needed)\n• Wi-Fi ADB: Connect to remote device over network (port 5555)\n• OTG ADB: Connect via USB OTG cable\n\nFeatures: command history, bookmarks, AI analysis, file browser, output search, save to file, and 200+ preloaded command examples."
                             )
                         }
                     },
@@ -552,7 +552,7 @@ private fun ShellWelcomeBanner(mode: ShellMode, onSuggestionSelected: (String) -
         Text("ACC Shell — ${mode.label}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         when (mode) {
             ShellMode.LOCAL -> Column(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Powered by Shizuku", style = MaterialTheme.typography.bodyMedium)
+                Text("Powered by ACCU", style = MaterialTheme.typography.bodyMedium)
                 Text("Runs ADB commands locally without USB debugging", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             ShellMode.WIFI -> Column(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {

@@ -127,7 +127,7 @@ fun PerAppThemingScreen(onBack: () -> Unit = {}) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.onTertiaryContainer, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Root or Shizuku required. Some apps may not support per-app theming overlays.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onTertiaryContainer, modifier = Modifier.weight(1f))
+                        Text("Root or ACCU required. Some apps may not support per-app theming overlays.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onTertiaryContainer, modifier = Modifier.weight(1f))
                         IconButton(onClick = { showWarning = false }) { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) }
                     }
                 }

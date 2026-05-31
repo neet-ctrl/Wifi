@@ -198,7 +198,7 @@ echo "To apply changes, uncomment the desired line and re-run."
         name = "Grant All Permissions to App",
         description = "Grant every declared dangerous permission to a package",
         content = """#!/system/bin/sh
-# Grant all dangerous permissions to an app (Shizuku-powered)
+# Grant all dangerous permissions to an app (ACCU-powered)
 PKG="com.example.app"   # <-- change this to your package name
 
 echo "Granting all dangerous permissions to: ${'$'}PKG"
@@ -208,14 +208,14 @@ pm list permissions -d -g | grep "permission:" | sed 's/  permission://' | while
 done
 echo "Done."
 """,
-        tags = listOf("permissions", "shizuku"),
+        tags = listOf("permissions", "accu"),
     ),
     ShellScript(
         id = "tpl_component_disable",
         name = "Disable App Components (Blocker)",
         description = "Disable specific activities, services and receivers",
         content = """#!/system/bin/sh
-# Disable components — Blocker style (requires Shizuku)
+# Disable components — Blocker style (requires ACCU)
 PKG="com.example.app"    # <-- change this
 
 # Disable a specific component:
@@ -408,7 +408,7 @@ fun ScriptEditorScreen(
                 actions = {
                     InfoTooltipIcon(
                         title = "Script Manager — aShellYou",
-                        description = "Full script editor and runner, replicating aShellYou's script management:\n\n• Write multi-line ADB shell scripts\n• Save with name, description, and tags\n• Run line-by-line via Shizuku with live output\n• 8 built-in templates: debloat, freeze, network, battery, storage, etc.\n• Favorite and organize scripts\n• Copy output to clipboard\n\nAll scripts run through Shizuku — no root required."
+                        description = "Full script editor and runner, replicating aShellYou's script management:\n\n• Write multi-line ADB shell scripts\n• Save with name, description, and tags\n• Run line-by-line via ACCU with live output\n• 8 built-in templates: debloat, freeze, network, battery, storage, etc.\n• Favorite and organize scripts\n• Copy output to clipboard\n\nAll scripts run through ACCU — no root required."
                     )
                     when (state.mode) {
                         ScriptEditorMode.LIST -> {

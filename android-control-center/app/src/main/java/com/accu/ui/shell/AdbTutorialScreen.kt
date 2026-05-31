@@ -96,7 +96,7 @@ Example:
         ),
         TutorialStep(
             title = "Method B: QR Code Pairing",
-            body  = "On Target: tap \"Pair device with QR code\" — a QR code will appear.\n\nOn ACCU host phone, go to Shizuku → ADB Pairing → QR mode and scan the displayed QR code.",
+            body  = "On Target: tap \"Pair device with QR code\" — a QR code will appear.\n\nOn ACCU host phone, go to ACCU Center → ADB Pairing → QR mode and scan the displayed QR code.",
             tip   = "QR pairing is only available on Android 11+ (API 30+). Both devices need Android 11+.",
         ),
         TutorialStep(
@@ -300,7 +300,7 @@ private val FEATURES_TUTORIAL = TutorialSection(
     steps    = listOf(
         TutorialStep(
             title = "ADB Shell — Interactive Terminal",
-            body  = "ACCU → Shell\nFull terminal with 3 modes: Local (Shizuku), Wi-Fi ADB, OTG ADB.",
+            body  = "ACCU → Shell\nFull terminal with 3 modes: Local (ACCU), Wi-Fi ADB, OTG ADB.",
             code  = """Features:
   • Run any ADB / shell command
   • Command history (↑/↓ keys)
@@ -505,7 +505,7 @@ If dialog doesn't appear:
             title = "Permission denied for certain commands",
             body  = "Some ADB commands require root or elevated privileges.",
             code  = """Workaround options:
-  1. Enable ACCU System Service (Shizuku) → higher privilege
+  1. Enable ACCU System Service → higher privilege
   2. For pm commands with --user 0: may need system-level ADB
   3. Check if device has a custom ROM with relaxed permissions
   4. Some commands need root: su -c "command"

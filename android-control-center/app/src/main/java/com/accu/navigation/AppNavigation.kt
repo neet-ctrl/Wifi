@@ -59,7 +59,7 @@ import com.accu.ui.settings.AccuPermissionsScreen
 import com.accu.ui.notifications.NotificationCenterScreen
 import com.accu.ui.settings.SettingsScreen
 import com.accu.ui.shell.ShellScreen
-import com.accu.ui.shizuku.ShizukuCenterScreen
+import com.accu.ui.shizuku.AccuCenterScreen
 import com.accu.ui.shizuku.HailWorkProfileScreen
 import com.accu.ui.storage.StorageScreen
 import com.accu.ui.storage.AppCleanerScreen
@@ -113,9 +113,9 @@ import com.accu.ui.filemanager.TextEditorScreen
 import com.accu.ui.shell.CommandExamplesScreen
 import com.accu.ui.shell.AdbFileBrowserScreen
 import com.accu.ui.shell.AdbConnectionMode
-// Shizuku
+// ACCU Connection
 import com.accu.ui.shizuku.AdbPairingScreen
-import com.accu.ui.shizuku.ShizukuAppsScreen
+import com.accu.ui.shizuku.AccuAppsScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -204,11 +204,11 @@ fun AppNavigation() {
             composable(Screen.Dashboard.route) {
                 DashboardScreen(navController = navController)
             }
-            composable(Screen.ShizukuCenter.route) {
-                ShizukuCenterScreen(
+            composable(Screen.AccuCenter.route) {
+                AccuCenterScreen(
                     onBack = { navController.popBackStack() },
                     onNavigateToAdbPairing = { navController.navigate(Screen.AdbPairing.route) },
-                    onNavigateToShizukuApps = { navController.navigate(Screen.ShizukuApps.route) },
+                    onNavigateToAccuApps = { navController.navigate(Screen.AccuApps.route) },
                     onNavigateToAccuServiceHub = { navController.navigate(Screen.AccuServiceHub.route) },
                 )
             }
@@ -363,7 +363,7 @@ fun AppNavigation() {
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     navController = navController,
-                    onNavigateToShizuku = { navController.navigate(Screen.ShizukuCenter.route) },
+                    onNavigateToAccuCenter = { navController.navigate(Screen.AccuCenter.route) },
                     onNavigateToCustomization = { navController.navigate(Screen.Customization.route) },
                     onNavigateToPrivacy = { navController.navigate(Screen.Privacy.route) },
                     onNavigateToNetwork = { navController.navigate(Screen.NetworkCenter.route) },
@@ -743,14 +743,14 @@ fun AppNavigation() {
                 )
             }
 
-            // Shizuku — ADB Pairing
+            // ACCU — ADB Pairing
             composable(Screen.AdbPairing.route) {
                 AdbPairingScreen(onBack = { navController.popBackStack() })
             }
 
-            // Shizuku — Apps using Shizuku
-            composable(Screen.ShizukuApps.route) {
-                ShizukuAppsScreen(onBack = { navController.popBackStack() })
+            // ACCU — Authorized Apps
+            composable(Screen.AccuApps.route) {
+                AccuAppsScreen(onBack = { navController.popBackStack() })
             }
 
             // Advanced Permission Center

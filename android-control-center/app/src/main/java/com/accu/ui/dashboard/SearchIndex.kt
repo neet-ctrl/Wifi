@@ -32,8 +32,8 @@ object SearchIndex {
 
         // ── Shell & ADB ───────────────────────────────────────────────────────
         SearchResult("Shell Terminal",       "Execute ADB / root shell commands",                        "shell",                    "terminal",            "Shell & ADB",   listOf("terminal","bash","sh","command","cli","adb","shell")),
-        SearchResult("Shizuku Center",       "Manage Shizuku service & wireless ADB",                    "shizuku_center",           "shizuku",             "Shell & ADB",   listOf("shizuku","adb","wireless","elevated","service","binder")),
-        SearchResult("Shizuku Apps",         "Apps currently authorized to use Shizuku",                 "shizuku_apps",             "apps",                "Shell & ADB",   listOf("shizuku","authorized","permission","binder","apps")),
+        SearchResult("ACCU Center",           "Manage ACCU connection & wireless ADB",                    "accu_center",              "hub",                 "Shell & ADB",   listOf("accu","adb","wireless","elevated","service","binder","connection")),
+        SearchResult("ACCU Apps",            "Apps currently authorized to use ACCU",                    "accu_apps",                "apps",                "Shell & ADB",   listOf("accu","authorized","permission","binder","apps")),
         SearchResult("ADB Pairing",          "Pair device over Wi-Fi ADB (mDNS)",                        "adb_pairing",              "wifi",                "Shell & ADB",   listOf("adb","wireless","pair","connect","tcp","wifi")),
         SearchResult("Script Editor",        "Write & run multi-line shell scripts",                     "script_editor",            "code",                "Shell & ADB",   listOf("script","shell","editor","bash","run","write")),
         SearchResult("Command Examples",     "Curated library of useful ADB commands",                   "command_examples",         "terminal",            "Shell & ADB",   listOf("examples","commands","library","adb","reference","cheatsheet")),
@@ -70,13 +70,13 @@ object SearchIndex {
         SearchResult("Liveprog Editor",      "Script custom DSP effects in Eel language",                "liveprog_editor",          "code",                "Audio",         listOf("liveprog","eel","script","dsp","effect","code")),
         SearchResult("Liveprog Params",      "Live parameter knobs for current Liveprog script",         "liveprog_params",          "tune",                "Audio",         listOf("liveprog","params","live","script","dsp","knob")),
         SearchResult("App Audio Blocklist",  "Exclude specific apps from DSP processing",                "app_audio_blocklist",      "block",               "Audio",         listOf("blocklist","exclude","bypass","dsp","app","whitelist")),
-        SearchResult("Call Recorder",        "Rootless call recording via ShizuCallRecorder",            "call_recorder",            "call",                "Audio",         listOf("call","record","phone","shizuku","voip","recording")),
+        SearchResult("Call Recorder",        "Rootless call recording via ACCU + scrcpy",                "call_recorder",            "call",                "Audio",         listOf("call","record","phone","accu","voip","recording")),
         SearchResult("Recording Settings",   "Call recorder quality, format & storage",                  "call_recording_settings",  "settings",            "Audio",         listOf("recording","settings","quality","format","call","mp3")),
 
         // ── Privacy & Security ────────────────────────────────────────────────
         SearchResult("Privacy Center",       "Tracker blocker & component disabler (Blocker)",           "privacy",                  "security",            "Privacy",       listOf("blocker","tracker","privacy","firewall","ads","block")),
         SearchResult("Online Rules",         "Manage Blocker online rule / filter lists",                "online_rules",             "cloud",               "Privacy",       listOf("blocker","rules","online","list","import","filter","adblock")),
-        SearchResult("Permission Center",    "All permissions for all 91 screens via Shizuku",           "permission_center",        "admin_panel_settings","Privacy",       listOf("permission","grant","revoke","shizuku","runtime","all","manage")),
+        SearchResult("Permission Center",    "All permissions for all 91 screens via ACCU",              "permission_center",        "admin_panel_settings","Privacy",       listOf("permission","grant","revoke","accu","runtime","all","manage")),
 
         // ── Customization ─────────────────────────────────────────────────────
         SearchResult("Customization Hub",    "Material You, themes & per-app visuals",                   "customization",            "palette",             "Customization", listOf("theme","material you","monet","color","customize","personalize")),
@@ -106,7 +106,7 @@ object SearchIndex {
         SearchResult("Key Map Log",          "Log of recent key mapping trigger events",                "key_map_log",              "history",             "Automation",    listOf("keymapper","log","events","trigger","history","debug")),
 
         // ── ACCU System Service ───────────────────────────────────────────────
-        SearchResult("ACCU Service Hub",     "IPC privilege broker — let other apps use ACCU's power", "accu_service_hub",         "api",                 "System",        listOf("ipc","api","service","binder","aidl","privilege","shizuku","shell","developer","sdk","third-party","connect")),
+        SearchResult("ACCU Service Hub",     "IPC privilege broker — let other apps use ACCU's power", "accu_service_hub",         "api",                 "System",        listOf("ipc","api","service","binder","aidl","privilege","accu","shell","developer","sdk","third-party","connect")),
         SearchResult("ACCU SDK Docs",        "Full developer SDK documentation for connecting apps",    "accu_sdk_docs",            "menu_book",           "System",        listOf("sdk","docs","api","developer","guide","integration","aidl","connect","bind")),
 
         // ── System & Settings ─────────────────────────────────────────────────
@@ -122,7 +122,7 @@ object SearchIndex {
     )
 
     val quickLaunch: List<SearchResult> = entries.filter { it.route in setOf(
-        "shizuku_center", "shell", "app_manager", "privacy", "audio_center",
+        "accu_center", "shell", "app_manager", "privacy", "audio_center",
         "storage", "notification_center", "settings", "accu_service_hub",
     ) }
 }

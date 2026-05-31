@@ -52,9 +52,9 @@ data class FreezeSchedule(
 )
 
 enum class FreezeWorkingMode(val label: String, val subtitle: String) {
-    SHIZUKU_SUSPEND("Shizuku — Suspend", "pm suspend (app appears greyed out, no background)"),
-    SHIZUKU_DISABLE("Shizuku — Disable", "pm disable-user (app hidden from launcher)"),
-    SHIZUKU_HIDE("Shizuku — Hide", "pm hide (requires device admin or deeper privs)"),
+    SHIZUKU_SUSPEND("ACCU — Suspend", "pm suspend (app appears greyed out, no background)"),
+    SHIZUKU_DISABLE("ACCU — Disable", "pm disable-user (app hidden from launcher)"),
+    SHIZUKU_HIDE("ACCU — Hide", "pm hide (requires device admin or deeper privs)"),
     ROOT_PM("Root — pm disable", "Root pm disable/enable (permanent disable)"),
     DEVICE_OWNER("Device Owner", "DPM setPackagesSuspended (MDM method)"),
 }
@@ -230,7 +230,7 @@ fun FreezeSchedulerScreen(
                 actions = {
                     InfoTooltipIcon(
                         title = "Freeze Scheduler — Hail",
-                        description = "Hail's time-based and trigger-based freeze scheduler.\n\nTriggers:\n• Scheduled time: set hour/minute + days of week\n• Screen off/on: instant trigger when display changes\n• Boot: run once on device restart\n• Charging/unplug events\n• Airplane mode\n\nActions:\n• Freeze (pm suspend) — app still appears, just suspended\n• Unfreeze (pm unsuspend) — restore suspended apps\n• Freeze + Kill — suspend and force-stop for max savings\n\nRequires Shizuku to execute. 'Run Now' executes immediately."
+                        description = "Hail's time-based and trigger-based freeze scheduler.\n\nTriggers:\n• Scheduled time: set hour/minute + days of week\n• Screen off/on: instant trigger when display changes\n• Boot: run once on device restart\n• Charging/unplug events\n• Airplane mode\n\nActions:\n• Freeze (pm suspend) — app still appears, just suspended\n• Unfreeze (pm unsuspend) — restore suspended apps\n• Freeze + Kill — suspend and force-stop for max savings\n\nRequires ACCU to execute. 'Run Now' executes immediately."
                     )
                     IconButton(onClick = { viewModel.openEditor() }) { Icon(Icons.Default.Add, "Add schedule") }
                 },

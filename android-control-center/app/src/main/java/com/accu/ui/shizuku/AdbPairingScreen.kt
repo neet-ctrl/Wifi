@@ -23,7 +23,7 @@ import com.accu.ui.components.ACCTopBar
 /**
  * ACCU wireless ADB pairing screen.
  *
- * Matches Shizuku's exact UX flow but self-contained inside ACCU:
+ * Standard wireless ADB pairing flow, self-contained inside ACCU:
  *   1. User enables Developer Options + Wireless Debugging (one-time)
  *   2. ACCU auto-discovers the pairing port via mDNS — no IP/port entry needed
  *   3. User enters only the 6-digit code shown on their screen

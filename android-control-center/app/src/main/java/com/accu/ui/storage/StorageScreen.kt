@@ -155,7 +155,7 @@ fun StorageScreen(
                 actions = {
                     InfoTooltipIcon(
                         title = "Storage Center — SD Maid SE",
-                        description = "Storage analysis and cleanup powered by SD Maid SE.\n\n• Storage ring chart: see what's consuming your storage\n• System Cleaner: remove cached/junk files\n• Large File Finder: find files over a threshold\n• Deduplicator: find and remove duplicate files\n• App Cleaner: per-app cache management\n\nRequires Shizuku for protected directories. Regular cache cleanup doesn't require it."
+                        description = "Storage analysis and cleanup powered by SD Maid SE.\n\n• Storage ring chart: see what's consuming your storage\n• System Cleaner: remove cached/junk files\n• Large File Finder: find files over a threshold\n• Deduplicator: find and remove duplicate files\n• App Cleaner: per-app cache management\n\nRequires ACCU for protected directories. Regular cache cleanup doesn't require it."
                     )
                     IconButton(onClick = viewModel::loadStorage) { Icon(Icons.Default.Refresh, "Refresh") }
                 }

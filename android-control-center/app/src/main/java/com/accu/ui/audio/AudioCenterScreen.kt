@@ -78,7 +78,7 @@ fun AudioCenterScreen(
                 actions = {
                     InfoTooltipIcon(
                         title = "Audio Center — RootlessJamesDSP",
-                        description = "Rootless system-wide audio processing powered by JamesDSP.\n\n• Equalizer: Graphic, Parametric, and AutoEQ profiles\n• Bass Boost, Stereo Widening, Reverberation\n• Convolution: load custom impulse response files\n• Liveprog: scriptable audio effects via Eel2\n• Per-app audio blocking\n\nNo root required — uses Shizuku + Android AudioEffect API.\n\nDSP toggle affects all audio output system-wide."
+                        description = "Rootless system-wide audio processing powered by JamesDSP.\n\n• Equalizer: Graphic, Parametric, and AutoEQ profiles\n• Bass Boost, Stereo Widening, Reverberation\n• Convolution: load custom impulse response files\n• Liveprog: scriptable audio effects via Eel2\n• Per-app audio blocking\n\nNo root required — uses ACCU + Android AudioEffect API.\n\nDSP toggle affects all audio output system-wide."
                     )
                     IconButton(onClick = onNavigateToGraphicEQ) { Icon(Icons.Default.Equalizer, "Graphic EQ") }
                     IconButton(onClick = onNavigateToDSPControls) { Icon(Icons.Default.Tune, "DSP Controls") }

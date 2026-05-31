@@ -339,7 +339,7 @@ fun CustomizationScreen(
                     OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                         ListItem(
                             headlineContent = { Text("Per-App Dark Mode (DarQ)", fontWeight = FontWeight.SemiBold) },
-                            supportingContent = { Text("Force dark mode on apps that don't support it natively. Uses Shizuku to apply overlays.") },
+                            supportingContent = { Text("Force dark mode on apps that don't support it natively. Uses ACCU to apply overlays.") },
                             leadingContent = { Icon(Icons.Default.NightlightRound, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp)) },
                             trailingContent = { Icon(Icons.Default.ChevronRight, null) },
                             modifier = Modifier.clickable(onClick = onNavigateToDarkMode),

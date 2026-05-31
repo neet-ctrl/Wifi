@@ -244,7 +244,7 @@ Once connected, open ACCU → ACCU Center → verify "Connected" status.""",
         ),
         icon = Icons.Outlined.Security,
         accentColor = Color(0xFF0288D1),
-        navTarget = "shizuku"
+        navTarget = "accu_center"
     ),
     TutorialStep(
         title = "Shell — Your ADB Powerhouse",

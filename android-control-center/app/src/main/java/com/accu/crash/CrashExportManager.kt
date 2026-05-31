@@ -164,7 +164,7 @@ class CrashExportManager @Inject constructor(
         appendLine("───────────────────────────────────────────────────────")
         appendLine("SYSTEM STATE")
         appendLine("  Network  : ${c.networkState}")
-        appendLine("  Shizuku  : ${c.shizukuState}")
+        appendLine("  ACCU     : ${c.shizukuState}")
         appendLine("  Root     : ${c.rootState}")
         appendLine("  WiFi ADB : ${c.wirelessAdbState}")
         appendLine("───────────────────────────────────────────────────────")

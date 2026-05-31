@@ -3,7 +3,7 @@
     <cloud-backup>
         <include domain="sharedpref" path="." />
         <include domain="database" path="acc_database.db" />
-        <exclude domain="sharedpref" path="shizuku.xml" />
+        <exclude domain="sharedpref" path="accu_prefs.xml" />
     </cloud-backup>
     <device-transfer>
         <include domain="sharedpref" path="." />

@@ -6,7 +6,7 @@ import android.os.IBinder
 import timber.log.Timber
 
 /**
- * Legacy class kept for any code that referenced ShizukuUserService.
+ * Legacy stub — originally ShizukuUserService, retained for binary compatibility.
  * ACCU no longer uses a separate privileged process — all privileged
  * execution is routed through AccuConnectionManager (root or wireless ADB).
  * This stub safely no-ops all bind/unbind calls.
@@ -25,7 +25,7 @@ class ShizukuUserService : IShizukuUserService.Stub() {
             }
         }
 
-        /** No-op — ACCU uses AccuConnectionManager instead of Shizuku UserService. */
+        /** No-op — ACCU uses AccuConnectionManager directly; this stub is kept for compatibility. */
         fun bind() { Timber.d("$TAG: bind() called — no-op, ACCU uses AccuConnectionManager") }
 
         /** No-op. */

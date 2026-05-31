@@ -15,8 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 enum class FreezeMethod(val label: String, val description: String, val requiresRoot: Boolean = false) {
-    SHIZUKU_SUSPEND("Shizuku (pm suspend)", "Uses PackageManager.setPackagesSuspended() via Shizuku — most reliable"),
-    SHIZUKU_DISABLE("Shizuku (pm disable)", "Uses setApplicationEnabledSetting via Shizuku — hides from launcher"),
+    SHIZUKU_SUSPEND("ACCU (pm suspend)", "Uses PackageManager.setPackagesSuspended() via ACCU — most reliable"),
+    SHIZUKU_DISABLE("ACCU (pm disable)", "Uses setApplicationEnabledSetting via ACCU — hides from launcher"),
     DEVICE_ADMIN("Device Admin (User Restriction)", "Uses DevicePolicyManager to restrict apps — works without root"),
     WORK_PROFILE("Island/Work Profile", "Moves app to work profile and freezes — requires Island or similar"),
     ROOT_DISABLE("Root (setprop / disable)", "Direct root shell to disable packages", requiresRoot = true),

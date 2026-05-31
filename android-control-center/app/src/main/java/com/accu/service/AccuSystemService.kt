@@ -25,7 +25,7 @@ import javax.inject.Inject
  * ║                                                                          ║
  * ║  A foreground service that exposes IAccuService to other apps.           ║
  * ║  Runs in ACCU's own process; executes privileged ops via                 ║
- * ║  AccuConnectionManager (root or wireless ADB — no Shizuku needed).       ║
+ * ║  AccuConnectionManager (root or wireless ADB — fully self-contained).    ║
  * ║                                                                          ║
  * ║  Binding intent action: "com.accu.api.AccuSystemService"                 ║
  * ║  Package:               "com.accu.controlcenter"                         ║

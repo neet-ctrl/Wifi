@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 
 enum class AudioSource(val label: String, val description: String) {
     MICROPHONE("Microphone", "Standard mic input — most compatible, stereo"),
-    CALL_STREAM("Call Stream", "Direct audio stream — clearest quality (root/Shizuku)"),
+    CALL_STREAM("Call Stream", "Direct audio stream — clearest quality (root/ACCU)"),
     BOTH("Both Sources", "Mic + call stream merged — maximum coverage"),
     VOICE_CALL("Voice Call", "Android VoiceCall source — legacy support"),
 }

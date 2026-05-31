@@ -19,7 +19,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
-import com.accu.ui.dashboard.ShizukuStatus
+import com.accu.ui.dashboard.AccuConnectionStatus
 import com.accu.ui.theme.*
 
 // ─── Press-scale modifier ─────────────────────────────────────────────────────
@@ -44,17 +44,17 @@ fun Modifier.pressScale(
 
 @Composable
 fun StatusBadge(
-    status: ShizukuStatus,
+    status: AccuConnectionStatus,
     onClick: () -> Unit,
     glowAlpha: Float = 1f,
 ) {
     val haptic = LocalHapticFeedback.current
     val (color, label, icon) = when (status) {
-        ShizukuStatus.RUNNING       -> Triple(AccentGreen,  "Active",        Icons.Default.CheckCircle)
-        ShizukuStatus.ROOT_MODE     -> Triple(AccentCyan,   "Root",          Icons.Default.AdminPanelSettings)
-        ShizukuStatus.NOT_RUNNING   -> Triple(AccentOrange, "Stopped",       Icons.Default.Warning)
-        ShizukuStatus.NOT_INSTALLED -> Triple(AccentRed,    "Not Installed", Icons.Default.Error)
-        ShizukuStatus.UNKNOWN       -> Triple(Color.Gray,   "Unknown",       Icons.Default.Help)
+        AccuConnectionStatus.RUNNING       -> Triple(AccentGreen,  "Active",       Icons.Default.CheckCircle)
+        AccuConnectionStatus.ROOT_MODE     -> Triple(AccentCyan,   "Root",         Icons.Default.AdminPanelSettings)
+        AccuConnectionStatus.NOT_RUNNING   -> Triple(AccentOrange, "Stopped",      Icons.Default.Warning)
+        AccuConnectionStatus.NOT_INSTALLED -> Triple(AccentRed,    "Disconnected", Icons.Default.Error)
+        AccuConnectionStatus.UNKNOWN       -> Triple(Color.Gray,   "Unknown",      Icons.Default.Help)
     }
 
     val interactionSource = remember { MutableInteractionSource() }
@@ -77,7 +77,7 @@ fun StatusBadge(
         modifier = Modifier
             .scale(scale)
             .drawBehind {
-                if (status == ShizukuStatus.RUNNING || status == ShizukuStatus.ROOT_MODE) {
+                if (status == AccuConnectionStatus.RUNNING || status == AccuConnectionStatus.ROOT_MODE) {
                     drawCircle(color.copy(alpha = 0.08f * glowAlpha), radius = size.maxDimension * 0.8f)
                 }
             },

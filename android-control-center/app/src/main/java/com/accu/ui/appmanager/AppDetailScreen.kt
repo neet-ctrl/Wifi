@@ -466,7 +466,7 @@ private val APP_OPS_TEMPLATE = listOf(
 
 @Composable
 private fun AppOpsTab(packageName: String, padding: PaddingValues) {
-    // Local state simulating ops — in production this reads from AppOpsManager via Shizuku
+    // Local state simulating ops — in production this reads from AppOpsManager via ACCU
     val opsState = remember { mutableStateMapOf<String, String>().apply { APP_OPS_TEMPLATE.forEach { (op, _, _) -> put(op, "Allow") } } }
 
     LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(bottom = 16.dp)) {
@@ -478,7 +478,7 @@ private fun AppOpsTab(packageName: String, padding: PaddingValues) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Info, null, Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("App Ops — fine-grained permission controls via Shizuku.", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text("App Ops — fine-grained permission controls via ACCU.", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
                     }
                     Row(
                         Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.onSecondaryContainer.copy(0.08f), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 4.dp),

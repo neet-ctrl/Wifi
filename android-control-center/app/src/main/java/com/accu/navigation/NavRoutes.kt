@@ -18,7 +18,7 @@ sealed class Screen(val route: String) {
     data object Settings    : Screen("settings")
 
     // Sub-screens (all navigable from dashboard or nav rail)
-    data object ShizukuCenter       : Screen("shizuku_center")
+    data object AccuCenter          : Screen("accu_center")
     data object Privacy             : Screen("privacy")
     data object Customization       : Screen("customization")
     data object DarkMode            : Screen("dark_mode")
@@ -180,9 +180,9 @@ sealed class Screen(val route: String) {
     // SmartSpacer
     data object SmartSpacerComplications : Screen("smartspacer_complications")
 
-    // Shizuku
+    // ACCU Connection
     data object AdbPairing         : Screen("adb_pairing")
-    data object ShizukuApps        : Screen("shizuku_apps")
+    data object AccuApps           : Screen("accu_apps")
 
     // DarQ
     data object DarQAppPicker      : Screen("darq_app_picker")

@@ -204,7 +204,7 @@ fun InureDisabledAppsScreen(onBack: () -> Unit = {}) {
             title = { Text("Enable ${toEnable.name}?") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("This will re-enable the app using ${if (toEnable.isSystem) "Shizuku (pm enable)" else "Android API"}.", style = MaterialTheme.typography.bodySmall)
+                    Text("This will re-enable the app using ${if (toEnable.isSystem) "ACCU (pm enable)" else "Android API"}.", style = MaterialTheme.typography.bodySmall)
                     if (toEnable.isSystem) {
                         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
                             Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {

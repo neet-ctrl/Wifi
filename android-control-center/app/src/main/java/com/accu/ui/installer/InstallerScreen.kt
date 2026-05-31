@@ -154,7 +154,7 @@ fun InstallerScreen(
                 actions = {
                     InfoTooltipIcon(
                         title = "Installer Center — InstallWithOptions",
-                        description = "Advanced APK installer based on InstallWithOptions.\n\nSupports all pm install flags:\n• Replace existing app\n• Allow version downgrade (install older build)\n• Grant all permissions automatically\n• Allow test-only builds\n• Do not kill app during update\n• Bypass low target SDK block\n• Request update ownership\n\nSupports single APKs and split APK sets (.apks). All installation is done via Shizuku (no root, no USB)."
+                        description = "Advanced APK installer based on InstallWithOptions.\n\nSupports all pm install flags:\n• Replace existing app\n• Allow version downgrade (install older build)\n• Grant all permissions automatically\n• Allow test-only builds\n• Do not kill app during update\n• Bypass low target SDK block\n• Request update ownership\n\nSupports single APKs and split APK sets (.apks). All installation is done via ACCU (no root, no USB)."
                     )
                 }
             )

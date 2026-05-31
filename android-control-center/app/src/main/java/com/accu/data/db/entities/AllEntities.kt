@@ -88,7 +88,7 @@ data class BlockedComponentEntity(
     val componentType: String,  // activity | service | receiver | provider
     val blockedAt: Long = System.currentTimeMillis(),
     val isTracker: Boolean = false,
-    val ruleSource: String = "user",  // user | ifw | ufw | shizuku
+    val ruleSource: String = "user",  // user | ifw | ufw | accu
 )
 
 @Entity(tableName = "privacy_rules")

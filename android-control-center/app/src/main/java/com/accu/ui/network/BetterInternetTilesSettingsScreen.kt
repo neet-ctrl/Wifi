@@ -47,9 +47,9 @@ enum class TileLongPressAction(val label: String) {
 // ── Shell method ───────────────────────────────────────────────────────────────
 
 enum class ShellMethod(val label: String, val description: String) {
-    SHIZUKU("Shizuku (Recommended)", "Uses Shizuku IPC for fastest, most reliable toggle"),
+    SHIZUKU("ACCU (Recommended)", "Uses ACCU IPC for fastest, most reliable toggle"),
     ROOT("Root (libsu)", "Direct root shell commands — requires root access"),
-    ADB("Wireless ADB", "Commands via wireless ADB — slower but doesn't need root or Shizuku"),
+    ADB("Wireless ADB", "Commands via wireless ADB — slower but doesn't need root"),
     ACCESSIBILITY("Accessibility Service", "Uses taps/UI automation — slowest, works without any special access"),
 }
 

@@ -35,8 +35,8 @@ val onboardingPages = listOf(
         Icons.Default.Hub, listOf(Color(0xFF4A56E2), Color(0xFF7C4DFF)),
     ),
     OnboardingPage(
-        "Shizuku Powered", "Rootless & Root",
-        "Leverages Shizuku for elevated ADB access without rooting your device. Full root support too. Control your Android like never before.",
+        "ACCU Powered", "Rootless & Root",
+        "Uses ACCU's own privilege engine for elevated ADB access without rooting your device. Full root support too. Control your Android like never before.",
         Icons.Default.AdminPanelSettings, listOf(Color(0xFF00D4FF), Color(0xFF0097A7)),
     ),
     OnboardingPage(
@@ -56,7 +56,7 @@ val onboardingPages = listOf(
     ),
     OnboardingPage(
         "Shell Terminal", "Developer Power",
-        "Full ADB shell terminal with command history, saved scripts, syntax hints, and multi-mode execution via Shizuku, root, or standard ADB.",
+        "Full ADB shell terminal with command history, saved scripts, syntax hints, and multi-mode execution via ACCU, root, or standard ADB.",
         Icons.Default.Terminal, listOf(Color(0xFF1A1A2E), Color(0xFF16213E)),
     ),
 )

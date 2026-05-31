@@ -25,7 +25,7 @@ import java.util.Calendar
 import javax.inject.Inject
 
 data class DashboardUiState(
-    val shizukuStatus: ShizukuStatus = ShizukuStatus.UNKNOWN,
+    val accuStatus: AccuConnectionStatus = AccuConnectionStatus.UNKNOWN,
     val recentActions: List<RecentAction> = emptyList(),
     val quickStats: QuickStats = QuickStats(),
     val moduleCards: List<ModuleCard> = emptyList(),
@@ -36,7 +36,7 @@ data class DashboardUiState(
     val recentScreens: List<SearchResult> = emptyList(),
 )
 
-enum class ShizukuStatus { UNKNOWN, RUNNING, NOT_RUNNING, NOT_INSTALLED, ROOT_MODE }
+enum class AccuConnectionStatus { UNKNOWN, RUNNING, NOT_RUNNING, NOT_INSTALLED, ROOT_MODE }
 
 data class QuickStats(
     val installedApps: Int = 0,
@@ -99,7 +99,7 @@ class DashboardViewModel @Inject constructor(
 
     init {
         loadDashboard()
-        startShizukuMonitor()
+        startAccuMonitor()
         collectHistory()
     }
 
@@ -161,16 +161,16 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    private fun startShizukuMonitor() {
+    private fun startAccuMonitor() {
         viewModelScope.launch {
             while (true) {
                 val status = when {
-                    shizukuUtils.isRootAvailable() -> ShizukuStatus.ROOT_MODE
-                    shizukuUtils.isShizukuAvailable() -> ShizukuStatus.RUNNING
-                    shizukuUtils.isShizukuInstalled(context) -> ShizukuStatus.NOT_RUNNING
-                    else -> ShizukuStatus.NOT_INSTALLED
+                    shizukuUtils.isRootAvailable() -> AccuConnectionStatus.ROOT_MODE
+                    shizukuUtils.isShizukuAvailable() -> AccuConnectionStatus.RUNNING
+                    shizukuUtils.isShizukuInstalled(context) -> AccuConnectionStatus.NOT_RUNNING
+                    else -> AccuConnectionStatus.NOT_INSTALLED
                 }
-                _uiState.update { it.copy(shizukuStatus = status) }
+                _uiState.update { it.copy(accuStatus = status) }
                 delay(3000)
             }
         }
@@ -217,7 +217,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     private fun buildModuleCards(): List<ModuleCard> = listOf(
-        ModuleCard("shizuku",    "ACCU Connection",   "Privilege & wireless ADB",      "wifi_protected_setup", "shizuku_center", 0xFF4A56E2),
+        ModuleCard("accu",       "ACCU Connection",   "Privilege & wireless ADB",      "wifi_protected_setup", "accu_center", 0xFF4A56E2),
         ModuleCard("shell",      "Shell Terminal",    "ADB commands & scripts",        "terminal",        "shell",             0xFF00D4FF),
         ModuleCard("debloat",    "Debloat",           "Remove bloatware",              "delete",          "debloat",           0xFFFF1744),
         ModuleCard("freeze",     "Freeze Apps",       "Suspend & hide packages",       "ac_unit",         "freeze_apps",       0xFF00BCD4),

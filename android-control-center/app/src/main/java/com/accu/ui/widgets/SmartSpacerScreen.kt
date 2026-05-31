@@ -384,10 +384,10 @@ private fun SmartSpacerSettingsTab(state: SmartSpacerState, viewModel: SmartSpac
                         RadioButton(selected = state.mode == mode, onClick = { viewModel.setMode(mode) })
                         Spacer(Modifier.width(8.dp))
                         Column {
-                            Text(when(mode) { SmartSpacerMode.NONE -> "Disabled"; SmartSpacerMode.ENHANCED -> "Enhanced Mode (Shizuku/Root)"; SmartSpacerMode.NATIVE -> "Native Smartspace (OEM Replacement)" }, fontWeight = FontWeight.Medium)
+                            Text(when(mode) { SmartSpacerMode.NONE -> "Disabled"; SmartSpacerMode.ENHANCED -> "Enhanced Mode (ACCU/Root)"; SmartSpacerMode.NATIVE -> "Native Smartspace (OEM Replacement)" }, fontWeight = FontWeight.Medium)
                             Text(when(mode) {
                                 SmartSpacerMode.NONE     -> "No Smartspace modification"
-                                SmartSpacerMode.ENHANCED -> "Best features. Requires Shizuku or root. Recommended."
+                                SmartSpacerMode.ENHANCED -> "Best features. Requires ACCU or root. Recommended."
                                 SmartSpacerMode.NATIVE   -> "Replaces stock At-a-Glance widget completely"
                             }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }

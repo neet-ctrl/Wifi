@@ -148,7 +148,7 @@ fun InstallFlagsScreen(onBack: () -> Unit) {
                             Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Warning, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
                                 Spacer(Modifier.width(6.dp))
-                                Text("Requires Shizuku or Root", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
+                                Text("Requires ACCU or Root", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
                             }
                         }
                     }

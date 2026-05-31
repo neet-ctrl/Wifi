@@ -21,7 +21,7 @@ class AirplaneModeTileService : TileService() {
         val currentMode = Settings.Global.getInt(contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0)
         val newMode = if (currentMode == 0) 1 else 0
         try {
-            // Requires WRITE_SECURE_SETTINGS — use Shizuku:
+            // Requires WRITE_SECURE_SETTINGS — use ACCU:
             // settings put global airplane_mode_on <0|1>
             // Then broadcast: am broadcast -a android.intent.action.AIRPLANE_MODE
             Log.d(TAG, "Airplane mode toggle: $currentMode → $newMode")

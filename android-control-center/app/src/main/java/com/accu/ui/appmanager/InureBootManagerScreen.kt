@@ -41,7 +41,7 @@ fun InureBootManagerScreen(onBack: () -> Unit = {}) {
             BootReceiver("Tasker", "net.dinglisch.android.taskerm", "net.dinglisch.android.taskerm.TaskerBootReceiver", true),
             BootReceiver("Syncthing", "com.nutomic.syncthingandroid", "com.nutomic.syncthingandroid.receiver.BootReceiver", false, disabledByAcf = true),
             BootReceiver("Automate", "com.llamalab.automate", "com.llamalab.automate.BootReceiver", false, disabledByAcf = true),
-            BootReceiver("Shizuku", "moe.shizuku.privileged.api", "moe.shizuku.manager.receiver.BootCompleteReceiver", true, true),
+            BootReceiver("ACCU", "com.accu.controlcenter", "com.accu.receiver.BootReceiver", true, true),
             BootReceiver("ACCU Service", "com.accu.controlcenter", "com.accu.receivers.BootReceiver", true),
             BootReceiver("Gmail", "com.google.android.gm", "com.google.android.gm.receiver.BootReceiver", true),
             BootReceiver("AlarmManager", "com.android.deskclock", "com.android.deskclock.AlarmInitReceiver", true, true),
@@ -229,7 +229,7 @@ fun InureBootManagerScreen(onBack: () -> Unit = {}) {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
                         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("How it works:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                            Text("• Uses pm command via Shizuku to disable/enable broadcast receivers\n• Affects only BOOT_COMPLETED, QUICKBOOT_POWERON actions\n• Does NOT disable the app itself — just prevents auto-start\n• Long-press any app to enter selection mode for batch operations", style = MaterialTheme.typography.bodySmall)
+                            Text("• Uses pm command via ACCU to disable/enable broadcast receivers\n• Affects only BOOT_COMPLETED, QUICKBOOT_POWERON actions\n• Does NOT disable the app itself — just prevents auto-start\n• Long-press any app to enter selection mode for batch operations", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                     Text("Note: Re-enabling a boot receiver takes effect on next device restart.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -39,10 +39,10 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShizukuCenterScreen(
+fun AccuCenterScreen(
     onBack: () -> Unit = {},
     onNavigateToAdbPairing: () -> Unit = {},
-    onNavigateToShizukuApps: () -> Unit = {},
+    onNavigateToAccuApps: () -> Unit = {},
     onNavigateToAccuServiceHub: () -> Unit = {},
     viewModel: ShizukuViewModel = hiltViewModel(),
 ) {
@@ -62,7 +62,7 @@ fun ShizukuCenterScreen(
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "Back") } },
                 actions = {
                     IconButton(onClick = onNavigateToAdbPairing) { Icon(Icons.Outlined.Usb, "ADB Pairing") }
-                    IconButton(onClick = onNavigateToShizukuApps) { Icon(Icons.Outlined.Apps, "Shizuku Apps") }
+                    IconButton(onClick = onNavigateToAccuApps) { Icon(Icons.Outlined.Apps, "ACCU Apps") }
                     IconButton(onClick = onNavigateToAccuServiceHub) { Icon(Icons.Outlined.Api, "ACCU Service Hub") }
                     if (state.isAvailable && state.isGranted) {
                         IconButton(onClick = viewModel::runDiagnostics) {

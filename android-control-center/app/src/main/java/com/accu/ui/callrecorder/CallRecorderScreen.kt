@@ -46,8 +46,8 @@ fun CallRecorderScreen(
                 onBack = onBack,
                 actions = {
                     InfoTooltipIcon(
-                        title = "Call Recorder — ShizuCallRecorder",
-                        description = "Rootless call recording powered by Shizuku.\n\n• Automatically records all incoming/outgoing calls\n• Uses scrcpy audio capture for Android 10+ (no root required)\n• Formats: AAC, MP3, PCM, OGG\n• Audio source: MIC, VOICE_CALL, VOICE_COMMUNICATION\n\nRequires: Shizuku running + RECORD_AUDIO permission.\n\nAll recordings are stored locally and never uploaded."
+                        title = "Call Recorder",
+                        description = "Rootless call recording powered by ACCU.\n\n• Automatically records all incoming/outgoing calls\n• Uses scrcpy audio capture for Android 10+ (no root required)\n• Formats: AAC, MP3, PCM, OGG\n• Audio source: MIC, VOICE_CALL, VOICE_COMMUNICATION\n\nRequires: ACCU connected + RECORD_AUDIO permission.\n\nAll recordings are stored locally and never uploaded."
                     )
                     IconButton(onClick = { viewModel.toggleSearch() }) { Icon(Icons.Default.Search, "Search") }
                     IconButton(onClick = { viewModel.toggleSettingsPanel() }) { Icon(Icons.Default.Settings, "Settings") }
@@ -152,7 +152,7 @@ fun CallRecorderScreen(
                                 }
                             }
                         }
-                        // Shizuku method info
+                        // ACCU method info
                         Surface(
                             shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.secondaryContainer,
@@ -161,7 +161,7 @@ fun CallRecorderScreen(
                                 Icon(Icons.Default.Info, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
                                 Spacer(Modifier.width(6.dp))
                                 Text(
-                                    "Uses Shizuku + scrcpy audio capture for rootless recording on Android 10+",
+                                    "Uses ACCU + scrcpy audio capture for rootless recording on Android 10+",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 )

@@ -86,7 +86,7 @@ object CrashAnalyzer {
             type.endsWith("SecurityException") ->
                 "A required Android permission was not granted or was revoked. Check that the permission is declared in AndroidManifest and granted at runtime before calling this API."
             type.endsWith("DeadObjectException") || (stk.contains("binder") && type.contains("Remote")) ->
-                "The remote Binder connection died (Shizuku service or ACCU system service crashed). The IPC call was made after the service stopped."
+                "The remote Binder connection died (ACCU system service crashed). The IPC call was made after the service stopped."
             type.endsWith("NetworkOnMainThreadException") ->
                 "Network I/O was performed on the main/UI thread. Move it to Dispatchers.IO."
             type.endsWith("IllegalStateException") && msg.contains("coroutine") ->
@@ -98,7 +98,7 @@ object CrashAnalyzer {
             type.endsWith("FileNotFoundException") ->
                 "A file path does not exist or the app lacks read/write permission. Verify the path and that MANAGE_EXTERNAL_STORAGE or WRITE_EXTERNAL_STORAGE is granted."
             kind == "IPC" ->
-                "Binder IPC call failed — the bound service (Shizuku, ACCU API, or system service) was unreachable."
+                "Binder IPC call failed — the bound service (ACCU API or system service) was unreachable."
             kind == "COMPOSE" ->
                 "Jetpack Compose rendering error. A Composable function threw an unhandled exception during recomposition."
             kind == "COROUTINE" ->
@@ -117,7 +117,7 @@ object CrashAnalyzer {
             stk.contains("shell") || stk.contains("ashell") -> "Shell / ADB"
             stk.contains("storage") || stk.contains("sdmaid") || stk.contains("filemanager") -> "Storage / Files"
             stk.contains("appmanager") || stk.contains("inure") || stk.contains("canta") || stk.contains("hail") -> "App Manager"
-            stk.contains("shizuku") || stk.contains("binder") || stk.contains("aidl") -> "Shizuku / IPC"
+            stk.contains("accu") || stk.contains("binder") || stk.contains("aidl") -> "ACCU / IPC"
             stk.contains("automation") || stk.contains("keymapper") -> "Automation / Key Mapper"
             stk.contains("customization") || stk.contains("colorblendr") || stk.contains("darq") -> "Customization"
             stk.contains("network") || stk.contains("tiles") -> "Network / Tiles"
@@ -142,19 +142,19 @@ object CrashAnalyzer {
             type.endsWith("OutOfMemoryError") ->
                 "1. Profile heap with Android Studio Memory Profiler. 2. Recycle Bitmaps after use. 3. Replace large in-memory lists with paging. 4. Enable largeHeap in AndroidManifest only as a last resort."
             type.endsWith("SecurityException") ->
-                "1. Open Settings → Permission Center and grant the required permission. 2. For WRITE_SECURE_SETTINGS / adb-level permissions, ensure Shizuku is running. 3. Declare the permission in AndroidManifest."
+                "1. Open Settings → Permission Center and grant the required permission. 2. For WRITE_SECURE_SETTINGS / adb-level permissions, ensure ACCU is connected. 3. Declare the permission in AndroidManifest."
             type.endsWith("DeadObjectException") || (stk.contains("binder") && type.contains("Remote")) ->
-                "1. Wrap IPC calls in try/catch(RemoteException). 2. Check Shizuku connection state before calling. 3. Use AccuClient's connection callback to re-bind when service dies."
+                "1. Wrap IPC calls in try/catch(RemoteException). 2. Check ACCU connection state before calling. 3. Use AccuClient's connection callback to re-bind when service dies."
             type.endsWith("StackOverflowError") ->
                 "1. Add a base case to the recursive function. 2. Convert recursion to an iterative loop. 3. Increase stack size only as a last resort."
             type.endsWith("NetworkOnMainThreadException") ->
                 "1. Wrap the call in withContext(Dispatchers.IO) { }. 2. Use a Repository pattern that runs on IO dispatcher."
-            module.contains("Shizuku") ->
-                "1. Ensure Shizuku service is running (Settings → Shizuku Center). 2. Re-bind to the ACCU service after app resumes. 3. Handle RemoteException around all AIDL calls."
+            module.contains("ACCU / IPC") ->
+                "1. Ensure ACCU is connected (Settings → ACCU Center). 2. Re-bind to the ACCU service after app resumes. 3. Handle RemoteException around all AIDL calls."
             module.contains("Audio") ->
                 "1. Verify JamesDSP service is running. 2. Check that the audio session ID is valid before applying effects."
             module.contains("App Manager") ->
-                "1. Ensure INSTALL_PACKAGES / DELETE_PACKAGES permissions are granted via Shizuku. 2. Check that the target package still exists before operating on it."
+                "1. Ensure INSTALL_PACKAGES / DELETE_PACKAGES permissions are granted via ACCU. 2. Check that the target package still exists before operating on it."
             else ->
                 "1. Check the full stack trace for the root cause. 2. Wrap the failing call in try/catch. 3. Use Safe Mode (Restart → Safe Mode) to disable experimental modules and isolate the issue."
         }
