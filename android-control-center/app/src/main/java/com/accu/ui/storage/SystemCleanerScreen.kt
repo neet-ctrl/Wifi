@@ -15,6 +15,14 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+enum class CleanSchedule(val label: String, val description: String) {
+    NEVER("Never", "Manual cleaning only"),
+    DAILY("Daily", "Auto-clean at midnight every day"),
+    WEEKLY("Weekly", "Auto-clean every Sunday at midnight"),
+    ON_CHARGE("On Charge", "Auto-clean when device starts charging"),
+    ON_BOOT("On Boot", "Auto-clean after every device restart"),
+}
+
 data class JunkCategory(
     val id: String,
     val name: String,
@@ -44,6 +52,11 @@ fun SystemCleanerScreen(onBack: () -> Unit) {
     var isScanning by remember { mutableStateOf(false) }
     var isCleaning by remember { mutableStateOf(false) }
     var scanProgress by remember { mutableStateOf(0f) }
+    var cleanSchedule by remember { mutableStateOf(CleanSchedule.NEVER) }
+    var showScheduleSheet by remember { mutableStateOf(false) }
+    var showWhitelistDialog by remember { mutableStateOf(false) }
+    val whitelist = remember { mutableStateListOf<String>() }
+    var newWhitelistEntry by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
 
@@ -57,6 +70,10 @@ fun SystemCleanerScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = { Text("System Cleaner") },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) } },
+                actions = {
+                    IconButton(onClick = { showWhitelistDialog = true }) { Icon(Icons.Default.PlaylistRemove, "Whitelist") }
+                    IconButton(onClick = { showScheduleSheet = true }) { Icon(Icons.Default.Schedule, "Schedule") }
+                },
             )
         }
     ) { padding ->
@@ -114,6 +131,32 @@ fun SystemCleanerScreen(onBack: () -> Unit) {
                 }
             }
 
+            // Schedule info row
+            if (cleanSchedule != CleanSchedule.NEVER) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(Icons.Default.Schedule, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.secondary)
+                    Text("Auto-clean: ${cleanSchedule.label}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = { showScheduleSheet = true }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("Change", style = MaterialTheme.typography.labelSmall) }
+                }
+            }
+            if (whitelist.isNotEmpty()) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(Icons.Default.PlaylistRemove, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.tertiary)
+                    Text("${whitelist.size} path(s) whitelisted", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = { showWhitelistDialog = true }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("Manage", style = MaterialTheme.typography.labelSmall) }
+                }
+            }
+
             Text("Junk Categories", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
 
             LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -132,6 +175,76 @@ fun SystemCleanerScreen(onBack: () -> Unit) {
                 }
             }
         }
+    }
+
+    // Schedule bottom sheet
+    if (showScheduleSheet) {
+        ModalBottomSheet(onDismissRequest = { showScheduleSheet = false }) {
+            Column(Modifier.padding(16.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Auto-Clean Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("ACCU will automatically clean selected categories on this schedule using WorkManager.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(4.dp))
+                CleanSchedule.entries.forEach { sched ->
+                    Card(
+                        Modifier.fillMaxWidth(),
+                        onClick = { cleanSchedule = sched; showScheduleSheet = false },
+                        colors = CardDefaults.cardColors(containerColor = if (cleanSchedule == sched) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer),
+                    ) {
+                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = cleanSchedule == sched, onClick = { cleanSchedule = sched; showScheduleSheet = false })
+                            Spacer(Modifier.width(8.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(sched.label, fontWeight = FontWeight.SemiBold)
+                                Text(sched.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+
+    // Whitelist dialog
+    if (showWhitelistDialog) {
+        AlertDialog(
+            onDismissRequest = { showWhitelistDialog = false },
+            icon = { Icon(Icons.Default.PlaylistRemove, null) },
+            title = { Text("Path Whitelist") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Paths listed here will never be cleaned, even if they match a junk category.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = newWhitelistEntry,
+                            onValueChange = { newWhitelistEntry = it },
+                            placeholder = { Text("/sdcard/important/", style = MaterialTheme.typography.bodySmall) },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                        )
+                        IconButton(onClick = {
+                            if (newWhitelistEntry.isNotBlank() && newWhitelistEntry !in whitelist) {
+                                whitelist.add(newWhitelistEntry.trim())
+                                newWhitelistEntry = ""
+                            }
+                        }) { Icon(Icons.Default.Add, null) }
+                    }
+                    if (whitelist.isEmpty()) {
+                        Text("No whitelisted paths — all categories cleaned.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                    } else {
+                        whitelist.toList().forEach { path ->
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.FolderOpen, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(6.dp))
+                                Text(path, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                                IconButton(onClick = { whitelist.remove(path) }, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { Button(onClick = { showWhitelistDialog = false }) { Text("Done") } },
+        )
     }
 }
 

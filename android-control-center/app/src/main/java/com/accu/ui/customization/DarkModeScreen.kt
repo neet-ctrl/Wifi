@@ -50,6 +50,13 @@ data class DarkModeState(
     val scheduleStart: String = "20:00",
     val scheduleEnd: String = "07:00",
     val snackbarMessage: String? = null,
+    // Xposed-specific
+    val aggressiveForceDark: Boolean = false,
+    val fixStatusBarInversion: Boolean = false,
+    val oxygenOsForceDark: Boolean = false,
+    // Developer options
+    val showDebugInfo: Boolean = false,
+    val useMonetColors: Boolean = false,
 )
 data class DarkModeApp(val packageName: String, val appName: String, val forceDark: Boolean = false, val isSystemApp: Boolean = false)
 
@@ -116,6 +123,23 @@ class DarkModeViewModel @Inject constructor(
     fun importSettings() { _state.update { it.copy(snackbarMessage = "Import not yet connected to file picker") } }
     fun onSearch(q: String) { _state.update { it.copy(searchQuery = q) } }
     fun clearSnackbar() { _state.update { it.copy(snackbarMessage = null) } }
+    fun toggleAggressiveForceDark() {
+        viewModelScope.launch {
+            val v = !_state.value.aggressiveForceDark
+            shizukuUtils.execShizuku("settings put global aggressive_force_dark ${if (v) "1" else "0"}")
+            _state.update { it.copy(aggressiveForceDark = v, snackbarMessage = if (v) "Aggressive force dark enabled" else "Aggressive force dark disabled") }
+        }
+    }
+    fun toggleFixStatusBarInversion() { _state.update { it.copy(fixStatusBarInversion = !it.fixStatusBarInversion, snackbarMessage = "Requires Xposed module reload") } }
+    fun toggleOxygenOsForceDark() {
+        viewModelScope.launch {
+            val v = !_state.value.oxygenOsForceDark
+            shizukuUtils.execShizuku("settings put global op_force_dark ${if (v) "1" else "0"}")
+            _state.update { it.copy(oxygenOsForceDark = v, snackbarMessage = if (v) "OxygenOS force dark on" else "OxygenOS force dark off") }
+        }
+    }
+    fun toggleShowDebugInfo() { _state.update { it.copy(showDebugInfo = !it.showDebugInfo) } }
+    fun toggleUseMonetColors() { _state.update { it.copy(useMonetColors = !it.useMonetColors) } }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -177,6 +201,75 @@ fun DarkModeScreen(
                             Text("Better compatibility on some devices", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(0.7f))
                         }
                         Switch(checked = state.sendAppCloses, onCheckedChange = { viewModel.toggleSendAppCloses() })
+                    }
+                }
+            }
+
+            // ── Xposed / Advanced settings ────────────────────────────────────
+            var showXposedSection by remember { mutableStateOf(false) }
+            Card(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                onClick = { showXposedSection = !showXposedSection },
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            ) {
+                Column {
+                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Extension, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Xposed / Advanced Settings", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                            Text("Aggressive force dark, status bar fix, OxygenOS", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Icon(if (showXposedSection) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
+                    }
+                    androidx.compose.animation.AnimatedVisibility(showXposedSection) {
+                        Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                            HorizontalDivider()
+                            Spacer(Modifier.height(6.dp))
+                            // Aggressive force dark
+                            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("Aggressive Force Dark", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                                    Text("More aggressive HWUI force-dark pass (may cause glitches)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(checked = state.aggressiveForceDark, onCheckedChange = { viewModel.toggleAggressiveForceDark() })
+                            }
+                            HorizontalDivider()
+                            // Fix status bar inversion
+                            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("Fix Status Bar Inversion", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                                    Text("Prevents icons from inverting in status bar (Xposed module)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(checked = state.fixStatusBarInversion, onCheckedChange = { viewModel.toggleFixStatusBarInversion() })
+                            }
+                            HorizontalDivider()
+                            // OxygenOS
+                            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("OxygenOS Force Dark", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                                    Text("OnePlus/OxygenOS specific force dark flag (op_force_dark)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(checked = state.oxygenOsForceDark, onCheckedChange = { viewModel.toggleOxygenOsForceDark() })
+                            }
+                            HorizontalDivider()
+                            // Developer options
+                            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("Monet / Material You Colors", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                                    Text("Apply dynamic color scheme to force-dark overlays", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(checked = state.useMonetColors, onCheckedChange = { viewModel.toggleUseMonetColors() })
+                            }
+                            HorizontalDivider()
+                            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("Show Debug Info", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                                    Text("Display force-dark status overlay on each app", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(checked = state.showDebugInfo, onCheckedChange = { viewModel.toggleShowDebugInfo() })
+                            }
+                        }
                     }
                 }
             }

@@ -109,6 +109,8 @@ import com.accu.ui.filemanager.FilePropertiesScreen
 import com.accu.ui.filemanager.TextEditorScreen
 // aShellYou
 import com.accu.ui.shell.CommandExamplesScreen
+import com.accu.ui.shell.AdbFileBrowserScreen
+import com.accu.ui.shell.AdbConnectionMode
 // Shizuku
 import com.accu.ui.shizuku.AdbPairingScreen
 import com.accu.ui.shizuku.ShizukuAppsScreen
@@ -180,6 +182,14 @@ fun AppNavigation() {
                 ShellScreen(
                     onNavigateToScripts = { navController.navigate(Screen.ScriptEditor.route) },
                     onNavigateToCommandExamples = { navController.navigate(Screen.CommandExamples.route) },
+                    onNavigateToFileBrowser = { mode, addr ->
+                        val route = when (mode) {
+                            AdbConnectionMode.WIFI  -> Screen.AdbFileBrowser.wifi(addr)
+                            AdbConnectionMode.OTG   -> Screen.AdbFileBrowser.otg(addr)
+                            AdbConnectionMode.LOCAL -> Screen.AdbFileBrowser.local()
+                        }
+                        navController.navigate(route)
+                    },
                 )
             }
             composable(Screen.AppManager.route) {
@@ -666,6 +676,23 @@ fun AppNavigation() {
                         navController.previousBackStackEntry?.savedStateHandle?.set("selected_command", cmd)
                         navController.popBackStack()
                     },
+                )
+            }
+
+            // aShellYou — ADB File Browser
+            composable(Screen.AdbFileBrowser.route) { back ->
+                val modeStr = back.arguments?.getString("connectionMode") ?: "local"
+                val addr = back.arguments?.getString("deviceAddress")
+                    ?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: ""
+                val connMode = when (modeStr) {
+                    "wifi" -> AdbConnectionMode.WIFI
+                    "otg"  -> AdbConnectionMode.OTG
+                    else   -> AdbConnectionMode.LOCAL
+                }
+                AdbFileBrowserScreen(
+                    connectionMode = connMode,
+                    deviceAddress = addr,
+                    onBack = { navController.popBackStack() },
                 )
             }
 

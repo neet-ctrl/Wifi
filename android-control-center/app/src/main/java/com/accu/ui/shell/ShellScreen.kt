@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.accu.ui.components.InfoTooltipIcon
+import androidx.compose.foundation.lazy.LazyRow
 
 enum class ShellMode(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     LOCAL("Local ADB", Icons.Outlined.PhoneAndroid),
@@ -40,11 +41,18 @@ enum class ShellMode(val label: String, val icon: androidx.compose.ui.graphics.v
     OTG("OTG ADB", Icons.Outlined.Usb)
 }
 
+fun ShellMode.toConnectionMode(): AdbConnectionMode = when (this) {
+    ShellMode.WIFI  -> AdbConnectionMode.WIFI
+    ShellMode.OTG   -> AdbConnectionMode.OTG
+    ShellMode.LOCAL -> AdbConnectionMode.LOCAL
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShellScreen(
     onNavigateToScripts: () -> Unit = {},
     onNavigateToCommandExamples: () -> Unit = {},
+    onNavigateToFileBrowser: (AdbConnectionMode, String) -> Unit = { _, _ -> },
     viewModel: ShellViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -61,6 +69,7 @@ fun ShellScreen(
     var showExamples by remember { mutableStateOf(false) }
     var showAiAnalysis by remember { mutableStateOf(false) }
     var showWifiConnect by remember { mutableStateOf(false) }
+    var showOtgWaitingDialog by remember { mutableStateOf(false) }
     var wifiHost by remember { mutableStateOf("") }
     var wifiPort by remember { mutableStateOf("5555") }
     var showSaveDialog by remember { mutableStateOf(false) }
@@ -119,6 +128,7 @@ fun ShellScreen(
                             onClick = {
                                 currentMode = mode
                                 if (mode == ShellMode.WIFI && !uiState.isWifiConnected) showWifiConnect = true
+                                if (mode == ShellMode.OTG) showOtgWaitingDialog = true
                             },
                             text = { Text(mode.label, style = MaterialTheme.typography.labelSmall) },
                             icon = { Icon(mode.icon, mode.label, modifier = Modifier.size(16.dp)) }
@@ -140,6 +150,11 @@ fun ShellScreen(
                                 color = if (uiState.isWifiConnected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
                             )
                             Row {
+                                if (uiState.isWifiConnected) {
+                                    IconButton(onClick = { onNavigateToFileBrowser(ShellMode.WIFI.toConnectionMode(), uiState.connectedHost) }, modifier = Modifier.size(32.dp)) {
+                                        Icon(Icons.Outlined.FolderOpen, "Browse files", modifier = Modifier.size(18.dp))
+                                    }
+                                }
                                 TextButton(onClick = { showWifiConnect = true }, contentPadding = PaddingValues(4.dp)) {
                                     Text(if (uiState.isWifiConnected) "Change" else "Connect", style = MaterialTheme.typography.labelSmall)
                                 }
@@ -434,6 +449,26 @@ fun ShellScreen(
                 }) { Text("Connect") }
             },
             dismissButton = { TextButton(onClick = { showWifiConnect = false }) { Text("Cancel") } }
+        )
+    }
+
+    // OTG waiting dialog
+    if (showOtgWaitingDialog) {
+        AlertDialog(
+            onDismissRequest = { showOtgWaitingDialog = false },
+            icon = { Icon(Icons.Outlined.Usb, null) },
+            title = { Text("Waiting for OTG Device") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Connect an Android device via USB OTG cable to begin ADB session.", style = MaterialTheme.typography.bodySmall)
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text("Make sure USB debugging is enabled on the target device.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showOtgWaitingDialog = false }) { Text("Start Scan") }
+            },
+            dismissButton = { TextButton(onClick = { showOtgWaitingDialog = false }) { Text("Cancel") } }
         )
     }
 

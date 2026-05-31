@@ -51,6 +51,14 @@ data class FreezeSchedule(
     val isEnabled: Boolean = true,
 )
 
+enum class FreezeWorkingMode(val label: String, val subtitle: String) {
+    SHIZUKU_SUSPEND("Shizuku — Suspend", "pm suspend (app appears greyed out, no background)"),
+    SHIZUKU_DISABLE("Shizuku — Disable", "pm disable-user (app hidden from launcher)"),
+    SHIZUKU_HIDE("Shizuku — Hide", "pm hide (requires device admin or deeper privs)"),
+    ROOT_PM("Root — pm disable", "Root pm disable/enable (permanent disable)"),
+    DEVICE_OWNER("Device Owner", "DPM setPackagesSuspended (MDM method)"),
+}
+
 enum class FreezeAction(val label: String, val icon: ImageVector, val color: Color) {
     FREEZE("Freeze Apps",        Icons.Default.AcUnit,      Color(0xFF1E88E5)),
     UNFREEZE("Unfreeze Apps",    Icons.Default.Whatshot,    Color(0xFFFF8F00)),
@@ -74,6 +82,10 @@ data class FreezeSchedulerState(
     val selectedSchedule: FreezeSchedule? = null,
     val showEditor: Boolean = false,
     val snackbarMessage: String? = null,
+    val workingMode: FreezeWorkingMode = FreezeWorkingMode.SHIZUKU_SUSPEND,
+    val skipForegroundApp: Boolean = true,
+    val grayscaleIcons: Boolean = false,
+    val showWorkingModeSheet: Boolean = false,
 )
 
 fun defaultSchedules() = listOf(
@@ -185,6 +197,11 @@ class FreezeSchedulerViewModel @Inject constructor(
 
     fun closeEditor() = _state.update { it.copy(showEditor = false, selectedSchedule = null) }
     fun clearSnackbar() = _state.update { it.copy(snackbarMessage = null) }
+    fun setWorkingMode(mode: FreezeWorkingMode) = _state.update { it.copy(workingMode = mode, showWorkingModeSheet = false, snackbarMessage = "Working mode: ${mode.label}") }
+    fun toggleSkipForeground() = _state.update { it.copy(skipForegroundApp = !it.skipForegroundApp) }
+    fun toggleGrayscaleIcons() = _state.update { it.copy(grayscaleIcons = !it.grayscaleIcons) }
+    fun openWorkingModeSheet() = _state.update { it.copy(showWorkingModeSheet = true) }
+    fun closeWorkingModeSheet() = _state.update { it.copy(showWorkingModeSheet = false) }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -250,6 +267,50 @@ fun FreezeSchedulerScreen(
                 }
             }
 
+            // Working mode card
+            item {
+                Card(
+                    Modifier.fillMaxWidth(),
+                    onClick = viewModel::openWorkingModeSheet,
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Build, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("Working Mode", fontWeight = FontWeight.SemiBold)
+                                Text(state.workingMode.label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                Text(state.workingMode.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Icon(Icons.Default.ChevronRight, null)
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        HorizontalDivider()
+                        Spacer(Modifier.height(8.dp))
+                        // Skip foreground & grayscale toggles
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Visibility, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("Skip foreground app", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                                Text("Never freeze the currently active app", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(checked = state.skipForegroundApp, onCheckedChange = { viewModel.toggleSkipForeground() }, modifier = Modifier.height(24.dp))
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Tonality, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("Grayscale frozen app icons", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                                Text("Show greyed-out icons for suspended apps", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(checked = state.grayscaleIcons, onCheckedChange = { viewModel.toggleGrayscaleIcons() }, modifier = Modifier.height(24.dp))
+                        }
+                    }
+                }
+            }
+
             // Schedules
             items(state.schedules, key = { it.id }) { schedule ->
                 FreezeScheduleCard(
@@ -271,6 +332,35 @@ fun FreezeSchedulerScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // Working mode bottom sheet
+    if (state.showWorkingModeSheet) {
+        ModalBottomSheet(onDismissRequest = viewModel::closeWorkingModeSheet) {
+            Column(Modifier.padding(16.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Freeze Working Mode", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Choose how ACCU freezes apps. Each method has different privilege requirements and behavior.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(8.dp))
+                FreezeWorkingMode.entries.forEach { mode ->
+                    Card(
+                        Modifier.fillMaxWidth(),
+                        onClick = { viewModel.setWorkingMode(mode) },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (state.workingMode == mode) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                        ),
+                    ) {
+                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            RadioButton(selected = state.workingMode == mode, onClick = { viewModel.setWorkingMode(mode) })
+                            Column(Modifier.weight(1f)) {
+                                Text(mode.label, fontWeight = FontWeight.SemiBold)
+                                Text(mode.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
             }
         }
     }

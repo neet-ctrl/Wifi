@@ -167,6 +167,12 @@ sealed class Screen(val route: String) {
 
     // aShellYou
     data object CommandExamples     : Screen("command_examples")
+    data object AdbFileBrowser      : Screen("adb_file_browser/{connectionMode}/{deviceAddress}") {
+        fun withArgs(mode: String, address: String) = "adb_file_browser/$mode/${java.net.URLEncoder.encode(address, "UTF-8")}"
+        fun wifi(address: String) = withArgs("wifi", address)
+        fun otg(address: String) = withArgs("otg", address)
+        fun local() = withArgs("local", "localhost")
+    }
 
     // SmartSpacer
     data object SmartSpacerComplications : Screen("smartspacer_complications")

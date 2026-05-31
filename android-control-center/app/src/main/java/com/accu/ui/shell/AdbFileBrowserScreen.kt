@@ -1,0 +1,578 @@
+package com.accu.ui.shell
+
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.accu.ui.components.ACCTopBar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+enum class AdbConnectionMode(val label: String) { WIFI("Wi-Fi ADB"), OTG("OTG ADB"), LOCAL("Local") }
+enum class FileOp { COPY, MOVE }
+
+data class RemoteFileItem(
+    val name: String,
+    val path: String,
+    val isDir: Boolean,
+    val size: String = "",
+    val permissions: String = "",
+    val modifiedDate: String = "",
+    val isSymlink: Boolean = false,
+)
+
+private fun fileIcon(item: RemoteFileItem) = when {
+    item.isDir -> Icons.Default.Folder
+    item.name.endsWith(".apk") -> Icons.Default.Android
+    item.name.endsWith(".zip") || item.name.endsWith(".tar") || item.name.endsWith(".gz") -> Icons.Default.Archive
+    item.name.endsWith(".mp4") || item.name.endsWith(".mkv") || item.name.endsWith(".avi") -> Icons.Default.VideoFile
+    item.name.endsWith(".mp3") || item.name.endsWith(".ogg") || item.name.endsWith(".flac") -> Icons.Default.AudioFile
+    item.name.endsWith(".png") || item.name.endsWith(".jpg") || item.name.endsWith(".webp") -> Icons.Default.Image
+    item.name.endsWith(".txt") || item.name.endsWith(".log") || item.name.endsWith(".xml") -> Icons.Default.Description
+    else -> Icons.Default.InsertDriveFile
+}
+
+private fun fileIconTint(item: RemoteFileItem): Color? = null
+
+private val SAMPLE_ROOT_FILES = listOf(
+    RemoteFileItem("sdcard", "/sdcard", true, "", "drwxrwx---", "2024-01-01"),
+    RemoteFileItem("data", "/data", true, "", "drwxrwx--x", "2024-01-01"),
+    RemoteFileItem("system", "/system", true, "", "dr-xr-xr-x", "2024-01-01"),
+    RemoteFileItem("storage", "/storage", true, "", "drwxr-xr-x", "2024-01-01"),
+    RemoteFileItem("proc", "/proc", true, "", "dr-xr-xr-x", "2024-01-01"),
+    RemoteFileItem("sys", "/sys", true, "", "drwxr-xr-x", "2024-01-01"),
+    RemoteFileItem("dev", "/dev", true, "", "drwxr-xr-x", "2024-01-01"),
+    RemoteFileItem("vendor", "/vendor", true, "", "dr-xr-xr-x", "2024-01-01"),
+)
+
+private val SAMPLE_SDCARD_FILES = listOf(
+    RemoteFileItem("Android", "/sdcard/Android", true, "", "drwxrwx---", "2024-06-01"),
+    RemoteFileItem("DCIM", "/sdcard/DCIM", true, "", "drwxrwx---", "2024-06-01"),
+    RemoteFileItem("Download", "/sdcard/Download", true, "", "drwxrwx---", "2024-06-01"),
+    RemoteFileItem("Music", "/sdcard/Music", true, "", "drwxrwx---", "2024-06-01"),
+    RemoteFileItem("Pictures", "/sdcard/Pictures", true, "", "drwxrwx---", "2024-06-01"),
+    RemoteFileItem("Documents", "/sdcard/Documents", true, "", "drwxrwx---", "2024-06-01"),
+    RemoteFileItem("Movies", "/sdcard/Movies", true, "", "drwxrwx---", "2024-06-01"),
+    RemoteFileItem("Ringtones", "/sdcard/Ringtones", true, "", "drwxrwx---", "2024-06-01"),
+    RemoteFileItem("screenshot.png", "/sdcard/screenshot.png", false, "245 KB", "-rw-rw-r--", "2024-05-28"),
+    RemoteFileItem("recording.mp4", "/sdcard/recording.mp4", false, "12.3 MB", "-rw-rw-r--", "2024-05-27"),
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdbFileBrowserScreen(
+    connectionMode: AdbConnectionMode = AdbConnectionMode.WIFI,
+    deviceAddress: String = "",
+    onBack: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val clipboardManager = LocalClipboardManager.current
+
+    var currentPath by remember { mutableStateOf("/") }
+    var pathStack by remember { mutableStateOf(listOf("/")) }
+    var files by remember { mutableStateOf(SAMPLE_ROOT_FILES) }
+    var isLoading by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var showSearch by remember { mutableStateOf(false) }
+    var selectedFiles by remember { mutableStateOf(setOf<String>()) }
+    var isSelectionMode by remember { mutableStateOf(false) }
+    var clipboardFile by remember { mutableStateOf<RemoteFileItem?>(null) }
+    var clipboardOp by remember { mutableStateOf<FileOp?>(null) }
+    var sortBy by remember { mutableStateOf("Name") }
+    var showSortMenu by remember { mutableStateOf(false) }
+    var showHidden by remember { mutableStateOf(false) }
+    var viewMode by remember { mutableStateOf("list") }
+
+    // Dialogs
+    var showCreateFolderDialog by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf<RemoteFileItem?>(null) }
+    var showDeleteDialog by remember { mutableStateOf<List<RemoteFileItem>>(emptyList()) }
+    var showInfoDialog by remember { mutableStateOf<RemoteFileItem?>(null) }
+    var showConflictDialog by remember { mutableStateOf(false) }
+    var newFolderName by remember { mutableStateOf("") }
+    var renameText by remember { mutableStateOf("") }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    fun loadPath(path: String) {
+        scope.launch {
+            isLoading = true
+            delay(300)
+            files = when {
+                path == "/" -> SAMPLE_ROOT_FILES
+                path.startsWith("/sdcard") && path.split("/").size <= 2 -> SAMPLE_SDCARD_FILES
+                else -> listOf(
+                    RemoteFileItem("subfolder_1", "$path/subfolder_1", true, "", "drwxr-xr-x", "2024-05-01"),
+                    RemoteFileItem("subfolder_2", "$path/subfolder_2", true, "", "drwxr-xr-x", "2024-05-02"),
+                    RemoteFileItem("file_a.txt", "$path/file_a.txt", false, "2.1 KB", "-rw-r--r--", "2024-05-10"),
+                    RemoteFileItem("file_b.log", "$path/file_b.log", false, "45.7 KB", "-rw-r--r--", "2024-05-11"),
+                    RemoteFileItem("data.bin", "$path/data.bin", false, "128 KB", "-rw-r-----", "2024-04-30"),
+                )
+            }
+            isLoading = false
+        }
+    }
+
+    LaunchedEffect(Unit) { loadPath(currentPath) }
+
+    fun navigateTo(path: String) {
+        pathStack = pathStack + path
+        currentPath = path
+        loadPath(path)
+        selectedFiles = emptySet()
+        isSelectionMode = false
+    }
+
+    fun navigateUp() {
+        if (pathStack.size > 1) {
+            val newStack = pathStack.dropLast(1)
+            pathStack = newStack
+            currentPath = newStack.last()
+            loadPath(currentPath)
+        } else {
+            onBack()
+        }
+        selectedFiles = emptySet()
+        isSelectionMode = false
+    }
+
+    val filteredFiles = remember(files, searchQuery, showHidden, sortBy) {
+        files.filter { f ->
+            (showHidden || !f.name.startsWith(".")) &&
+            (searchQuery.isBlank() || f.name.contains(searchQuery, ignoreCase = true))
+        }.let { list ->
+            when (sortBy) {
+                "Name" -> list.sortedWith(compareByDescending<RemoteFileItem> { it.isDir }.thenBy { it.name.lowercase() })
+                "Size" -> list.sortedWith(compareByDescending<RemoteFileItem> { it.isDir }.thenBy { it.size })
+                "Date" -> list.sortedWith(compareByDescending<RemoteFileItem> { it.isDir }.thenByDescending { it.modifiedDate })
+                "Type" -> list.sortedWith(compareByDescending<RemoteFileItem> { it.isDir }.thenBy { it.name.substringAfterLast(".") })
+                else -> list
+            }
+        }
+    }
+
+    val uploadLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            scope.launch {
+                snackbarHostState.showSnackbar("Uploading file to $currentPath…")
+            }
+        }
+    }
+
+    // Create Folder Dialog
+    if (showCreateFolderDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateFolderDialog = false; newFolderName = "" },
+            icon = { Icon(Icons.Default.CreateNewFolder, null) },
+            title = { Text("New Folder") },
+            text = {
+                OutlinedTextField(
+                    newFolderName, { newFolderName = it },
+                    label = { Text("Folder name") },
+                    modifier = Modifier.fillMaxWidth(), singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (newFolderName.isNotBlank()) {
+                        val newPath = "$currentPath/$newFolderName"
+                        files = listOf(RemoteFileItem(newFolderName, newPath, true, "", "drwxr-xr-x", "now")) + files
+                        scope.launch { snackbarHostState.showSnackbar("Folder \"$newFolderName\" created") }
+                        newFolderName = ""
+                        showCreateFolderDialog = false
+                    }
+                }) { Text("Create") }
+            },
+            dismissButton = { TextButton(onClick = { showCreateFolderDialog = false; newFolderName = "" }) { Text("Cancel") } }
+        )
+    }
+
+    // Rename Dialog
+    showRenameDialog?.let { fileToRename ->
+        LaunchedEffect(fileToRename) { renameText = fileToRename.name }
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = null; renameText = "" },
+            icon = { Icon(Icons.Default.DriveFileRenameOutline, null) },
+            title = { Text("Rename") },
+            text = {
+                OutlinedTextField(
+                    renameText, { renameText = it },
+                    label = { Text("New name") },
+                    modifier = Modifier.fillMaxWidth(), singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (renameText.isNotBlank() && renameText != fileToRename.name) {
+                        files = files.map { f ->
+                            if (f.path == fileToRename.path) f.copy(name = renameText, path = "$currentPath/$renameText") else f
+                        }
+                        scope.launch { snackbarHostState.showSnackbar("Renamed to \"$renameText\"") }
+                    }
+                    showRenameDialog = null; renameText = ""
+                }) { Text("Rename") }
+            },
+            dismissButton = { TextButton(onClick = { showRenameDialog = null; renameText = "" }) { Text("Cancel") } }
+        )
+    }
+
+    // Delete Dialog
+    if (showDeleteDialog.isNotEmpty()) {
+        val targets = showDeleteDialog
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = emptyList() },
+            icon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text(if (targets.size == 1) "Delete \"${targets[0].name}\"?" else "Delete ${targets.size} items?") },
+            text = { Text("This action cannot be undone. The ${if (targets.size == 1) "item" else "items"} will be permanently deleted.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val deletedPaths = targets.map { it.path }.toSet()
+                    files = files.filter { it.path !in deletedPaths }
+                    selectedFiles = selectedFiles - deletedPaths
+                    if (selectedFiles.isEmpty()) isSelectionMode = false
+                    scope.launch { snackbarHostState.showSnackbar("Deleted ${targets.size} item(s)") }
+                    showDeleteDialog = emptyList()
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { showDeleteDialog = emptyList() }) { Text("Cancel") } }
+        )
+    }
+
+    // File Info Dialog
+    showInfoDialog?.let { f ->
+        AlertDialog(
+            onDismissRequest = { showInfoDialog = null },
+            icon = { Icon(if (f.isDir) Icons.Default.Folder else Icons.Default.InsertDriveFile, null) },
+            title = { Text(f.name, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    InfoRow("Path", f.path)
+                    InfoRow("Type", if (f.isDir) "Directory" else "File")
+                    if (f.size.isNotBlank()) InfoRow("Size", f.size)
+                    if (f.permissions.isNotBlank()) InfoRow("Permissions", f.permissions)
+                    if (f.modifiedDate.isNotBlank()) InfoRow("Modified", f.modifiedDate)
+                    if (f.isSymlink) InfoRow("Type", "Symbolic link")
+                }
+            },
+            confirmButton = {
+                Row {
+                    TextButton(onClick = { clipboardManager.setText(AnnotatedString(f.path)); showInfoDialog = null }) { Text("Copy path") }
+                    TextButton(onClick = { showInfoDialog = null }) { Text("Close") }
+                }
+            }
+        )
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            if (isSelectionMode) {
+                TopAppBar(
+                    title = { Text("${selectedFiles.size} selected") },
+                    navigationIcon = {
+                        IconButton(onClick = { isSelectionMode = false; selectedFiles = emptySet() }) {
+                            Icon(Icons.Default.Close, "Cancel selection")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            val sel = files.filter { it.path in selectedFiles }
+                            clipboardFile = sel.firstOrNull(); clipboardOp = FileOp.COPY
+                            scope.launch { snackbarHostState.showSnackbar("${sel.size} item(s) copied to clipboard") }
+                        }) { Icon(Icons.Default.ContentCopy, "Copy") }
+                        IconButton(onClick = {
+                            val sel = files.filter { it.path in selectedFiles }
+                            clipboardFile = sel.firstOrNull(); clipboardOp = FileOp.MOVE
+                            scope.launch { snackbarHostState.showSnackbar("${sel.size} item(s) cut to clipboard") }
+                        }) { Icon(Icons.Default.ContentCut, "Cut") }
+                        IconButton(onClick = {
+                            showDeleteDialog = files.filter { it.path in selectedFiles }
+                        }) { Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error) }
+                        IconButton(onClick = {
+                            selectedFiles = filteredFiles.map { it.path }.toSet()
+                        }) { Icon(Icons.Default.SelectAll, "Select all") }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                )
+            } else {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(connectionMode.label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            if (deviceAddress.isNotBlank()) Text(deviceAddress, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    },
+                    navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") } },
+                    actions = {
+                        IconButton(onClick = { showSearch = !showSearch; if (!showSearch) searchQuery = "" }) {
+                            Icon(if (showSearch) Icons.Default.SearchOff else Icons.Default.Search, "Search")
+                        }
+                        Box {
+                            IconButton(onClick = { showSortMenu = true }) { Icon(Icons.Default.Sort, "Sort") }
+                            DropdownMenu(showSortMenu, { showSortMenu = false }) {
+                                listOf("Name", "Size", "Date", "Type").forEach { s ->
+                                    DropdownMenuItem(
+                                        text = { Text(s) },
+                                        leadingIcon = { if (sortBy == s) Icon(Icons.Default.Check, null) },
+                                        onClick = { sortBy = s; showSortMenu = false }
+                                    )
+                                }
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = { Text("Show hidden files") },
+                                    leadingIcon = { if (showHidden) Icon(Icons.Default.Check, null) },
+                                    onClick = { showHidden = !showHidden; showSortMenu = false }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(if (viewMode == "list") "Grid view" else "List view") },
+                                    leadingIcon = { Icon(if (viewMode == "list") Icons.Default.GridView else Icons.Default.ViewList, null) },
+                                    onClick = { viewMode = if (viewMode == "list") "grid" else "list"; showSortMenu = false }
+                                )
+                            }
+                        }
+                        IconButton(onClick = { isRefreshing = true; scope.launch { delay(600); loadPath(currentPath); isRefreshing = false } }) {
+                            if (isRefreshing) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            else Icon(Icons.Default.Refresh, "Refresh")
+                        }
+                    }
+                )
+            }
+        },
+        floatingActionButton = {
+            if (!isSelectionMode) {
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SmallFloatingActionButton(onClick = { uploadLauncher.launch("*/*") }) {
+                        Icon(Icons.Default.Upload, "Upload file")
+                    }
+                    if (clipboardFile != null && clipboardOp != null) {
+                        SmallFloatingActionButton(onClick = {
+                            val op = if (clipboardOp == FileOp.COPY) "Copied" else "Moved"
+                            scope.launch { snackbarHostState.showSnackbar("$op \"${clipboardFile?.name}\" to $currentPath") }
+                            if (clipboardOp == FileOp.MOVE) { clipboardFile = null; clipboardOp = null }
+                        }) { Icon(Icons.Default.ContentPaste, "Paste") }
+                    }
+                    FloatingActionButton(onClick = { showCreateFolderDialog = true; newFolderName = "" }) {
+                        Icon(Icons.Default.CreateNewFolder, "New folder")
+                    }
+                }
+            }
+        }
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            // Path breadcrumbs
+            PathBreadcrumbs(
+                pathStack = pathStack,
+                onNavigateTo = { path ->
+                    val idx = pathStack.indexOf(path)
+                    if (idx >= 0) {
+                        pathStack = pathStack.take(idx + 1)
+                        currentPath = path
+                        loadPath(path)
+                    }
+                }
+            )
+
+            // Search bar
+            AnimatedVisibility(visible = showSearch) {
+                OutlinedTextField(
+                    searchQuery, { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                    placeholder = { Text("Search in ${currentPath.substringAfterLast('/')}…") },
+                    leadingIcon = { Icon(Icons.Default.Search, null, modifier = Modifier.size(18.dp)) },
+                    trailingIcon = { if (searchQuery.isNotEmpty()) IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Default.Clear, null, modifier = Modifier.size(16.dp)) } },
+                    singleLine = true, shape = RoundedCornerShape(12.dp)
+                )
+            }
+
+            // Clipboard banner
+            AnimatedVisibility(visible = clipboardFile != null) {
+                Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(if (clipboardOp == FileOp.COPY) Icons.Default.ContentCopy else Icons.Default.ContentCut, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("${if (clipboardOp == FileOp.COPY) "Copy" else "Cut"}: ${clipboardFile?.name}", fontSize = 12.sp, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        TextButton(onClick = { clipboardFile = null; clipboardOp = null }, contentPadding = PaddingValues(4.dp)) { Text("Clear", fontSize = 11.sp) }
+                    }
+                }
+            }
+
+            // File count
+            if (!isLoading) {
+                Text(
+                    "${filteredFiles.size} item(s)${if (searchQuery.isNotEmpty()) " matching \"$searchQuery\"" else ""}",
+                    fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                )
+            }
+
+            // Loading indicator
+            if (isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (filteredFiles.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.FolderOff, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(if (searchQuery.isNotEmpty()) "No files match \"$searchQuery\"" else "Empty directory", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            } else {
+                LazyColumn(contentPadding = PaddingValues(bottom = 100.dp)) {
+                    items(filteredFiles, key = { it.path }) { file ->
+                        FileListItem(
+                            file = file,
+                            isSelected = file.path in selectedFiles,
+                            isSelectionMode = isSelectionMode,
+                            onLongClick = {
+                                isSelectionMode = true
+                                selectedFiles = selectedFiles + file.path
+                            },
+                            onClick = {
+                                if (isSelectionMode) {
+                                    selectedFiles = if (file.path in selectedFiles) selectedFiles - file.path else selectedFiles + file.path
+                                    if (selectedFiles.isEmpty()) isSelectionMode = false
+                                } else if (file.isDir) {
+                                    navigateTo(file.path)
+                                }
+                            },
+                            onCopy = { clipboardFile = file; clipboardOp = FileOp.COPY; scope.launch { snackbarHostState.showSnackbar("\"${file.name}\" copied to clipboard") } },
+                            onCut = { clipboardFile = file; clipboardOp = FileOp.MOVE; scope.launch { snackbarHostState.showSnackbar("\"${file.name}\" cut to clipboard") } },
+                            onRename = { showRenameDialog = file; renameText = file.name },
+                            onDelete = { showDeleteDialog = listOf(file) },
+                            onInfo = { showInfoDialog = file },
+                            onDownload = { scope.launch { snackbarHostState.showSnackbar("Downloading \"${file.name}\"…") } },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun FileListItem(
+    file: RemoteFileItem,
+    isSelected: Boolean,
+    isSelectionMode: Boolean,
+    onLongClick: () -> Unit,
+    onClick: () -> Unit,
+    onCopy: () -> Unit,
+    onCut: () -> Unit,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
+    onInfo: () -> Unit,
+    onDownload: () -> Unit,
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(onLongClick = onLongClick, onClick = onClick),
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else Color.Transparent
+    ) {
+        Row(
+            Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (isSelectionMode) {
+                Checkbox(checked = isSelected, onCheckedChange = { onClick() }, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(8.dp))
+            }
+            Icon(
+                fileIcon(file), null,
+                modifier = Modifier.size(36.dp),
+                tint = if (file.isDir) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(file.name, fontWeight = if (file.isDir) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (file.size.isNotBlank()) Text(file.size, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (file.permissions.isNotBlank()) Text(file.permissions, fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (file.modifiedDate.isNotBlank()) Text(file.modifiedDate, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Box {
+                IconButton(onClick = { showMenu = true }, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.MoreVert, null, modifier = Modifier.size(18.dp))
+                }
+                DropdownMenu(showMenu, { showMenu = false }) {
+                    DropdownMenuItem(text = { Text("Copy") }, leadingIcon = { Icon(Icons.Default.ContentCopy, null) }, onClick = { showMenu = false; onCopy() })
+                    DropdownMenuItem(text = { Text("Cut") }, leadingIcon = { Icon(Icons.Default.ContentCut, null) }, onClick = { showMenu = false; onCut() })
+                    DropdownMenuItem(text = { Text("Rename") }, leadingIcon = { Icon(Icons.Default.DriveFileRenameOutline, null) }, onClick = { showMenu = false; onRename() })
+                    if (!file.isDir) DropdownMenuItem(text = { Text("Download") }, leadingIcon = { Icon(Icons.Default.Download, null) }, onClick = { showMenu = false; onDownload() })
+                    DropdownMenuItem(text = { Text("Properties") }, leadingIcon = { Icon(Icons.Default.Info, null) }, onClick = { showMenu = false; onInfo() })
+                    HorizontalDivider()
+                    DropdownMenuItem(text = { Text("Delete", color = MaterialTheme.colorScheme.error) }, leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }, onClick = { showMenu = false; onDelete() })
+                }
+            }
+        }
+    }
+    HorizontalDivider(thickness = 0.5.dp)
+}
+
+@Composable
+private fun PathBreadcrumbs(pathStack: List<String>, onNavigateTo: (String) -> Unit) {
+    val scrollState = rememberScrollState()
+    LaunchedEffect(pathStack) { scrollState.animateScrollTo(scrollState.maxValue) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .horizontalScroll(scrollState)
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        pathStack.forEachIndexed { index, path ->
+            val label = if (index == 0) "/" else path.substringAfterLast("/")
+            val isLast = index == pathStack.size - 1
+            Text(
+                label,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = if (isLast) FontWeight.Bold else FontWeight.Normal,
+                color = if (isLast) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable(enabled = !isLast) { onNavigateTo(path) }
+            )
+            if (!isLast) {
+                Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(Modifier.fillMaxWidth()) {
+        Text("$label:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(100.dp))
+        Text(value, fontSize = 12.sp, fontFamily = if (label == "Path" || label == "Permissions") FontFamily.Monospace else FontFamily.Default, modifier = Modifier.weight(1f))
+    }
+}

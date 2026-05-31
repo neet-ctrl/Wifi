@@ -11,6 +11,21 @@ import androidx.compose.ui.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+enum class AudioSource(val label: String, val description: String) {
+    MICROPHONE("Microphone", "Standard mic input — most compatible, stereo"),
+    CALL_STREAM("Call Stream", "Direct audio stream — clearest quality (root/Shizuku)"),
+    BOTH("Both Sources", "Mic + call stream merged — maximum coverage"),
+    VOICE_CALL("Voice Call", "Android VoiceCall source — legacy support"),
+}
+
+enum class AudioEncoding(val label: String, val ext: String, val description: String) {
+    AAC("AAC / M4A", "m4a", "Balanced — small file, great quality (recommended)"),
+    MP3("MP3", "mp3", "Universal — works on all devices and players"),
+    WAV("WAV / PCM", "wav", "Lossless — largest size, perfect quality"),
+    OPUS("Opus / OGG", "ogg", "Best compression — modern codecs only"),
+    AMR("AMR-WB", "amr", "Legacy — lowest size, reduced quality"),
+}
+
 enum class RecordingDirection(val label: String, val description: String) {
     BOTH("Both Directions", "Record both incoming and outgoing calls"),
     INCOMING_ONLY("Incoming Only", "Only record calls you receive"),
@@ -29,6 +44,10 @@ enum class FilenameFormat(val label: String, val template: String, val example: 
 @Composable
 fun CallRecordingSettingsScreen(onBack: () -> Unit) {
     var direction by remember { mutableStateOf(RecordingDirection.BOTH) }
+    var audioSource by remember { mutableStateOf(AudioSource.MICROPHONE) }
+    var encoding by remember { mutableStateOf(AudioEncoding.AAC) }
+    var bitrate by remember { mutableStateOf(128) } // kbps
+    var sampleRate by remember { mutableStateOf(44100) }
     var filenameFormat by remember { mutableStateOf(FilenameFormat.DATE_NUMBER) }
     var customTemplate by remember { mutableStateOf("{date}_{number}_{direction}") }
     var saveLocation by remember { mutableStateOf("/sdcard/Recordings/ACC") }
@@ -51,6 +70,67 @@ fun CallRecordingSettingsScreen(onBack: () -> Unit) {
             contentPadding = padding + PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            item {
+                SectionTitle("Audio Source")
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    AudioSource.entries.forEach { src ->
+                        Card(
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(containerColor = if (audioSource == src) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer),
+                            onClick = { audioSource = src },
+                        ) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(selected = audioSource == src, onClick = { audioSource = src })
+                                Spacer(Modifier.width(8.dp))
+                                Column {
+                                    Text(src.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                    Text(src.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                SectionTitle("Audio Encoding")
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    AudioEncoding.entries.forEach { enc ->
+                        Card(
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(containerColor = if (encoding == enc) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer),
+                            onClick = { encoding = enc },
+                        ) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(selected = encoding == enc, onClick = { encoding = enc })
+                                Spacer(Modifier.width(8.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(enc.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                    Text(enc.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Surface(shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.tertiaryContainer) {
+                                    Text(".${enc.ext}", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                                }
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Card(shape = RoundedCornerShape(12.dp)) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Bitrate & Quality", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                        Text("Bitrate: ${bitrate} kbps", style = MaterialTheme.typography.bodySmall)
+                        Slider(value = bitrate.toFloat(), onValueChange = { bitrate = it.toInt() }, valueRange = 32f..320f, steps = 8)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("Sample rate:", style = MaterialTheme.typography.bodySmall)
+                            listOf(8000, 16000, 44100, 48000).forEach { rate ->
+                                FilterChip(selected = sampleRate == rate, onClick = { sampleRate = rate }, label = { Text("${rate / 1000}kHz") }, modifier = Modifier.height(28.dp))
+                            }
+                        }
+                    }
+                }
+            }
+
             item {
                 SectionTitle("Recording Direction")
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

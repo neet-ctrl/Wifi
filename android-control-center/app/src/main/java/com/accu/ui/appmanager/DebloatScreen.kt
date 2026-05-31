@@ -2,6 +2,7 @@ package com.accu.ui.appmanager
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
@@ -46,12 +47,27 @@ fun DebloatScreen(
         )
     }
 
+    // Safety level model
+    data class SafetyLevel(val label: String, val color: androidx.compose.ui.graphics.Color, val description: String)
+    val safetyLevels = remember {
+        listOf(
+            SafetyLevel("Recommended", androidx.compose.ui.graphics.Color(0xFF43A047), "Safe to remove without breaking core functionality"),
+            SafetyLevel("Advanced", androidx.compose.ui.graphics.Color(0xFFFB8C00), "May affect some features, removable with care"),
+            SafetyLevel("Expert", androidx.compose.ui.graphics.Color(0xFFE53935), "Risky — only for experienced users"),
+            SafetyLevel("Unsafe", androidx.compose.ui.graphics.Color(0xFF880E4F), "Critical system components — very likely to break device"),
+        )
+    }
+    var selectedSafety by remember { mutableStateOf<String?>(null) }
+    var showSafetyInfo by remember { mutableStateOf(false) }
+    var pendingUninstallPkg by remember { mutableStateOf<String?>(null) }
+
     Scaffold(
         topBar = {
             ACCTopBar(
                 title = "Debloat",
                 onBack = onBack,
                 actions = {
+                    IconButton(onClick = { showSafetyInfo = true }) { Icon(Icons.Default.Info, "Safety Info") }
                     if (state.selectedApps.isNotEmpty()) {
                         IconButton(onClick = { viewModel.batchUninstall() }) { Icon(Icons.Default.Delete, "Remove Selected") }
                     }
@@ -75,12 +91,29 @@ fun DebloatScreen(
                 }
             }
 
+            // Safety level filter chips
+            LazyRow(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(safetyLevels) { level ->
+                    FilterChip(
+                        selected = selectedSafety == level.label,
+                        onClick = { selectedSafety = if (selectedSafety == level.label) null else level.label },
+                        label = { Text(level.label) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = level.color.copy(0.15f),
+                            selectedLabelColor = level.color,
+                            selectedLeadingIconColor = level.color,
+                        ),
+                        leadingIcon = if (selectedSafety == level.label) {{ Icon(Icons.Default.Check, null, Modifier.size(14.dp)) }} else null,
+                    )
+                }
+            }
+
             // Search
             var searchQuery by remember { mutableStateOf("") }
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it; viewModel.onSearchChange(it) },
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
                 label = { Text("Search system apps…") },
                 leadingIcon = { Icon(Icons.Default.Search, null) },
                 singleLine = true,
@@ -110,7 +143,7 @@ fun DebloatScreen(
                     }
 
                 Text(
-                    "${systemApps.size} system apps",
+                    "${systemApps.size} system apps${if (selectedSafety != null) " · ${selectedSafety!!} filter" else ""}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -118,15 +151,16 @@ fun DebloatScreen(
 
                 LazyColumn(Modifier.weight(1f)) {
                     items(systemApps, key = { it.packageName }) { app ->
+                        val isBloat = bloatCategories.values.flatten().contains(app.packageName)
                         DebloatAppItem(
                             app = app,
                             isSelected = app.packageName in state.selectedApps,
                             isMultiSelect = state.isMultiSelect,
-                            isBloat = bloatCategories.values.flatten().contains(app.packageName),
+                            isBloat = isBloat,
                             onClick = {
                                 if (state.isMultiSelect) viewModel.toggleAppSelection(app.packageName)
                             },
-                            onRemove = { viewModel.uninstallForUser(app.packageName) },
+                            onRemove = { pendingUninstallPkg = app.packageName },
                             onFreeze = { viewModel.freezeApp(app.packageName) },
                         )
                         HorizontalDivider()
@@ -134,6 +168,65 @@ fun DebloatScreen(
                 }
             }
         }
+    }
+
+    // Uninstall confirmation dialog
+    if (pendingUninstallPkg != null) {
+        val pkg = pendingUninstallPkg!!
+        AlertDialog(
+            onDismissRequest = { pendingUninstallPkg = null },
+            icon = { Icon(Icons.Default.Delete, null) },
+            title = { Text("Remove System App?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Are you sure you want to remove:", style = MaterialTheme.typography.bodySmall)
+                    Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.errorContainer) {
+                        Text(pkg, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = MaterialTheme.colorScheme.error)
+                    }
+                    Text(
+                        "This will uninstall the app for the current user (--user 0). The app may be restored on factory reset.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.errorContainer.copy(0.5f)) {
+                        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Warning, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
+                            Spacer(Modifier.width(8.dp))
+                            Text("This action cannot be easily undone. Removing system apps may cause instability.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.uninstallForUser(pkg); pendingUninstallPkg = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                ) { Text("Remove") }
+            },
+            dismissButton = { TextButton(onClick = { pendingUninstallPkg = null }) { Text("Cancel") } },
+        )
+    }
+
+    // Safety levels info dialog
+    if (showSafetyInfo) {
+        AlertDialog(
+            onDismissRequest = { showSafetyInfo = false },
+            title = { Text("Safety Level Badges") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("ACCU uses safety levels from the Universal Android Debloater community database to categorize system apps:", style = MaterialTheme.typography.bodySmall)
+                    safetyLevels.forEach { level ->
+                        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp), color = level.color.copy(0.15f)) {
+                                Text(level.label, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = level.color, fontWeight = FontWeight.Bold)
+                            }
+                            Text(level.description, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            },
+            confirmButton = { Button(onClick = { showSafetyInfo = false }) { Text("Got it") } },
+        )
     }
 }
 

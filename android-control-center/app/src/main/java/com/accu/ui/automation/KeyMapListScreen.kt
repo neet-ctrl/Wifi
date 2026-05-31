@@ -4,8 +4,8 @@ import android.content.Intent
 import androidx.compose.animation.*
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -57,11 +57,24 @@ fun KeyMapListScreen(
     val isSelecting = selectedIds.isNotEmpty()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var showSortSheet by remember { mutableStateOf(false) }
+    var sortBy by remember { mutableStateOf("trigger") } // trigger | enabled | error
+    var sortAsc by remember { mutableStateOf(true) }
+    var showExportDialog by remember { mutableStateOf(false) }
+    var showBugReportDialog by remember { mutableStateOf(false) }
 
-    val filtered = keyMaps.filter {
-        searchQuery.isBlank() || it.trigger.contains(searchQuery, ignoreCase = true) ||
-        it.actions.any { a -> a.contains(searchQuery, ignoreCase = true) }
-    }
+    val filtered = keyMaps
+        .filter {
+            searchQuery.isBlank() || it.trigger.contains(searchQuery, ignoreCase = true) ||
+            it.actions.any { a -> a.contains(searchQuery, ignoreCase = true) }
+        }
+        .let { list ->
+            when (sortBy) {
+                "enabled" -> if (sortAsc) list.sortedByDescending { it.isEnabled } else list.sortedBy { it.isEnabled }
+                "error" -> list.sortedByDescending { it.hasError }
+                else -> if (sortAsc) list.sortedBy { it.trigger } else list.sortedByDescending { it.trigger }
+            }
+        }
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -104,8 +117,18 @@ fun KeyMapListScreen(
                     title = "Key Maps",
                     onBack = onBack,
                     actions = {
+                        IconButton(onClick = { showSortSheet = true }) { Icon(Icons.Default.Sort, "Sort") }
                         IconButton(onClick = onNavigateToLog) { Icon(Icons.Default.List, "Event log") }
                         IconButton(onClick = onNavigateToSettings) { Icon(Icons.Default.Settings, "Settings") }
+                        var showMenu by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { showMenu = true }) { Icon(Icons.Default.MoreVert, null) }
+                            DropdownMenu(showMenu, { showMenu = false }) {
+                                DropdownMenuItem(text = { Text("Export all key maps") }, leadingIcon = { Icon(Icons.Default.IosShare, null) }, onClick = { showExportDialog = true; showMenu = false })
+                                DropdownMenuItem(text = { Text("Import key maps") }, leadingIcon = { Icon(Icons.Default.FileOpen, null) }, onClick = { showMenu = false })
+                                DropdownMenuItem(text = { Text("Report a bug") }, leadingIcon = { Icon(Icons.Default.BugReport, null) }, onClick = { showBugReportDialog = true; showMenu = false })
+                            }
+                        }
                     }
                 )
             }
@@ -194,6 +217,21 @@ fun KeyMapListScreen(
                                     onCheckedChange = { keyMaps = keyMaps.map { m -> if (m.id == km.id) m.copy(isEnabled = it) else m } },
                                     modifier = Modifier.scale(0.8f)
                                 )
+                                if (!isSelecting) {
+                                    var showKmMenu by remember { mutableStateOf(false) }
+                                    Box {
+                                        IconButton(onClick = { showKmMenu = true }, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.MoreVert, null, Modifier.size(16.dp)) }
+                                        DropdownMenu(showKmMenu, { showKmMenu = false }) {
+                                            DropdownMenuItem(text = { Text("Duplicate") }, leadingIcon = { Icon(Icons.Default.ContentCopy, null) }, onClick = {
+                                                val dup = km.copy(id = "${km.id}_dup_${System.currentTimeMillis()}", trigger = "${km.trigger} (copy)")
+                                                keyMaps = keyMaps + dup
+                                                showKmMenu = false
+                                            })
+                                            DropdownMenuItem(text = { Text("Edit") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { onNavigateToEdit(km.id); showKmMenu = false })
+                                            DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }, onClick = { keyMaps = keyMaps.filter { it.id != km.id }; showKmMenu = false })
+                                        }
+                                    }
+                                }
                             }
                             if (km.constraints.isNotEmpty()) {
                                 Spacer(Modifier.height(4.dp))
@@ -217,6 +255,85 @@ fun KeyMapListScreen(
             }
         }
     }
-}
+
+    // Sort bottom sheet
+    if (showSortSheet) {
+        androidx.compose.material3.ModalBottomSheet(onDismissRequest = { showSortSheet = false }) {
+            Column(Modifier.padding(16.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("Sort Key Maps", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Sort by", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = sortBy == "trigger", onClick = { sortBy = "trigger" }, label = { Text("Trigger") })
+                    FilterChip(selected = sortBy == "enabled", onClick = { sortBy = "enabled" }, label = { Text("Status") })
+                    FilterChip(selected = sortBy == "error", onClick = { sortBy = "error" }, label = { Text("Errors first") })
+                }
+                Text("Order", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = sortAsc, onClick = { sortAsc = true }, label = { Text("Ascending") })
+                    FilterChip(selected = !sortAsc, onClick = { sortAsc = false }, label = { Text("Descending") })
+                }
+                Button(onClick = { showSortSheet = false }, Modifier.fillMaxWidth()) { Text("Apply") }
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+
+    // Export dialog
+    if (showExportDialog) {
+        AlertDialog(
+            onDismissRequest = { showExportDialog = false },
+            icon = { Icon(Icons.Default.IosShare, null) },
+            title = { Text("Export Key Maps") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("All ${keyMaps.size} key maps will be exported as a JSON file to your Downloads folder.", style = MaterialTheme.typography.bodySmall)
+                    Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+                        Text("/sdcard/Download/keymapper_export.json", modifier = Modifier.padding(10.dp), style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                    }
+                }
+            },
+            confirmButton = { Button(onClick = { showExportDialog = false }) { Text("Export") } },
+            dismissButton = { TextButton(onClick = { showExportDialog = false }) { Text("Cancel") } },
+        )
+    }
+
+    // Bug report dialog
+    if (showBugReportDialog) {
+        var bugDescription by remember { mutableStateOf("") }
+        var includeLog by remember { mutableStateOf(true) }
+        AlertDialog(
+            onDismissRequest = { showBugReportDialog = false },
+            icon = { Icon(Icons.Default.BugReport, null) },
+            title = { Text("Report a Bug") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = bugDescription,
+                        onValueChange = { bugDescription = it },
+                        label = { Text("Describe the issue") },
+                        modifier = Modifier.fillMaxWidth().height(120.dp),
+                        maxLines = 5,
+                    )
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Include key map log", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                            Text("Helps diagnose the problem", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(checked = includeLog, onCheckedChange = { includeLog = it })
+                    }
+                    Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Info, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.secondary)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Report will be opened on GitHub Issues", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        }
+                    }
+                }
+            },
+            confirmButton = { Button(onClick = { showBugReportDialog = false }, enabled = bugDescription.isNotBlank()) { Text("Submit") } },
+            dismissButton = { TextButton(onClick = { showBugReportDialog = false }) { Text("Cancel") } },
+        )
+    }
+} // end KeyMapListScreen
 
 private fun Modifier.scale(scale: Float) = this.then(Modifier)

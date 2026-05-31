@@ -5,7 +5,7 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.accu.ui.components.ACCTopBar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DSPControlsScreen(onBack: () -> Unit = {}) {
     var masterEnabled by remember { mutableStateOf(true) }
@@ -78,6 +79,12 @@ fun DSPControlsScreen(onBack: () -> Unit = {}) {
     // DDC (Digital Device Correction)
     var ddcEnabled by remember { mutableStateOf(false) }
 
+    // Device profiles
+    var selectedProfile by remember { mutableStateOf("Default") }
+    var showProfileDialog by remember { mutableStateOf(false) }
+    var profileName by remember { mutableStateOf("") }
+    val savedProfiles = remember { mutableStateListOf("Default", "Gaming", "Music", "Podcast") }
+
     Scaffold(
         topBar = {
             ACCTopBar(
@@ -91,6 +98,46 @@ fun DSPControlsScreen(onBack: () -> Unit = {}) {
         }
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp, bottom = 24.dp)) {
+
+            // ─── Device Profiles ──────────────────────────────────────────
+            item {
+                DSPSection("Device Profiles", Icons.Default.Devices, null, null) {
+                    Text(
+                        "Save and restore complete DSP configurations per device or use-case.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(savedProfiles) { profile ->
+                            FilterChip(
+                                selected = selectedProfile == profile,
+                                onClick = { selectedProfile = profile },
+                                label = { Text(profile) },
+                                leadingIcon = if (selectedProfile == profile) {{ Icon(Icons.Default.Check, null, Modifier.size(14.dp)) }} else null,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilledTonalButton(onClick = { profileName = ""; showProfileDialog = true }, Modifier.weight(1f)) {
+                            Icon(Icons.Default.Save, null, Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Save Profile", fontSize = 12.sp)
+                        }
+                        OutlinedButton(onClick = {}, Modifier.weight(1f)) {
+                            Icon(Icons.Default.IosShare, null, Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Export", fontSize = 12.sp)
+                        }
+                        OutlinedButton(onClick = {}, Modifier.weight(1f)) {
+                            Icon(Icons.Default.FileOpen, null, Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Import", fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
 
             // ─── Output Control ────────────────────────────────────────────
             item {
@@ -225,6 +272,40 @@ fun DSPControlsScreen(onBack: () -> Unit = {}) {
                 Spacer(Modifier.height(24.dp))
             }
         }
+    }
+
+    // Save profile dialog
+    if (showProfileDialog) {
+        AlertDialog(
+            onDismissRequest = { showProfileDialog = false },
+            icon = { Icon(Icons.Default.Save, null) },
+            title = { Text("Save Profile") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Save the current DSP settings as a named profile.", style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(
+                        value = profileName,
+                        onValueChange = { profileName = it },
+                        label = { Text("Profile name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (profileName.isNotBlank()) {
+                            if (!savedProfiles.contains(profileName)) savedProfiles.add(profileName)
+                            selectedProfile = profileName
+                        }
+                        showProfileDialog = false
+                    },
+                    enabled = profileName.isNotBlank(),
+                ) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { showProfileDialog = false }) { Text("Cancel") } },
+        )
     }
 }
 

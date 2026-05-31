@@ -23,6 +23,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.accu.data.db.dao.AppLanguageDao
 import com.accu.data.db.entities.AppLanguageEntity
+import androidx.compose.material3.LocalContentColor
 import com.accu.ui.components.ACCTopBar
 import com.accu.ui.components.EmptyState
 import com.accu.utils.ShizukuUtils
@@ -44,8 +45,10 @@ data class LangState(
     val snackbarMessage: String? = null,
     val showLocaleDialog: Boolean = false,
     val selectedApp: LangAppModel? = null,
+    val showSystemApps: Boolean = false,
+    val modifiedFirst: Boolean = false,
 )
-data class LangAppModel(val packageName: String, val appName: String, val currentLocale: String = "")
+data class LangAppModel(val packageName: String, val appName: String, val currentLocale: String = "", val isSystemApp: Boolean = false)
 
 @HiltViewModel
 class LanguageViewModel @Inject constructor(
@@ -67,8 +70,8 @@ class LanguageViewModel @Inject constructor(
             val pm = context.packageManager
             val apps = pm.getInstalledPackages(0).mapNotNull { pkg ->
                 val ai = pkg.applicationInfo ?: return@mapNotNull null
-                if (ai.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0) return@mapNotNull null
-                LangAppModel(pkg.packageName, pm.getApplicationLabel(ai).toString())
+                val isSystem = (ai.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0
+                LangAppModel(pkg.packageName, pm.getApplicationLabel(ai).toString(), isSystemApp = isSystem)
             }.sortedBy { it.appName }
             _state.update { it.copy(availableApps = apps, isLoading = false) }
         }
@@ -114,6 +117,8 @@ class LanguageViewModel @Inject constructor(
     fun selectApp(app: LangAppModel) { _state.update { it.copy(selectedApp = app, showLocaleDialog = true) } }
     fun dismissDialog() { _state.update { it.copy(showLocaleDialog = false, selectedApp = null) } }
     fun clearSnackbar() { _state.update { it.copy(snackbarMessage = null) } }
+    fun toggleShowSystemApps() { _state.update { it.copy(showSystemApps = !it.showSystemApps) } }
+    fun toggleModifiedFirst() { _state.update { it.copy(modifiedFirst = !it.modifiedFirst) } }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -155,10 +160,50 @@ fun LanguageCenterScreen(
     LaunchedEffect(state.snackbarMessage) { state.snackbarMessage?.let { snackbarHostState.showSnackbar(it); viewModel.clearSnackbar() } }
 
     Scaffold(
-        topBar = { ACCTopBar(title = "Language Center", onBack = onBack) },
+        topBar = {
+            ACCTopBar(
+                title = "Language Center",
+                onBack = onBack,
+                actions = {
+                    IconButton(onClick = viewModel::toggleShowSystemApps) {
+                        Icon(
+                            if (state.showSystemApps) Icons.Default.PhoneAndroid else Icons.Default.Apps,
+                            "Toggle System Apps",
+                            tint = if (state.showSystemApps) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                        )
+                    }
+                    IconButton(onClick = viewModel::toggleModifiedFirst) {
+                        Icon(
+                            Icons.Default.FilterList,
+                            "Modified First",
+                            tint = if (state.modifiedFirst) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                        )
+                    }
+                },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
+            // Toggles row
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = state.showSystemApps,
+                    onClick = viewModel::toggleShowSystemApps,
+                    label = { Text("System apps") },
+                    leadingIcon = { Icon(Icons.Default.PhoneAndroid, null, Modifier.size(14.dp)) },
+                )
+                FilterChip(
+                    selected = state.modifiedFirst,
+                    onClick = viewModel::toggleModifiedFirst,
+                    label = { Text("Modified first") },
+                    leadingIcon = { Icon(Icons.Default.FilterList, null, Modifier.size(14.dp)) },
+                )
+            }
+
             SearchBar(
                 query = state.searchQuery, onQueryChange = viewModel::onSearch,
                 onSearch = {}, active = false, onActiveChange = {},
@@ -181,7 +226,17 @@ fun LanguageCenterScreen(
                 }
             }
 
-            val filtered = state.availableApps.filter { it.appName.contains(state.searchQuery, true) || it.packageName.contains(state.searchQuery, true) }
+            val filtered = remember(state.availableApps, state.searchQuery, state.showSystemApps, state.modifiedFirst, state.appLanguages) {
+                state.availableApps
+                    .filter { if (!state.showSystemApps) !it.isSystemApp else true }
+                    .filter { it.appName.contains(state.searchQuery, true) || it.packageName.contains(state.searchQuery, true) }
+                    .let { list ->
+                        if (state.modifiedFirst) {
+                            val modifiedPkgs = state.appLanguages.map { it.packageName }.toSet()
+                            list.sortedByDescending { it.packageName in modifiedPkgs }
+                        } else list
+                    }
+            }
             if (filtered.isEmpty()) {
                 EmptyState(Icons.Default.Language, "No apps found", "Try a different search")
             } else {

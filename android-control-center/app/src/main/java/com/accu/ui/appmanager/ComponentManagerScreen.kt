@@ -55,13 +55,30 @@ fun ComponentManagerScreen(
     var showImportDialog by remember { mutableStateOf(false) }
     var showCloudDialog by remember { mutableStateOf(false) }
     var cloudUrl by remember { mutableStateOf("") }
+    var showSortSheet by remember { mutableStateOf(false) }
+    var sortBy by remember { mutableStateOf("name") }      // "name" | "package"
+    var sortAsc by remember { mutableStateOf(true) }
+    var priorityMode by remember { mutableStateOf("none") } // "none" | "disabled_first" | "enabled_first"
+    val selectedComponents = remember { mutableStateListOf<String>() }
+    var isSelectionMode by remember { mutableStateOf(false) }
 
     val types = listOf("all", "activity", "service", "receiver", "provider")
 
-    val filtered = remember(state.blockedComponents, selectedType, searchQuery) {
+    val filtered = remember(state.blockedComponents, selectedType, searchQuery, sortBy, sortAsc, priorityMode) {
         state.blockedComponents
             .let { if (selectedType == "all") it else it.filter { c -> c.componentType == selectedType } }
             .filter { c -> searchQuery.isEmpty() || c.componentName.contains(searchQuery, true) || c.packageName.contains(searchQuery, true) }
+            .let { list ->
+                val sorted = when (sortBy) {
+                    "package" -> if (sortAsc) list.sortedBy { it.packageName } else list.sortedByDescending { it.packageName }
+                    else      -> if (sortAsc) list.sortedBy { it.componentName.substringAfterLast('.') } else list.sortedByDescending { it.componentName.substringAfterLast('.') }
+                }
+                when (priorityMode) {
+                    "disabled_first" -> sorted.sortedBy { !it.isBlocked }
+                    "enabled_first"  -> sorted.sortedBy { it.isBlocked }
+                    else             -> sorted
+                }
+            }
     }
 
     LaunchedEffect(state.snackbarMessage) { state.snackbarMessage?.let { snackbar.showSnackbar(it); viewModel.clearSnackbar() } }
@@ -72,8 +89,23 @@ fun ComponentManagerScreen(
                 title = "Component Manager",
                 onBack = onBack,
                 actions = {
-                    IconButton(onClick = { showImportDialog = true }) { Icon(Icons.Default.FileOpen, "Import Rules") }
-                    IconButton(onClick = { viewModel.exportRules() }) { Icon(Icons.Default.IosShare, "Export Rules") }
+                    if (isSelectionMode) {
+                        IconButton(onClick = {
+                            val allKeys = filtered.map { "${it.packageName}/${it.componentName}" }
+                            if (selectedComponents.containsAll(allKeys)) selectedComponents.clear()
+                            else { selectedComponents.clear(); selectedComponents.addAll(allKeys) }
+                        }) { Icon(Icons.Default.SelectAll, "Select All") }
+                        IconButton(onClick = { selectedComponents.forEach { key ->
+                            val comp = filtered.firstOrNull { "${it.packageName}/${it.componentName}" == key }
+                            comp?.let { viewModel.enableComponent(it.packageName, it.componentName) }
+                        }; selectedComponents.clear(); isSelectionMode = false }) { Icon(Icons.Default.PlayArrow, "Enable All Selected", tint = androidx.compose.ui.graphics.Color(0xFF43A047)) }
+                        IconButton(onClick = { selectedComponents.clear(); isSelectionMode = false }) { Icon(Icons.Default.Close, "Cancel Selection") }
+                    } else {
+                        IconButton(onClick = { showSortSheet = true }) { Icon(Icons.Default.Sort, "Sort") }
+                        IconButton(onClick = { isSelectionMode = true }) { Icon(Icons.Default.Checklist, "Select") }
+                        IconButton(onClick = { showImportDialog = true }) { Icon(Icons.Default.FileOpen, "Import Rules") }
+                        IconButton(onClick = { viewModel.exportRules() }) { Icon(Icons.Default.IosShare, "Export Rules") }
+                    }
                     var showMenu by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { showMenu = true }) { Icon(Icons.Default.MoreVert, "More") }
@@ -146,13 +178,37 @@ fun ComponentManagerScreen(
             }
 
             // List
+            if (isSelectionMode && selectedComponents.isNotEmpty()) {
+                Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("${selectedComponents.size} selected", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        TextButton(onClick = {
+                            selectedComponents.forEach { key ->
+                                val comp = filtered.firstOrNull { "${it.packageName}/${it.componentName}" == key }
+                                comp?.let { viewModel.enableComponent(it.packageName, it.componentName) }
+                            }; selectedComponents.clear()
+                        }) { Text("Enable All", color = androidx.compose.ui.graphics.Color(0xFF43A047)) }
+                        TextButton(onClick = { selectedComponents.clear() }) { Text("Clear") }
+                    }
+                }
+            }
             if (filtered.isEmpty()) {
                 EmptyState(Icons.Default.CheckCircle, if (state.blockedComponents.isEmpty()) "No blocked components" else "No components match filter",
                     if (state.blockedComponents.isEmpty()) "Block app components from the App Detail screen" else "Try a different filter or search")
             } else {
                 LazyColumn(Modifier.weight(1f)) {
                     items(filtered, key = { "${it.packageName}/${it.componentName}" }) { comp ->
-                        BlockedComponentItem(comp = comp, onEnable = { viewModel.enableComponent(comp.packageName, comp.componentName) })
+                        val key = "${comp.packageName}/${comp.componentName}"
+                        val isSelected = key in selectedComponents
+                        BlockedComponentItem(
+                            comp = comp,
+                            isSelectionMode = isSelectionMode,
+                            isSelected = isSelected,
+                            onToggleSelect = {
+                                if (isSelected) selectedComponents.remove(key) else selectedComponents.add(key)
+                            },
+                            onEnable = { viewModel.enableComponent(comp.packageName, comp.componentName) },
+                        )
                         HorizontalDivider()
                     }
                 }
@@ -224,6 +280,33 @@ fun ComponentManagerScreen(
         )
     }
 
+    // Sort bottom sheet
+    if (showSortSheet) {
+        ModalBottomSheet(onDismissRequest = { showSortSheet = false }) {
+            Column(Modifier.padding(16.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("Sort Components", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Sort by", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = sortBy == "name", onClick = { sortBy = "name" }, label = { Text("Component Name") })
+                    FilterChip(selected = sortBy == "package", onClick = { sortBy = "package" }, label = { Text("Package Name") })
+                }
+                Text("Order", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = sortAsc, onClick = { sortAsc = true }, label = { Text("Ascending") }, leadingIcon = { Icon(Icons.Default.ArrowUpward, null, Modifier.size(14.dp)) })
+                    FilterChip(selected = !sortAsc, onClick = { sortAsc = false }, label = { Text("Descending") }, leadingIcon = { Icon(Icons.Default.ArrowDownward, null, Modifier.size(14.dp)) })
+                }
+                Text("Priority", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = priorityMode == "none", onClick = { priorityMode = "none" }, label = { Text("None") })
+                    FilterChip(selected = priorityMode == "disabled_first", onClick = { priorityMode = "disabled_first" }, label = { Text("Blocked first") })
+                    FilterChip(selected = priorityMode == "enabled_first", onClick = { priorityMode = "enabled_first" }, label = { Text("Enabled first") })
+                }
+                Button(onClick = { showSortSheet = false }, Modifier.fillMaxWidth()) { Text("Apply") }
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+
     // Cloud rules dialog
     if (showCloudDialog) {
         AlertDialog(
@@ -250,12 +333,25 @@ fun ComponentManagerScreen(
 }
 
 @Composable
-private fun BlockedComponentItem(comp: BlockedComponentEntity, onEnable: () -> Unit) {
+private fun BlockedComponentItem(
+    comp: BlockedComponentEntity,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onToggleSelect: () -> Unit = {},
+    onEnable: () -> Unit,
+) {
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     var expanded by remember { mutableStateOf(false) }
-    Column {
+    Column(
+        modifier = if (isSelectionMode) Modifier.clickable { onToggleSelect() } else Modifier,
+    ) {
         ListItem(
             headlineContent = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (isSelectionMode) {
+                        Checkbox(checked = isSelected, onCheckedChange = { onToggleSelect() }, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                    }
                     Text(comp.componentName.substringAfterLast('.'), maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                     if (comp.isTracker) {
                         Spacer(Modifier.width(4.dp))
@@ -291,6 +387,9 @@ private fun BlockedComponentItem(comp: BlockedComponentEntity, onEnable: () -> U
                     Spacer(Modifier.width(4.dp))
                     IconButton(onClick = onEnable, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.Default.PlayArrow, "Unblock", Modifier.size(16.dp), tint = AccentGreen)
+                    }
+                    IconButton(onClick = { clipboard.setText(androidx.compose.ui.text.AnnotatedString(comp.componentName)) }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Outlined.ContentCopy, "Copy full name", Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(32.dp)) {
                         Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, Modifier.size(16.dp))
