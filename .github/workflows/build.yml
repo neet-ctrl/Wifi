@@ -1,7 +1,7 @@
 # ╔══════════════════════════════════════════════════════════════╗
 # ║  Android Control Center Ultimate — Workspace Root Trigger   ║
 # ║  Push the ENTIRE workspace → workflow fires automatically.  ║
-# ║  DEBUG APK ONLY — NO SIGNED / RELEASE BUILD.                ║
+# ║  Builds DEBUG APK and publishes a GitHub pre-release.        ║
 # ╚══════════════════════════════════════════════════════════════╝
 name: "🔧 Build Debug APK (Workspace Root)"
 
@@ -24,6 +24,9 @@ on:
         required: false
         default: 'false'
         type: boolean
+
+permissions:
+  contents: write
 
 env:
   JAVA_VERSION: '17'
@@ -85,7 +88,7 @@ jobs:
       - name: "🔨 Build DEBUG APK"
         working-directory: android-control-center
         run: |
-          echo "Building DEBUG only — no signed APK, no release APK"
+          echo "Building DEBUG APK"
           ./gradlew assembleDebug \
             --no-daemon \
             --stacktrace \
@@ -103,7 +106,65 @@ jobs:
           echo ""
           echo "Build #${{ github.run_number }} · Branch: ${{ github.ref_name }} · Commit: ${{ github.sha }}"
 
-      - name: "📤 Upload Debug APK"
+      - name: "📦 Locate APKs"
+        id: apk
+        working-directory: android-control-center
+        run: |
+          APK_FILES=$(find app/build/outputs/apk/debug -name "*.apk" | sort)
+          echo "Found APKs:"
+          echo "$APK_FILES" | xargs ls -lh
+          PRIMARY=$(echo "$APK_FILES" | grep -i "universal" | head -1)
+          [ -z "$PRIMARY" ] && PRIMARY=$(echo "$APK_FILES" | head -1)
+          echo "primary=$PRIMARY" >> "$GITHUB_OUTPUT"
+
+      - name: "📊 APK size"
+        id: apk_info
+        run: |
+          SIZE_MB=$(stat -c%s "${{ steps.apk.outputs.primary }}" | awk '{printf "%.2f", $1/1048576}')
+          echo "size=${SIZE_MB} MB" >> "$GITHUB_OUTPUT"
+
+      - name: "📝 Generate release notes"
+        id: notes
+        working-directory: android-control-center
+        run: |
+          DATE=$(date +'%B %d, %Y')
+          VERSION=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts || echo "1.0.0")
+          BODY="## ACCU v${VERSION}-debug — Build ${{ github.run_number }}
+
+          **Date:** ${DATE}
+          **Branch:** \`${{ github.ref_name }}\`
+          **Commit:** \`${{ github.sha }}\`
+
+          > ⚠️ **Debug build** — not optimised, contains debug symbols, applicationId suffix \`.debug\`. For testing only.
+
+          ### Package Details
+          | Field | Value |
+          |---|---|
+          | Version | \`${VERSION}-debug\` |
+          | Build # | \`${{ github.run_number }}\` |
+          | Build type | Debug (unsigned / debug key) |
+          | APK size | ${{ steps.apk_info.outputs.size }} |
+          | Min Android | 10 (API 29) |
+          | Triggered by | ${{ github.actor }} |
+
+          ### ABI variants attached
+          | File | Architecture |
+          |---|---|
+          | \`*-arm64-v8a-debug.apk\` | Most modern phones |
+          | \`*-armeabi-v7a-debug.apk\` | Older 32-bit ARM |
+          | \`*-x86_64-debug.apk\` | Emulators / Intel |
+          | \`*-universal-debug.apk\` | All architectures (largest) |
+
+          ### Installation
+          1. Download the APK for your device architecture
+          2. Enable **Install unknown apps** for your file manager
+          3. Install alongside the release build (different app ID: \`com.accu.controlcenter.debug\`)"
+
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$BODY" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: "📤 Upload Debug APK as workflow artifact"
         uses: actions/upload-artifact@v4
         with:
           name: "ACCU-debug-build${{ github.run_number }}"
@@ -119,16 +180,33 @@ jobs:
           path: android-control-center/app/build/reports/
           retention-days: 7
 
+      - name: "🚀 Create GitHub Pre-Release"
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}-debug
+          name: "ACCU Debug Build ${{ github.run_number }}"
+          body: ${{ steps.notes.outputs.body }}
+          files: android-control-center/app/build/outputs/apk/debug/*.apk
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: "📋 Build Summary"
         run: |
-          echo "## ✅ ACCU Debug APK Built" >> $GITHUB_STEP_SUMMARY
+          VERSION=$(grep -oP 'versionName\s*=\s*"\K[^"]+' android-control-center/app/build.gradle.kts || echo "1.0.0")
+          echo "## ✅ ACCU Debug APK Built & Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${VERSION}-debug\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Build # | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Triggered by | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| APK Artifact | ACCU-debug-build${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| APK Size | ${{ steps.apk_info.outputs.size }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Release Tag | v${{ github.run_number }}-debug |" >> $GITHUB_STEP_SUMMARY
 
   lint:
     name: "🔍 Lint Check (non-blocking)"

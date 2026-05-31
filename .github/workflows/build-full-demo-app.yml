@@ -2,7 +2,7 @@
 # ║  ACCU SDK FullDemoApp — Workspace Root Trigger                           ║
 # ║  Push the ENTIRE workspace from `cd /workspace` → this fires.           ║
 # ║  Mirrors the pattern from .github/workflows/build.yml (main ACCU app).  ║
-# ║  DEBUG APK ONLY — no signed / release build.                             ║
+# ║  Builds DEBUG APK and publishes a GitHub pre-release.                    ║
 # ╚══════════════════════════════════════════════════════════════════════════╝
 name: "🧪 Build FullDemoApp Debug APK"
 
@@ -25,6 +25,9 @@ on:
         required: false
         default: 'false'
         type: boolean
+
+permissions:
+  contents: write
 
 env:
   JAVA_VERSION:  '17'
@@ -108,7 +111,60 @@ jobs:
           echo "APK size: $(du -sh $APK | cut -f1)"
           echo "Build #${{ github.run_number }} · Branch: ${{ github.ref_name }} · Commit: ${{ github.sha }}"
 
-      - name: "📤 Upload Debug APK"
+      - name: "📦 Locate APK"
+        id: apk
+        working-directory: ${{ env.DEMO_DIR }}
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -1)
+          echo "Found APK: $APK_PATH"
+          echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$APK_PATH")" >> "$GITHUB_OUTPUT"
+
+      - name: "📊 APK size"
+        id: apk_info
+        working-directory: ${{ env.DEMO_DIR }}
+        run: |
+          SIZE_MB=$(stat -c%s "${{ steps.apk.outputs.path }}" | awk '{printf "%.2f", $1/1048576}')
+          echo "size=${SIZE_MB} MB" >> "$GITHUB_OUTPUT"
+
+      - name: "📝 Generate release notes"
+        id: notes
+        working-directory: ${{ env.DEMO_DIR }}
+        run: |
+          DATE=$(date +'%B %d, %Y')
+          VERSION=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts || echo "1.0.0")
+          BODY="## FullDemoApp v${VERSION}-debug — Build ${{ github.run_number }}
+
+          **Date:** ${DATE}
+          **Branch:** \`${{ github.ref_name }}\`
+          **Commit:** \`${{ github.sha }}\`
+
+          > ⚠️ **Debug build** — not optimised, contains debug symbols. For testing only.
+
+          ### Package Details
+          | Field | Value |
+          |---|---|
+          | App ID | \`com.accu.sdkdemo\` |
+          | Version | \`${VERSION}-debug\` |
+          | Build # | \`${{ github.run_number }}\` |
+          | Build type | Debug (unsigned / debug key) |
+          | APK size | ${{ steps.apk_info.outputs.size }} |
+          | Min Android | 10 (API 29) |
+          | Triggered by | ${{ github.actor }} |
+
+          ### Screens included (14 total)
+          Dashboard · Connection Diagnostics · Permission Test · Scope Inspector · Shell Test · Package Manager · Permission Ops · Settings Test · Locale Test · API Explorer · Log Center · Crash Center · Diagnostics Export · Automated Tests
+
+          ### Installation
+          1. Download the APK
+          2. Enable **Install unknown apps** for your file manager
+          3. Install and open FullDemoApp"
+
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$BODY" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: "📤 Upload Debug APK as workflow artifact"
         uses: actions/upload-artifact@v4
         with:
           name: "FullDemoApp-debug-build${{ github.run_number }}"
@@ -124,18 +180,34 @@ jobs:
           path: ${{ env.DEMO_DIR }}/app/build/reports/
           retention-days: 7
 
+      - name: "🚀 Create GitHub Pre-Release"
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}-fulldemo-debug
+          name: "FullDemoApp Debug Build ${{ github.run_number }}"
+          body: ${{ steps.notes.outputs.body }}
+          files: ${{ env.DEMO_DIR }}/app/build/outputs/apk/debug/*.apk
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: "📋 Build Summary"
         run: |
-          echo "## 🧪 FullDemoApp Debug APK Built" >> $GITHUB_STEP_SUMMARY
+          VERSION=$(grep -oP 'versionName\s*=\s*"\K[^"]+' ${{ env.DEMO_DIR }}/app/build.gradle.kts || echo "1.0.0")
+          echo "## 🧪 FullDemoApp Debug APK Built & Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| App Package | \`com.accu.sdkdemo\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${VERSION}-debug\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Build # | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Triggered by | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| APK Artifact | FullDemoApp-debug-build${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| APK Size | ${{ steps.apk_info.outputs.size }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Release Tag | v${{ github.run_number }}-fulldemo-debug |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Screens Included (14 total)" >> $GITHUB_STEP_SUMMARY
           echo "Dashboard · Connection Diagnostics · Permission Test · Scope Inspector · Shell Test · Package Manager · Permission Ops · Settings Test · Locale Test · API Explorer · Log Center · Crash Center · Diagnostics Export · Automated Tests" >> $GITHUB_STEP_SUMMARY
