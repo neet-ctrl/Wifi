@@ -343,7 +343,7 @@ private fun ModuleCardItem(card: ModuleCard, onClick: () -> Unit, modifier: Modi
 @Composable
 private fun RecentActionsList(actions: List<RecentAction>, onActionClick: (RecentAction) -> Unit) {
     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(actions, key = { it.id }) { action ->
+        items(actions, key = { it.route ?: it.title }) { action ->
             Surface(
                 onClick = { onActionClick(action) },
                 shape = RoundedCornerShape(16.dp),
