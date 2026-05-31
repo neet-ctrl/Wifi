@@ -73,6 +73,7 @@ fun PackageManagerScreen(vm: MainViewModel) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AppCard(app: AppInfo, onAction: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }

@@ -39,6 +39,7 @@ private val COMMON_APP_OPS = listOf(
     "android:fine_location" to "FINE_LOCATION op",
 )
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PermissionOpsScreen(vm: MainViewModel) {
     val result by vm.permOpsResult.collectAsState()

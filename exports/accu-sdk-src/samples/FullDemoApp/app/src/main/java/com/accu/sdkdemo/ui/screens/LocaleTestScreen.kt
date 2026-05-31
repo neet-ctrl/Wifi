@@ -37,6 +37,7 @@ private val LOCALE_OPTIONS = listOf(
     LocaleOption("pt",  "Portuguese",     "🇧🇷"),
 )
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LocaleTestScreen(vm: MainViewModel) {
     val apps        by vm.apps.collectAsState()
