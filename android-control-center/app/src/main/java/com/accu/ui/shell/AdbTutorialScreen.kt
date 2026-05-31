@@ -49,245 +49,247 @@ private data class TutorialSection(
 
 private val WIFI_ADB_TUTORIAL = TutorialSection(
     title    = "Wi-Fi ADB",
-    subtitle = "Wireless debugging between two Android devices on the same network",
+    subtitle = "Connect wirelessly — ACCU auto-pairs, no IP typing needed",
     icon     = Icons.Default.Wifi,
     color    = AccentCyan,
     steps    = listOf(
         TutorialStep(
-            title = "Enable Developer Options on Target Device",
-            body  = "The device you want to control (\"Target\") must have Developer Options unlocked:",
+            title = "Step 1 — Unlock Developer Options on the TARGET phone",
+            body  = "The phone you want to control must have Developer Options unlocked:",
             code  = """Settings  →  About phone  →  Build number
 Tap \"Build number\" 7 times rapidly
-→ You'll see \"You are now a developer!\"
+→ \"You are now a developer!\"
 
 Then go to:
 Settings  →  Developer Options""",
-            tip   = "On Samsung: Settings → About phone → Software information → Build number. On MIUI: Settings → About phone → MIUI version.",
+            tip   = "Samsung: Settings → About phone → Software information → Build number. MIUI/HyperOS: Settings → About phone → tap MIUI version 7×.",
         ),
         TutorialStep(
-            title   = "Enable Wireless Debugging (Android 11+)",
-            body    = "In Developer Options on the Target device:",
+            title   = "Step 2 — Enable Wireless Debugging on the TARGET phone",
+            body    = "In Developer Options on the TARGET device:",
             code    = "Settings → Developer Options → Wireless debugging → Toggle ON",
-            tip     = "Both devices must be on the same Wi-Fi network (same router/AP). Mobile hotspot from one phone works too!",
-            warning = "Wireless debugging disables automatically when you disconnect from Wi-Fi or restart the device.",
+            tip     = "Both phones must be on the same Wi-Fi network (same router/AP). Using one phone as a hotspot that the other joins also works.",
+            warning = "Wireless debugging turns off automatically when you disconnect from Wi-Fi or restart the device.",
         ),
         TutorialStep(
-            title = "Find the IP Address and Port",
-            body  = "Under Wireless debugging you'll see the IP address and port. Note these — you'll need them.",
-            code  = """Example display on target device:
-  IP address & Port:  192.168.1.42:41547
+            title = "Step 3 — Get the 6-digit pairing code from the TARGET phone",
+            body  = "Still on the TARGET phone:",
+            code  = """Settings → Developer Options → Wireless debugging
+→ tap \"Pair device with pairing code\"
 
-Or run in shell:
-  ip route | awk '{print $9}'
-  # or
-  ifconfig wlan0 | grep inet""",
-            tip   = "The port shown next to the IP is the connection port (different from the pairing port).",
+You will see:
+  Wi-Fi pairing code:  123456
+  IP address & Port:   192.168.1.42:37839
+                                   ↑ this is the PAIRING port
+
+On the main Wireless debugging page you also see:
+  IP address & Port:   192.168.1.42:41547
+                                   ↑ this is the SESSION/CONNECTION port
+
+ACCU finds both ports automatically — you only need the 6-digit code.""",
+            tip   = "The pairing code expires after ~60 seconds. Have ACCU ready on the host phone before requesting the code.",
         ),
         TutorialStep(
-            title = "Method A: Pair with Pairing Code",
-            body  = "On Target: tap \"Pair device with pairing code\" → note the 6-digit code and pairing port.\n\nIn ACCU (on your host phone), go to Shell → Wi-Fi ADB and enter:",
-            code  = """adb pair 192.168.1.42:<pairing_port> <6digit_code>
+            title = "Step 4 — Tap \"Wireless ADB\" in ACCU on the HOST phone",
+            body  = "On the HOST phone (the one running ACCU):",
+            code  = """ACCU  →  bottom nav: ACCU Center (shield icon)
+→ Status card shows: \"Not Connected\"
+→ Tap the \"Wireless ADB\" button
 
-Example:
-  adb pair 192.168.1.42:37839 123456
-  → Enter pairing code: 123456
-  → Successfully paired to 192.168.1.42:37839""",
-            tip   = "Use the PAIRING port (shown in the pair dialog), not the connection port.",
+ACCU starts mDNS auto-discovery of Wireless Debugging services.
+When your target is found:
+• A notification appears: \"Wireless Debugging Detected — Open ACCU\"
+• OR: ACCU Center advances to the pairing code step automatically""",
+            tip   = "If discovery takes more than 30 seconds, check both phones are on the same Wi-Fi network and that the target's Wireless debugging is still ON.",
         ),
         TutorialStep(
-            title = "Method B: QR Code Pairing",
-            body  = "On Target: tap \"Pair device with QR code\" — a QR code will appear.\n\nOn ACCU host phone, go to ACCU Center → ADB Pairing → QR mode and scan the displayed QR code.",
-            tip   = "QR pairing is only available on Android 11+ (API 30+). Both devices need Android 11+.",
+            title = "Step 5 — Enter the 6-digit code in ACCU",
+            body  = "In ACCU on the HOST phone:",
+            code  = """ACCU Center → Pairing step
+→ Enter the 6-digit code shown on the TARGET phone
+→ Tap \"Confirm\"
+
+ACCU then runs automatically:
+  adb pair 192.168.1.42:37839 123456   ← pairing
+  adb connect 192.168.1.42:41547       ← connect to session port
+
+Status card turns green:
+  \"ACCU Connected · Wireless ADB (192.168.1.42) · uid=2000\"""",
+            tip   = "Pairing is a one-time step per Wi-Fi network. After first pair, ACCU only needs to run adb connect on future sessions.",
         ),
         TutorialStep(
-            title = "Connect After Pairing",
-            body  = "After pairing, connect using the CONNECTION port (shown on the Wireless debugging main page):",
-            code  = """adb connect 192.168.1.42:<connection_port>
-
-Example:
-  adb connect 192.168.1.42:41547
-  → connected to 192.168.1.42:41547
-
-Verify connection:
-  adb devices
-  → 192.168.1.42:41547  device""",
-            tip   = "Pairing only needs to be done once per Wi-Fi network. After that, just connect with the IP and connection port each session.",
+            title = "All features now work!",
+            body  = "Every screen in ACCU automatically routes through the wireless ADB session. You never need to re-connect when switching features.",
+            code  = """Shell terminal     → uid=2000 ADB shell
+App Freeze         → pm suspend --user 0 <pkg>
+Permission toggle  → pm grant/revoke <pkg> <perm>
+Debloat            → pm uninstall --user 0 <pkg>
+QS Tiles           → svc wifi enable/disable
+File chmod         → chmod via AccuConnectionManager
+Diagnostics        → id  →  shows uid=2000(shell)""",
+            tip   = "To reconnect after device reboot: ACCU Center → tap \"Restart\". Full re-pairing is not needed — just reconnect.",
         ),
         TutorialStep(
-            title = "Legacy Method: adb tcpip (Android 10 and below)",
-            body  = "For older Android devices (no Wireless Debugging menu). The target device needs a USB connection first:",
-            code  = """Step 1: Enable USB debugging on target
-  Settings → Developer Options → USB debugging → ON
+            title = "Reconnect after reboot",
+            body  = "After the target phone restarts, Wireless debugging may be off. Re-enable it, then:",
+            code  = """ACCU Center → tap \"Restart\"
+→ ACCU runs: adb connect <last_saved_IP>:<last_saved_port>
+→ Reconnects in ~1 second if Wireless debugging is still ON
 
-Step 2: Connect target to host via USB-OTG (or PC)
-  adb devices
-  → Should show your device
-
-Step 3: Switch to TCP mode
-  adb tcpip 5555
-
-Step 4: Disconnect USB, then connect wirelessly
-  adb connect 192.168.1.42:5555
-
-Step 5: Verify
-  adb shell getprop ro.product.model""",
-            warning = "This method requires USB + physical connection first to set the TCP port. Android 11+ does not need this.",
+If it fails (e.g. port changed):
+→ Tap \"Wireless ADB\" to re-discover via mDNS
+→ Re-enter the 6-digit code (no need to re-enable Developer Options)""",
         ),
         TutorialStep(
-            title = "You're Connected! Run ADB Commands",
-            body  = "Now go to ACCU → Shell → Wi-Fi ADB tab and run any command:\n\nOr use these directly:",
-            code  = """adb shell getprop ro.product.model   # Device model
-adb shell pm list packages -3        # User apps
-adb shell dumpsys battery            # Battery info
-adb shell screencap -p /sdcard/s.png # Screenshot
-adb pull /sdcard/s.png               # Pull to host
-adb shell am start -n com.pkg/.Activity  # Launch app""",
+            title = "Legacy: adb tcpip method (Android 10 and below)",
+            body  = "For older phones without the Wireless Debugging menu. Requires USB + OTG cable first:",
+            code  = """1. Connect phones via OTG cable
+2. adb devices  →  confirm target is listed
+3. adb tcpip 5555
+4. Disconnect USB cable
+5. adb connect <TARGET_IP>:5555
+6. Verify: adb devices  →  <IP>:5555  device""",
+            warning = "Android 11+ does not need this method — use the guided Wireless ADB flow in ACCU Center instead.",
         ),
         TutorialStep(
             title = "Disconnect",
             body  = "When done:",
-            code  = """adb disconnect 192.168.1.42:41547  # Specific device
-adb disconnect                       # All devices""",
-            tip   = "Or toggle off Wireless Debugging on the target to prevent further connections.",
+            code  = """ACCU Center → tap \"Stop\"
+→ ACCU runs: adb disconnect <ip>:<port>
+→ Clears saved session
+
+Or from shell:
+  adb disconnect 192.168.1.42:41547""",
+            tip   = "Toggle off Wireless Debugging on the target to prevent any further connection attempts.",
         ),
     )
 )
 
 private val OTG_ADB_TUTORIAL = TutorialSection(
     title    = "OTG ADB (USB)",
-    subtitle = "Control one Android device from another via USB OTG cable",
+    subtitle = "Control one Android device from another via USB cable — no Wi-Fi needed",
     icon     = Icons.Default.Usb,
     color    = AccentOrange,
     steps    = listOf(
         TutorialStep(
-            title   = "Hardware Requirements",
+            title   = "Step 1 — Check hardware requirements",
             body    = "You need specific hardware for phone-to-phone USB ADB:",
             code    = """HOST phone (running ACCU):
-  • Must support USB OTG host mode
+  • Must support USB OTG HOST mode
   • Android 5.0+ recommended
-  • Check: "Does my phone support USB OTG host mode?"
+  • Most phones from 2018+ support it (Pixel, Samsung, OnePlus, Xiaomi)
 
 TARGET phone (being controlled):
-  • Standard Android phone
-  • USB debugging enabled
+  • Any Android phone
+  • USB debugging enabled (we'll set this in Step 2)
 
-Cable:
-  • USB-C OTG adapter + USB-C cable, OR
-  • USB-C to USB-C OTG cable (host/device roles auto-assigned), OR
-  • USB-A OTG adapter for older phones""",
-            tip     = "Most phones from 2018+ support USB OTG host mode. Budget phones may not. Pixel, Samsung, OnePlus, Xiaomi flagships all support it.",
-            warning = "A standard USB-C cable alone will NOT work — you need one with OTG host capability, or a USB OTG adapter.",
+Cable — pick one option:
+  A) USB-C OTG adapter on HOST  +  USB-C cable to TARGET
+  B) USB-A OTG adapter on HOST  +  USB-A-to-C cable to TARGET
+  C) USB-C to USB-C OTG cable   (check label for OTG/host support)""",
+            tip     = "Not sure if your HOST phone supports USB OTG? Try connecting a USB mouse — if the cursor appears, OTG host mode is supported.",
+            warning = "A standard phone charging cable alone will NOT work. You need a cable or adapter with USB OTG host capability.",
         ),
         TutorialStep(
-            title = "Enable USB Debugging on Target Phone",
-            body  = "On the TARGET phone (the one you want to control):",
+            title = "Step 2 — Enable USB Debugging on the TARGET phone",
+            body  = "On the TARGET phone (the phone you want to control):",
             code  = """1. Settings  →  About phone  →  Build number
-   Tap 7 times  →  Developer mode ON
+   Tap 7 times rapidly  →  \"You are now a developer!\"
 
 2. Settings  →  Developer Options
    →  USB debugging  →  Toggle ON
 
-3. Optional but recommended:
+3. Recommended extras:
    →  Install via USB  →  ON
    →  USB debugging (Security settings)  →  ON""",
-            tip   = "On Samsung: USB debugging is under Settings → Developer Options → USB debugging. On MIUI: same path but you may also need to enable \"USB Debugging (Security Settings)\" for full permissions.",
+            tip   = "On Samsung: USB debugging is under Settings → Developer Options → USB debugging. On MIUI: also enable \"USB Debugging (Security Settings)\" for full pm/am access.",
         ),
         TutorialStep(
-            title = "Connect the Phones",
-            body  = "Connect the two phones with your OTG cable/adapter:",
-            code  = """HOST phone  ←→  [USB-OTG cable/adapter]  ←→  TARGET phone
+            title = "Step 3 — Connect the two phones with your OTG cable",
+            body  = "Connect the phones physically:",
+            code  = """HOST phone  ←[OTG adapter/cable]→  TARGET phone
 
-Connection options:
-  A) USB-C OTG adapter on HOST + USB-C cable to TARGET
-  B) USB-A OTG adapter on HOST + USB-A cable to TARGET
-  C) USB-C to USB-C OTG cable (check labeling carefully)""",
+Option A (most common):
+  HOST USB-C port  →  USB-C OTG adapter  →  USB-C cable  →  TARGET USB-C port
+
+Option B (older HOST phone):
+  HOST Micro-USB  →  Micro-USB OTG adapter  →  USB-A cable  →  TARGET
+
+Option C (direct cable):
+  USB-C to USB-C OTG cable (one end must be marked HOST/OTG)""",
             tip   = "If using a USB-A OTG adapter, plug the OTG adapter into the HOST phone, then connect the USB-A cable to the TARGET phone's USB-C port using a USB-A to C cable.",
             warning = "Some USB-C cables are \"charge only\" — they won't carry data. Use a cable that supports USB 2.0 or higher data transfer.",
         ),
         TutorialStep(
-            title = "Allow USB Debugging on Target",
-            body  = "When you plug in, the TARGET phone will show a dialog:",
-            code  = """[Target phone shows]
+            title = "Step 4 — Tap \"OTG / USB\" in ACCU on the HOST phone",
+            body  = "On the HOST phone (the one running ACCU):",
+            code  = """ACCU  →  bottom nav: ACCU Center (shield icon)
+→ Status card shows: \"Not Connected\"
+→ Tap the \"OTG / USB\" button
+
+ACCU runs: adb devices  (looks for USB-connected device)
+
+If a device is found:
+  Status card: \"ACCU Connected · OTG / USB ADB · uid=2000\"
+
+If \"no devices found\":
+  → Unlock the TARGET phone screen and check for a dialog""",
+            warning = "If connection fails: unlock the target screen, swap the cable direction, or tap \"Change USB preference\" in the target's notification shade.",
+        ),
+        TutorialStep(
+            title = "Step 5 — Approve USB Debugging on the TARGET phone",
+            body  = "The TARGET phone will show a one-time approval dialog:",
+            code  = """[TARGET phone shows]
 \"Allow USB debugging?\"
 RSA key fingerprint: AB:CD:EF:...
 
-☑ Always allow from this computer
+☑ Always allow from this computer   ← tick this
 → Tap [Allow]
 
 If the dialog doesn't appear:
-  • Swipe down notification shade on target
-  • Change USB mode from \"Charging\" to \"File Transfer\"
-  • Then disconnect & reconnect""",
-            tip   = "Tick \"Always allow\" so you don't need to re-approve on every connection.",
+  • Swipe down the notification shade on the TARGET
+  • Look for \"USB preference\" notification → change to \"File Transfer\"
+  • Then go back to ACCU Center and tap \"OTG / USB\" again""",
+            tip   = "Tick \"Always allow\" so you won't need to approve every time you reconnect with this cable.",
         ),
         TutorialStep(
-            title = "Open ACCU Shell in OTG Mode",
-            body  = "On the HOST phone (running ACCU):",
-            code  = """1. Open ACCU  →  Shell
-2. Tap the \"OTG ADB\" tab
-3. Wait for the target device to appear
-4. ACCU will detect the connected device
+            title = "Step 6 — All features now run on the TARGET phone",
+            body  = "Every ACCU feature automatically targets the connected device:",
+            code  = """Shell terminal     → commands run on TARGET
+App Freeze         → freezes TARGET apps
+Debloat            → removes TARGET bloatware
+Permission toggle  → changes TARGET app permissions
+File chmod         → chmod on TARGET filesystem
+Diagnostics        → shows TARGET device info (uid=2000)
 
-Verify detection:
-  adb devices
-  → Should show: <serial>  device
-
-If it shows \"unauthorized\":
-  → Check target phone — a permission dialog may be waiting""",
-            warning = "If ACCU shows \"no devices found\", try: unlock the target phone screen, re-plug the cable, or tap \"Change USB preference\" in the target's notification.",
+Verify: ACCU Shell → type: adb shell getprop ro.product.model
+→ shows TARGET phone model""",
         ),
         TutorialStep(
-            title = "Run ADB Commands on Target",
-            body  = "Once connected, you can run any ADB command on the target phone:",
-            code  = """# Device info
-adb shell getprop ro.product.model
-adb shell getprop ro.build.version.release
+            title = "Bonus: Upgrade to wireless after OTG connects",
+            body  = "Once OTG is connected you can switch to wireless so you can remove the cable:",
+            code  = """In ACCU Shell → type these commands while OTG is active:
 
-# List installed apps
-adb shell pm list packages -3
+  adb tcpip 5555
+  → \"restarting in TCP mode port: 5555\"
 
-# Screenshot and pull to host
-adb shell screencap -p /sdcard/ss.png
-adb pull /sdcard/ss.png
+  adb shell ip route
+  → Note the TARGET IP (e.g. 192.168.1.42)
 
-# Install APK from host to target
-adb install /path/to/app.apk
+  Disconnect the OTG cable, then:
+  adb connect 192.168.1.42:5555
 
-# Remove bloatware
-adb shell pm uninstall --user 0 com.bloat.app
-
-# Force stop app
-adb shell am force-stop com.example.app
-
-# File transfer
-adb push local_file.txt /sdcard/
-adb pull /sdcard/remote_file.txt""",
-            tip   = "Use the ACCU File Browser (Shell → OTG → File Browser icon) for a visual file manager on the target device.",
-        ),
-        TutorialStep(
-            title = "Switch Target to Wireless After OTG Connect",
-            body  = "Once connected via OTG, you can switch to wireless to remove the cable:",
-            code  = """# While OTG connected, enable TCP on target
-adb tcpip 5555
-
-# Get target's IP address
-adb shell ip route | awk '{print $9}'
-
-# Disconnect OTG cable, then connect wirelessly
-adb connect <TARGET_IP>:5555
-
-# Verify
-adb devices""",
-            tip   = "This hybrid approach lets you set up wireless ADB without going through Developer Options UI on older Android versions.",
+OR: use the Wireless ADB flow in ACCU Center
+  → tap \"Wireless ADB\" → auto-discovers the target""",
+            tip   = "This is useful for setting up wireless ADB on older Android 10 devices that don't have the Wireless Debugging menu.",
         ),
         TutorialStep(
             title = "Disconnect",
             body  = "When done:",
-            code  = """adb kill-server  # Stop ADB daemon on host
-# Then simply unplug the cable
+            code  = """ACCU Center → tap \"Stop\"
+→ Clears the OTG session
 
-# Or if switched to wireless:
-adb disconnect <TARGET_IP>:5555""",
+Or unplug the cable — ACCU detects disconnection and updates the status card.""",
         ),
     )
 )

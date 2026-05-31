@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" width="96" alt="ACC Logo" />
+<img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" width="96" alt="ACCU Logo" />
 
 # Android Control Center Ultimate
 
@@ -17,11 +17,188 @@
 
 ---
 
-## What is ACC Ultimate?
+## What is ACCU?
 
-**Android Control Center Ultimate** is a native Android app that consolidates **17 best-in-class open-source tools** into a single, unified experience — one install, one UI language, zero redundancy. Every feature has been re-implemented in modern **Kotlin + Jetpack Compose** with a **Material 3 Expressive** design system, keeping the power of each source project while adding cross-tool workflows that were never possible before.
+**Android Control Center Ultimate** consolidates **17 best-in-class open-source tools** into a single unified app — one install, one UI language, zero redundancy. Every feature is re-implemented in modern **Kotlin + Jetpack Compose** with a **Material 3 Expressive** design system.
 
-> Requires **[Shizuku](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api)** for most privileged operations. Root access is optional and unlocks additional capabilities.
+> **No Shizuku required.** ACCU is fully self-sufficient via its own `AccuConnectionManager` — one global privilege broker that serves every feature.
+
+---
+
+## How Privilege Works — AccuConnectionManager
+
+Every feature in ACCU routes through a single `@Singleton` called **`AccuConnectionManager`**. There is no separate Shizuku app, no external dependency. Users connect **once**, and every screen automatically benefits.
+
+```
+Shell Terminal
+App Freeze          ╮
+Debloater           │
+Permission Manager  ├──▶  AccuConnectionManager.exec("command")
+Component Manager   │           │
+File Manager        │           ├── Root (LibSU)          [preferred]
+QS Tiles            │           ├── Wireless ADB          [adb -s ip:port shell]
+Dark Mode           │           ├── OTG / USB ADB         [adb shell]
+Language Selector   ╯           └── Plain shell           [unprivileged fallback]
+```
+
+**Priority order:** Root → Wireless ADB → OTG ADB → Plain shell. The highest-available method wins automatically on every `exec()` call.
+
+---
+
+## Connecting ACCU — Full Step-by-Step
+
+### Where to find the connection UI
+
+Open ACCU → **ACCU Center** (shield icon, bottom navigation or dashboard card).
+
+The status card at the top shows:
+- 🟢 **ACCU Connected** — privilege active, method shown (Root / Wireless ADB / OTG)
+- 🔴 **Not Connected** — three connection buttons visible
+
+---
+
+### Method 1: Root (Automatic — no setup)
+
+If the device is rooted, ACCU detects root automatically on first launch via LibSU.
+
+```
+ACCU Center → tap "Use Root"
+→ Root shell opens instantly
+→ Status card: "ACCU Connected · Root · uid=0"
+```
+
+All features immediately work at full privilege. No further steps needed.
+
+---
+
+### Method 2: Wireless ADB (Android 11+ — recommended for non-rooted devices)
+
+**Requirements:** Both phones on the same Wi-Fi network. Target phone: Android 11+.
+
+#### Step 1 — Enable Developer Options on the target phone
+```
+Settings → About phone → tap "Build number" 7 times
+→ "You are now a developer!"
+```
+> Samsung: Settings → About phone → Software information → Build number
+> MIUI/HyperOS: Settings → About phone → tap MIUI version 7 times
+
+#### Step 2 — Enable Wireless Debugging on the target phone
+```
+Settings → Developer Options → Wireless debugging → toggle ON
+```
+> Both phones must be on the same Wi-Fi network (or one hosts a hotspot the other joins).
+
+#### Step 3 — Get the pairing code from the target phone
+```
+Settings → Developer Options → Wireless debugging
+→ tap "Pair device with pairing code"
+→ Note the 6-digit code and the pairing port shown
+   Example: "Wi-Fi pairing code: 123456  Port: 37839"
+```
+
+#### Step 4 — Start discovery in ACCU on the host phone
+```
+ACCU → ACCU Center → tap "Wireless ADB" button
+→ ACCU starts mDNS auto-discovery
+→ When target is found, a notification appears:
+  "Wireless Debugging Detected — Open ACCU to enter code"
+→ Or: ACCU Center shows "Enter your 6-digit pairing code"
+```
+
+#### Step 5 — Enter the 6-digit code
+```
+ACCU Center → Pairing step → enter the 6-digit code → tap Confirm
+→ ACCU runs: adb pair <ip>:<pairing_port> <code>
+→ Then auto-connects: adb connect <ip>:<session_port>
+→ Status card: "ACCU Connected · Wireless ADB (192.168.x.x) · uid=2000"
+```
+
+**That's it.** Every feature in the app now routes through the wireless ADB session automatically.
+
+#### Notes on pairing vs connection ports
+| Port | What it is | Where you see it |
+|------|-----------|-----------------|
+| **Pairing port** | Used only once to pair | Shown in the "Pair device with pairing code" dialog |
+| **Session/connection port** | Used for all commands | Shown on the main Wireless debugging page |
+
+ACCU auto-discovers both via mDNS — you only ever need to type the 6-digit code.
+
+#### Reconnecting after a restart
+```
+ACCU Center → tap "Restart" (if shown)
+→ ACCU runs: adb connect <last_ip>:<last_port>
+→ Reconnects in ~1 second without re-pairing
+```
+Pairing persists across reboots on the same Wi-Fi network. Only the session needs to be re-established.
+
+---
+
+### Method 3: OTG / USB ADB (phone-to-phone, no Wi-Fi needed)
+
+**Requirements:**
+- **Host phone** (running ACCU): must support USB OTG host mode
+- **Target phone** (to be controlled): USB Debugging enabled
+- **Cable:** USB-C OTG adapter + USB-C cable, or a USB-C to USB-C OTG cable
+
+#### Step 1 — Enable USB Debugging on the target phone
+```
+Settings → About phone → Build number (tap 7×)
+Settings → Developer Options → USB debugging → ON
+```
+
+#### Step 2 — Connect the phones
+```
+HOST phone ←[USB-OTG adapter]←[USB cable]→ TARGET phone
+```
+> If using a USB-C to USB-C cable, one end must be OTG host mode. Most USB-C to USB-C OTG cables auto-negotiate.
+
+#### Step 3 — Tap "OTG / USB" in ACCU
+```
+ACCU → ACCU Center → tap "OTG / USB" button
+→ ACCU runs: adb devices (checks for USB-connected device)
+```
+
+#### Step 4 — Approve on the target phone
+```
+[Target phone shows dialog]
+"Allow USB debugging?
+ RSA key fingerprint: AB:CD:EF:..."
+→ Tick "Always allow from this computer"
+→ Tap Allow
+```
+
+#### Step 5 — Connected
+```
+ACCU Center status: "ACCU Connected · OTG / USB ADB · uid=2000"
+→ All features in ACCU now run on the target phone
+```
+
+> **Tip:** Once OTG is connected, switch to wireless so you can remove the cable:
+> ```
+> ACCU Shell → run: adb tcpip 5555
+> Get target IP: adb shell ip route
+> → Then use Wireless ADB method above
+> ```
+
+---
+
+## How All 85+ Features Use the Same Connection
+
+Every ViewModel, TileService, and background service injects `AccuConnectionManager` via Hilt. The call path is identical everywhere:
+
+```kotlin
+// In any ViewModel / TileService:
+@Inject lateinit var connectionManager: AccuConnectionManager
+// or via:
+@Inject lateinit var shizukuUtils: ShizukuUtils   // thin wrapper
+
+// Then just:
+val result = connectionManager.exec("pm suspend --user 0 com.some.app")
+// ↑ Automatically uses root / wireless ADB / OTG — whichever is active
+```
+
+You **never** need to re-connect when switching screens. The singleton state persists for the entire app session. QS tiles, background workers, and accessibility services all share the same connection.
 
 ---
 
@@ -29,42 +206,40 @@
 
 | # | Feature Area | Source Project | What You Get |
 |---|---|---|---|
-| 1 | **Shizuku Center** | [Shizuku](https://github.com/RikkaApps/Shizuku) | ADB-over-WiFi bridge, per-app permission grants, live status dashboard, pairing wizard |
-| 2 | **Interactive Shell** | [aShellYou](https://github.com/DP-Hridayan/aShellYou) | Full ADB shell with history, syntax highlighting, command suggestions, AI-powered analysis, Google Drive backup |
+| 1 | **ACCU Center** | Built-in | Wireless ADB auto-pair, OTG connect, root detect, diagnostics, per-app grants |
+| 2 | **Interactive Shell** | [aShellYou](https://github.com/DP-Hridayan/aShellYou) | Full ADB shell with history, syntax highlighting, AI analysis, command examples |
 | 3 | **App Debloat** | [Canta](https://github.com/samolego/Canta) | Safe uninstall/disable of system & carrier bloatware, community presets, undo logs |
-| 4 | **App Freeze** | [Hail](https://github.com/aistra0528/Hail) | Suspend apps via Shizuku (no root), freeze on screen-off, scheduled auto-freeze, QS tile |
-| 5 | **App Inspector** | [Inure](https://github.com/Hamza417/Inure) | Deep app info: storage breakdown, permissions, activities, services, receivers, providers, sensors, trackers, VirusTotal scan |
-| 6 | **Component Manager** | [Blocker](https://github.com/lihenggui/blocker) | Enable/disable individual Activities, Services, Receivers, Providers with rule import/export |
-| 7 | **Monet Theming** | [ColorBlendr](https://github.com/Mahmud0808/ColorBlendr) | Material You color palette editor, seed color picker, Monet style selector, per-surface overrides |
-| 8 | **Dark Mode** | [DarQ](https://github.com/KieronQuinn/DarQ) | Per-app forced dark mode, geolocation-based scheduling, sunrise/sunset automation, app picker |
+| 4 | **App Freeze** | [Hail](https://github.com/aistra0528/Hail) | Suspend apps via ADB (no root), freeze on screen-off, scheduled auto-freeze, QS tile |
+| 5 | **App Inspector** | [Inure](https://github.com/Hamza417/Inure) | Deep app info: storage breakdown, permissions, activities, services, trackers, VirusTotal |
+| 6 | **Component Manager** | [Blocker](https://github.com/lihenggui/blocker) | Enable/disable Activities, Services, Receivers, Providers; IFW rule import/export |
+| 7 | **Monet Theming** | [ColorBlendr](https://github.com/Mahmud0808/ColorBlendr) | Material You color palette editor, seed color picker, Monet style selector |
+| 8 | **Dark Mode** | [DarQ](https://github.com/KieronQuinn/DarQ) | Per-app forced dark mode, geolocation scheduling, sunrise/sunset automation |
 | 9 | **Widgets** | [SmartSpacer](https://github.com/KieronQuinn/SmartSpacer) | Lock-screen and notification bar widget management, complication targets |
-| 10 | **Storage & Cleanup** | [SD Maid SE](https://github.com/d4rken-org/sdmaid-se) | Junk cleaner, duplicate finder, large-file browser, empty-folder sweeper, app cleaner, corpse finder |
-| 11 | **File Manager** | [Material Files](https://github.com/zhanghai/MaterialFiles) | Root-capable file browser, archive support, SMB/FTP server, text editor, file properties |
-| 12 | **APK Installer** | [InstallWithOptions](https://github.com/zacharee/InstallWithOptions) | Install APKs with downgrade, test-package, grant-all-permissions and full session flags |
-| 13 | **Key Mapper** | [Key Mapper](https://github.com/keymapperorg/KeyMapper) | Remap hardware buttons, gestures, and volume keys to any action via Accessibility Service |
-| 14 | **Language Selector** | [Language Selector](https://github.com/VegaBobo/Language-Selector) | Per-app language overrides + system locale switcher without root |
-| 15 | **Internet Tiles** | [BetterInternetTiles](https://github.com/CasperVerswijvelt/Better-Internet-Tiles) | Wi-Fi, Mobile Data, Hotspot, NFC, Bluetooth, Airplane Mode QS tiles that actually work |
-| 16 | **Audio DSP** | [RootlessJamesDSP](https://github.com/ThePBone/RootlessJamesDSP) | System-wide EQ, bass boost, stereo widening, reverb, convolver, LiveProg scripting (no root) |
-| 17 | **Call Recording** | [ShizuCallRecorder](https://github.com/chenxiaolong/BCR) | Rootless call recording via scrcpy audio capture + Shizuku, playback, auto-export |
+| 10 | **Storage & Cleanup** | [SD Maid SE](https://github.com/d4rken-org/sdmaid-se) | Junk cleaner, duplicate finder, large-file browser, corpse finder |
+| 11 | **File Manager** | [Material Files](https://github.com/zhanghai/MaterialFiles) | Root-capable file browser, archive support, SMB/FTP server, file properties |
+| 12 | **APK Installer** | [InstallWithOptions](https://github.com/zacharee/InstallWithOptions) | Install APKs with downgrade, test-package, grant-all-permissions |
+| 13 | **Key Mapper** | [Key Mapper](https://github.com/keymapperorg/KeyMapper) | Remap hardware buttons, gestures, volume keys to any action |
+| 14 | **Language Selector** | [Language Selector](https://github.com/VegaBobo/Language-Selector) | Per-app language overrides, system locale switcher |
+| 15 | **Internet Tiles** | [BetterInternetTiles](https://github.com/CasperVerswijvelt/Better-Internet-Tiles) | Wi-Fi, Mobile Data, Hotspot, NFC, Bluetooth, Airplane Mode QS tiles |
+| 16 | **Audio DSP** | [RootlessJamesDSP](https://github.com/ThePBone/RootlessJamesDSP) | System-wide EQ, bass boost, stereo widening, reverb, convolver, LiveProg |
+| 17 | **Call Recording** | [ShizuCallRecorder](https://github.com/chenxiaolong/BCR) | Rootless call recording, playback, auto-export |
 
 ---
 
 ## Highlights
 
-- **🔍 Global Command Palette** — search all 85+ screens from anywhere with `⌘K`, scored fuzzy matching, per-category accent colors, Quick Launch tiles, and a **Recently Visited** row powered by DataStore
-- **🔔 Notification Center** — 11 notification channels, snooze controls, per-channel preferences, animated bell hero
-- **📊 Live Dashboard** — real-time stats (RAM, storage, battery, CPU), Shizuku health card, module grid
-- **🎨 Material 3 Expressive** — glassmorphism surfaces, spring animations, adaptive navigation, dynamic color
-- **🔒 Zero telemetry** — no analytics, no network calls home, fully on-device
-- **🔌 ACCU System Service** — third-party app IPC broker with a full AIDL API, scope-based permission model, boot autostart, and built-in SDK documentation screen
+- **Global Command Palette** — search all 85+ screens from anywhere, fuzzy match, Quick Launch tiles, Recently Visited row
+- **Notification Center** — 11 channels, snooze controls, per-channel preferences
+- **Live Dashboard** — real-time RAM, storage, battery, CPU; ACCU connection health card
+- **Material 3 Expressive** — glassmorphism surfaces, spring animations, adaptive navigation
+- **Zero telemetry** — no analytics, no network calls home, fully on-device
+- **ACCU System Service** — third-party IPC broker with full AIDL API, scope-based permissions, boot autostart
 
 ---
 
 ## ACCU System Service — Third-Party Developer API
 
-ACCU acts as a **privileged IPC broker** for other Android apps — similar to Shizuku, but built on top of it and packaged directly into ACCU. No Shizuku SDK required by client apps.
-
-### How it works
+ACCU acts as a **privileged IPC broker** for other apps via its AIDL interface. No external SDK required by clients.
 
 ```
 Your App  →  bindService("com.accu.api.AccuSystemService")  →  AccuSystemService
@@ -72,75 +247,23 @@ Your App  →  bindService("com.accu.api.AccuSystemService")  →  AccuSystemSer
                                                              AccuPermissionManager
                                                              (user-controlled grants)
                                                                       ↓
-                                                             Shizuku / root shell
+                                                             AccuConnectionManager
+                                                             (root / wireless ADB / OTG)
                                                                       ↓
                                                              Android System APIs
 ```
 
-### Service Hub UI
-
-Navigate to **ACCU → Service Hub** (the API plug icon on the bottom nav or in the dashboard) to:
-
-| Tab | What you see |
-|---|---|
-| **Apps** | All apps that have ever requested ACCU access — grant status, scopes, call count, last used timestamp. Revoke or delete any entry with a single tap. |
-| **Pending** | Real-time list of apps currently waiting for your permission decision. Grant full access or deny from here without opening a separate dialog. |
-| **SDK Docs** | Built-in quick reference with copy-to-clipboard code snippets for binding, shell execution, and the full method list. A button links to the extended developer guide. |
-
-The hero status card shows:
-- Green/red live indicator (running vs. stopped)
-- Start / Stop button
-- **Boot autostart toggle** — when enabled, AccuSystemService starts automatically on every boot via `BootReceiver`
-- Connected app count · Pending count · Total API call counter
-- Binding intent snippet for developers
-
-### API capabilities
-
-| Scope | What client apps can do |
-|---|---|
-| `SHELL` | Run any shell command via `exec()` / `execAsync()` / `execAndGetOutput()` |
-| `PACKAGE_MANAGE` | Install, uninstall, enable, disable, hide, suspend, clear data, manage components, force-stop |
-| `PERMISSIONS` | Grant/revoke runtime permissions, read/write App Ops |
-| `SETTINGS` | Read/write Settings.Secure, Settings.Global, Settings.System |
-| `LOCALE` | Set per-app locale overrides |
-| `ALL` | All of the above |
-
-### Integration (TL;DR for developers)
-
 ```kotlin
-// 1. Copy 3 AIDL files into com/accu/api/ in your project
-// 2. Add to AndroidManifest.xml:
-//    <queries><package android:name="com.accu.controlcenter" /></queries>
-// 3. Bind:
 val intent = Intent("com.accu.api.AccuSystemService").setPackage("com.accu.controlcenter")
 context.bindService(intent, connection, BIND_AUTO_CREATE)
 
-// 4. In onServiceConnected:
+// In onServiceConnected:
 val accu = IAccuService.Stub.asInterface(binder)
-accu.requestPermission(callback)          // shows ACCU grant dialog once
-val result = accu.exec("pm list packages") // [stdout, stderr, exitCode]
+accu.requestPermission(callback)
+val result = accu.exec("pm list packages")
 ```
 
-**Full guide:** [`docs/ACCU_THIRD_PARTY_DEVELOPER_GUIDE.md`](docs/ACCU_THIRD_PARTY_DEVELOPER_GUIDE.md) — 22 sections covering architecture, all 37 API methods, scope reference, error handling, threading model, lifecycle, security model, testing, troubleshooting, and a Shizuku migration guide.
-
-### Boot autostart
-
-The **Boot autostart** toggle in Service Hub persists across reboots. When enabled:
-1. `BootReceiver` fires on `BOOT_COMPLETED` / `QUICKBOOT_POWERON` / `MY_PACKAGE_REPLACED`.
-2. It reads `accu_service_autostart` from `accu_service_prefs` SharedPreferences.
-3. If `true`, it calls `startForegroundService(Intent(AccuSystemService))` immediately.
-
-The toggle is off by default; the user must enable it explicitly in Service Hub.
-
----
-
-## Screenshots
-
-> _Add screenshots here once the first build is signed and running on a device._
-
-| Dashboard | Command Palette | Shell | App Manager |
-|---|---|---|---|
-| _(coming soon)_ | _(coming soon)_ | _(coming soon)_ | _(coming soon)_ |
+Full guide: `docs/ACCU_THIRD_PARTY_DEVELOPER_GUIDE.md`
 
 ---
 
@@ -149,69 +272,28 @@ The toggle is off by default; the user must enable it explicitly in Service Hub.
 | Requirement | Details |
 |---|---|
 | **Android version** | 10.0+ (API 29) |
-| **Shizuku** | [Install from Play Store](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api) — required for most features |
-| **Root (optional)** | Unlocks additional shell, file manager, and component manager capabilities |
-| **ADB (optional)** | `adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh` to start Shizuku via USB |
+| **Privilege (choose one)** | Root OR Android 11+ Wireless Debugging OR USB OTG host mode |
+| **No external app needed** | ACCU is fully self-sufficient — no Shizuku, no ADB tools on PC |
 
 ---
 
 ## Building
 
-### Prerequisites
-
-- **Android Studio Meerkat** (2025.1+) or newer
-- **JDK 17**
-- **Android SDK** with Build Tools 35+, Platform 36
-
-### Clone
-
 ```bash
+# Clone
 git clone https://github.com/your-org/android-control-center.git
 cd android-control-center/android-control-center
-```
 
-### Debug Build
-
-```bash
+# Debug build
 ./gradlew assembleDebug
 # Output: app/build/outputs/apk/debug/app-debug.apk
-```
 
-### Install directly to a connected device
-
-```bash
+# Install to connected device
 ./gradlew installDebug
-```
 
-### Release Build
-
-```bash
-# Configure signing (edit app/build.gradle.kts or set env vars)
-export KEYSTORE_PATH=keystore/release.keystore
-export KEYSTORE_PASSWORD=your_password
-export KEY_ALIAS=your_alias
-export KEY_PASSWORD=your_key_password
-
+# Release build (set signing env vars first)
 ./gradlew assembleRelease
-# Output: app/build/outputs/apk/release/app-release.apk
 ```
-
-### GitHub Actions (CI/CD)
-
-| Trigger | Builds |
-|---|---|
-| Push to `main` / `develop` | Debug APK → uploaded as workflow artifact |
-| Push tag `v1.x.x` | Debug + Release APKs → GitHub Release created |
-| Manual dispatch | Choose `debug` or `release` from the Actions tab |
-
-**Required GitHub Secrets for release builds:**
-
-| Secret | Description |
-|---|---|
-| `KEYSTORE_BASE64` | Base64-encoded `.jks` or `.keystore` file |
-| `KEYSTORE_PASSWORD` | Keystore password |
-| `KEY_ALIAS` | Key alias |
-| `KEY_PASSWORD` | Key password |
 
 ---
 
@@ -220,30 +302,31 @@ export KEY_PASSWORD=your_key_password
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                      UI Layer                           │
-│  Jetpack Compose  ·  Material 3  ·  MVVM ViewModels     │
-│  85+ screens  ·  5 bottom tabs  ·  Command Palette      │
+│  Jetpack Compose · Material 3 · MVVM ViewModels         │
+│  85+ screens · 5 bottom tabs · Command Palette          │
 └──────────────────────────┬──────────────────────────────┘
                            │ StateFlow / collectAsState
 ┌──────────────────────────▼──────────────────────────────┐
 │                    Domain Layer                         │
-│         Use Cases  ·  Business Logic  ·  Models         │
+│         Use Cases · Business Logic · Models             │
 └──────────┬────────────────────────┬────────────────────-┘
            │                        │
 ┌──────────▼───────────┐  ┌─────────▼──────────────────────┐
-│    Data Layer         │  │     System/Privileged Layer     │
-│  Room DB (16 tables) │  │  Shizuku IPC Service            │
-│  DataStore Prefs     │  │  LibSU root shell               │
-│  Repositories        │  │  Android system APIs            │
-└──────────────────────┘  └────────────────────────────────┘
+│    Data Layer         │  │  Privilege Layer (ACCU-native)  │
+│  Room DB (16 tables) │  │  AccuConnectionManager          │
+│  DataStore Prefs     │  │  ├── LibSU root shell           │
+│  Repositories        │  │  ├── Wireless ADB (mDNS)        │
+└──────────────────────┘  │  └── OTG / USB ADB              │
+                          └────────────────────────────────┘
 ```
 
 ### Key Design Decisions
 
 - **Single Activity** — `MainActivity` hosts the entire nav graph; edge-to-edge with `WindowCompat`
-- **Hilt DI** — all ViewModels, repositories, and services are Hilt-injected; `@Singleton` shared across the graph
-- **Navigation** — single `NavHost` with 94+ named routes; `NavigationSuiteScaffold` adapts to phone/tablet/foldable
-- **Shizuku first** — privileged operations attempt Shizuku before falling back to root, then ADB
-- **DataStore** — navigation history, notification preferences, and user settings use `androidx.datastore.preferences`
+- **Hilt DI** — all ViewModels, repositories, services are Hilt-injected; `@Singleton` shared across the graph
+- **AccuConnectionManager singleton** — all 85+ screens share one connection; root/wireless/OTG auto-selected
+- **Contract-first connection** — mDNS discovers pairing port AND session port; user only types 6-digit code
+- **DataStore** — navigation history, notification prefs, user settings use `androidx.datastore.preferences`
 
 ---
 
@@ -251,80 +334,19 @@ export KEY_PASSWORD=your_key_password
 
 ```
 app/src/main/java/com/accu/
-├── ACCApplication.kt              — Hilt app, 12 notification channels, Timber, LibSU
-├── MainActivity.kt                — Single-activity host, edge-to-edge
+├── connection/
+│   └── AccuConnectionManager.kt  — global privilege singleton (root / wireless ADB / OTG)
+├── utils/
+│   └── ShizukuUtils.kt           — thin wrapper delegating to AccuConnectionManager
 │
-├── data/
-│   ├── db/                        — Room database (16 entities, 16 DAOs)
-│   └── repositories/
-│       ├── AppRepository.kt
-│       ├── ShellRepository.kt
-│       └── NavigationHistoryRepository.kt  — DataStore-backed nav history
+├── ui/shizuku/
+│   ├── ShizukuCenterScreen.kt    — ACCU Center: connection status, Wireless/OTG/Root buttons
+│   ├── ShizukuViewModel.kt       — connection management, diagnostics, authorized apps
+│   └── AdbPairingScreen.kt       — guided 4-step wireless ADB pairing wizard
 │
-├── di/
-│   ├── AppModule.kt               — Shell config, singleton providers
-│   └── DatabaseModule.kt          — Room + DAO providers
-│
-├── domain/usecases/               — AudioUseCases, etc.
-│
-├── navigation/
-│   ├── NavRoutes.kt               — 94+ typed screen objects
-│   └── AppNavigation.kt           — Full nav graph + history tracking listener
-│
-├── notifications/
-│   ├── AccuNotificationHelper.kt  — 12-channel notification manager
-│   ├── NotificationPreferences.kt
-│   └── NotificationCenterViewModel.kt
-│
-├── receivers/                     — Boot, CallState, PackageChange
-├── services/                      — Accessibility, AudioEffect, CallRecording, Shizuku IPC, QS Tiles
-├── workers/                       — CleanupWorker (WorkManager)
-│
-└── ui/
-    ├── dashboard/                 — Dashboard, SearchIndex (85+ screens), Command Palette, NavHistoryViewModel
-    ├── shizuku/                   — Shizuku center, ADB pairing, freeze scheduler, app list
-    ├── shell/                     — Shell screen, script editor, ADB file browser, command examples
-    ├── appmanager/                — App list, detail, debloat, freeze, components, permissions, Inure analytics, VirusTotal
-    ├── audio/                     — Equalizer, parametric EQ, AutoEQ, DSP, liveprog editor, blocklist
-    ├── automation/                — Key mapper rules, advanced key mapper
-    ├── callrecorder/              — Call recording, playback, scrcpy integration, settings
-    ├── customization/             — Color editor, dark mode, DarQ app picker, ColorBlendr styles, per-app themes
-    ├── filemanager/               — File browser, text editor, FTP server, file properties
-    ├── installer/                 — APK installer, install flags
-    ├── language/                  — Language center, per-app language detail
-    ├── network/                   — Network center, internet tiles settings
-    ├── notifications/             — Notification center (11 channels, animated, snooze)
-    ├── onboarding/                — Welcome flow
-    ├── privacy/                   — Privacy dashboard, online rules
-    ├── settings/                  — App settings, permissions
-    ├── storage/                   — Storage analyzer, app cleaner, system cleaner, deduplicator, corpse finder, squeezer
-    ├── tutorial/                  — Learning center, feature tutorials
-    ├── widgets/                   — SmartSpacer, complication targets
-    └── components/                — ACCTopBar, GlossyCard, StatusBadge, shared composables
+├── services/                     — QS tiles (all inject AccuConnectionManager via Hilt)
+└── ui/                           — 85+ screens, all share the same connection
 ```
-
----
-
-## Tech Stack
-
-| Layer | Library | Version |
-|---|---|---|
-| Language | Kotlin | 2.1 |
-| UI Toolkit | Jetpack Compose | BOM 2025.x |
-| Design System | Material 3 Expressive | latest |
-| Architecture | MVVM + Clean (UseCases) | — |
-| Dependency Injection | Hilt | 2.54 |
-| Navigation | Navigation Compose | 2.8.x |
-| Database | Room | 2.7 |
-| Preferences | DataStore Preferences | 1.1.2 |
-| Async | Kotlin Coroutines + Flow | 1.9 |
-| Privileged Ops | Shizuku SDK | 13.1.5 |
-| Root Shell | LibSU | 5.3.0 |
-| Image Loading | Coil | 3.x |
-| Background Jobs | WorkManager | 2.10 |
-| Annotation Processor | KSP | 2.1 |
-| Build System | Gradle + AGP | 8.11 / 8.7 |
-| CI/CD | GitHub Actions | — |
 
 ---
 
@@ -332,59 +354,31 @@ app/src/main/java/com/accu/
 
 - **No telemetry** — zero analytics SDKs, no crash reporters phoning home
 - **No network calls** — all operations are local, on-device only
-- **Private storage** — call recordings stored in app-private storage (`/data/data/…`), excluded from media scans
-- **Secure backup** — `backup_rules.xml` excludes Shizuku session data and sensitive prefs from cloud backup
+- **Secure backup** — sensitive session data excluded from cloud backup
 
 ---
 
 ## Contributing
 
-Contributions, bug reports, and feature requests are welcome!
-
-1. **Fork** the repository
-2. Create a feature branch: `git checkout -b feat/your-feature`
-3. Follow the existing code style — Kotlin, Compose, MVVM, Hilt
-4. All new screens must be added to `SearchIndex.kt` so they appear in the Command Palette
-5. Submit a **Pull Request** against `main`
-
-### Code Style Guidelines
-
-- Use `@HiltViewModel` for all ViewModels; inject via `hiltViewModel()` in composables
-- New features go in `ui/<feature>/` with `Screen.kt`, `ViewModel.kt` pattern
-- Navigation routes are typed objects in `NavRoutes.kt` — always add a `Screen.Xxx` entry
-- Use `ACCTopBar` and `GlossyCard` composables for visual consistency
-- Material 3 color roles only (`colorScheme.primary`, `colorScheme.surface`, etc.)
+1. Fork, create branch: `git checkout -b feat/your-feature`
+2. All new screens must be added to `SearchIndex.kt`
+3. New privileged operations: use `connectionManager.exec()`, never `Runtime.exec("su -c ...")`
+4. New TileServices: use `@AndroidEntryPoint` + `@Inject lateinit var connectionManager`
+5. Submit PR against `main`
 
 ---
 
 ## Acknowledgements
 
-This project stands on the shoulders of 17 amazing open-source projects. Deep thanks to their authors:
-
-[aShellYou](https://github.com/DP-Hridayan/aShellYou) · [BetterInternetTiles](https://github.com/CasperVerswijvelt/Better-Internet-Tiles) · [Blocker](https://github.com/lihenggui/blocker) · [Canta](https://github.com/samolego/Canta) · [ColorBlendr](https://github.com/Mahmud0808/ColorBlendr) · [DarQ](https://github.com/KieronQuinn/DarQ) · [Hail](https://github.com/aistra0528/Hail) · [InstallWithOptions](https://github.com/zacharee/InstallWithOptions) · [Inure](https://github.com/Hamza417/Inure) · [Key Mapper](https://github.com/keymapperorg/KeyMapper) · [Language Selector](https://github.com/VegaBobo/Language-Selector) · [Material Files](https://github.com/zhanghai/MaterialFiles) · [RootlessJamesDSP](https://github.com/ThePBone/RootlessJamesDSP) · [SD Maid SE](https://github.com/d4rken-org/sdmaid-se) · [ShizuCallRecorder](https://github.com/chenxiaolong/BCR) · [Shizuku](https://github.com/RikkaApps/Shizuku) · [SmartSpacer](https://github.com/KieronQuinn/SmartSpacer)
+[aShellYou](https://github.com/DP-Hridayan/aShellYou) · [BetterInternetTiles](https://github.com/CasperVerswijvelt/Better-Internet-Tiles) · [Blocker](https://github.com/lihenggui/blocker) · [Canta](https://github.com/samolego/Canta) · [ColorBlendr](https://github.com/Mahmud0808/ColorBlendr) · [DarQ](https://github.com/KieronQuinn/DarQ) · [Hail](https://github.com/aistra0528/Hail) · [InstallWithOptions](https://github.com/zacharee/InstallWithOptions) · [Inure](https://github.com/Hamza417/Inure) · [Key Mapper](https://github.com/keymapperorg/KeyMapper) · [Language Selector](https://github.com/VegaBobo/Language-Selector) · [Material Files](https://github.com/zhanghai/MaterialFiles) · [RootlessJamesDSP](https://github.com/ThePBone/RootlessJamesDSP) · [SD Maid SE](https://github.com/d4rken-org/sdmaid-se) · [ShizuCallRecorder](https://github.com/chenxiaolong/BCR) · [SmartSpacer](https://github.com/KieronQuinn/SmartSpacer)
 
 ---
 
 ## License
 
 ```
-Copyright 2025 ACC Ultimate Contributors
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2025 ACCU Contributors
+Licensed under the Apache License, Version 2.0
 ```
 
-<div align="center">
-
-Made with ❤️ · Kotlin · Compose · Material 3
-
-</div>
+<div align="center">Made with Kotlin · Compose · Material 3</div>
