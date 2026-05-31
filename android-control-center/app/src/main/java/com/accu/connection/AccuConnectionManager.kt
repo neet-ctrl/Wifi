@@ -94,6 +94,23 @@ class AccuConnectionManager @Inject constructor(
         CONNECTED_OTG,
     }
 
+    /** Result of a [completePairing] call — distinguishes failure reasons precisely. */
+    sealed class PairingResult {
+        /** Paired, connected, and verified via echo. */
+        object Success : PairingResult()
+        /**
+         * No adb binary found on this device.
+         * The user must run the pairing command from their PC instead.
+         * [host] and [port] are the discovered pairing endpoint so the UI can
+         * construct the exact `adb pair host:port <code>` command for copy-paste.
+         */
+        data class NoAdbBinary(val host: String, val port: Int) : PairingResult()
+        /** adb binary is present but `adb pair` did not print "Successfully paired" — likely wrong code. */
+        object WrongCode : PairingResult()
+        /** mDNS discovery has not resolved a pairing port yet. */
+        object NoPairingService : PairingResult()
+    }
+
     private val _state = MutableStateFlow(ConnectionState.DISCONNECTED)
     val state: StateFlow<ConnectionState> = _state.asStateFlow()
 
@@ -488,28 +505,31 @@ class AccuConnectionManager @Inject constructor(
     /**
      * Step 2 of the pairing flow — called when user enters the 6-digit PIN.
      *
-     * Tries in order:
-     *   1. Root already available → no pairing needed, return true immediately
-     *   2. System adb binary found → run `adb pair host:port code`
-     *   3. Otherwise → cannot complete from device; caller should guide user to PC
+     * Returns a [PairingResult] so callers can show accurate error messages:
+     *   - [PairingResult.Success]          — paired, connected, and verified
+     *   - [PairingResult.NoAdbBinary]      — no adb binary; user must run command from PC
+     *   - [PairingResult.WrongCode]        — adb ran but "Successfully paired" not in output
+     *   - [PairingResult.NoPairingService] — mDNS hasn't resolved a pairing port yet
      */
-    suspend fun completePairing(code: String): Boolean = withContext(Dispatchers.IO) {
+    suspend fun completePairing(code: String): PairingResult = withContext(Dispatchers.IO) {
         // Root is the primary success path — no pairing needed
         if (try { Shell.getShell().isRoot } catch (_: Exception) { false }) {
             _state.value = ConnectionState.CONNECTED_ROOT
             Timber.i("$TAG completePairing: root available — no pairing required")
             stopPairingDiscovery()
-            return@withContext true
+            return@withContext PairingResult.Success
         }
 
         val host = pairingHost.ifBlank { getDeviceIp() }
-        val port = if (pairingPort > 0) pairingPort else return@withContext false
+        val port = if (pairingPort > 0) pairingPort else {
+            Timber.w("$TAG completePairing: pairingPort is 0 — mDNS hasn't resolved yet")
+            return@withContext PairingResult.NoPairingService
+        }
 
         val adb = findAdbBinary()
         if (adb == null) {
-            Timber.w("$TAG completePairing: no adb binary on device — user must pair from PC")
-            // Still save the host/port so the PC command can be displayed
-            return@withContext false
+            Timber.w("$TAG completePairing: no adb binary on device ($host:$port) — user must pair from PC")
+            return@withContext PairingResult.NoAdbBinary(host, port)
         }
 
         Timber.i("$TAG completePairing: running $adb pair $host:$port ***")
@@ -532,7 +552,7 @@ class AccuConnectionManager @Inject constructor(
                 showConnectedNotification(host, connectPort)
                 stopPairingDiscovery()
                 Timber.i("$TAG completePairing: verified live connection to $host:$connectPort")
-                return@withContext true
+                return@withContext PairingResult.Success
             } else {
                 Timber.w("$TAG completePairing: paired but echo verification failed — ${verify.combinedOutput.take(80)}")
             }
@@ -540,7 +560,7 @@ class AccuConnectionManager @Inject constructor(
 
         Timber.w("$TAG pairing failed — ${pairResult.combinedOutput}")
         _state.value = ConnectionState.AWAITING_CODE
-        false
+        PairingResult.WrongCode
     }
 
     // ─── Notification helpers ──────────────────────────────────────────────────

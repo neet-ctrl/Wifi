@@ -4,12 +4,15 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -38,6 +41,7 @@ fun AdbPairingScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var step by remember { mutableIntStateOf(1) }
     var pairingCode by remember { mutableStateOf("") }
+    val clipboardManager = LocalClipboardManager.current
 
     // Advance to step 3 automatically when ACCU detects the pairing service
     LaunchedEffect(state.connectionState) {
@@ -123,7 +127,7 @@ fun AdbPairingScreen(
                 StepCard(step = 3, currentStep = step, title = "Enter Pairing Code") {
                     when (state.connectionState) {
                         AccuConnectionManager.ConnectionState.AWAITING_CODE -> {
-                            // Pairing service auto-detected!
+                            // Pairing service auto-detected — show the actual IP and port
                             Card(
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth(),
@@ -133,7 +137,19 @@ fun AdbPairingScreen(
                                     Spacer(Modifier.width(8.dp))
                                     Column {
                                         Text("Pairing service detected!", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                        Text("IP and port captured automatically", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        if (state.discoveredPairingIp.isNotBlank() && state.discoveredPairingPort > 0) {
+                                            Spacer(Modifier.height(2.dp))
+                                            SelectionContainer {
+                                                Text(
+                                                    "${state.discoveredPairingIp}:${state.discoveredPairingPort}",
+                                                    fontSize = 12.sp,
+                                                    fontFamily = FontFamily.Monospace,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                )
+                                            }
+                                        } else {
+                                            Text("IP and port captured automatically", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                     }
                                 }
                             }
@@ -177,11 +193,50 @@ fun AdbPairingScreen(
 
                     if (state.pairingStatus.isNotBlank()) {
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            state.pairingStatus,
-                            fontSize = 12.sp,
-                            color = if (state.pairingStatus.contains("✓")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        )
+                        val isPcCommand = state.pairingStatus.contains("adb pair")
+                        val isSuccess   = state.pairingStatus.contains("✓")
+                        val statusColor = when {
+                            isSuccess   -> MaterialTheme.colorScheme.primary
+                            isPcCommand -> MaterialTheme.colorScheme.tertiary
+                            else        -> MaterialTheme.colorScheme.error
+                        }
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = when {
+                                    isSuccess   -> MaterialTheme.colorScheme.primaryContainer
+                                    isPcCommand -> MaterialTheme.colorScheme.tertiaryContainer
+                                    else        -> MaterialTheme.colorScheme.errorContainer
+                                }
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(Modifier.padding(10.dp)) {
+                                if (isPcCommand) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Computer, null, Modifier.size(14.dp), tint = statusColor)
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("Run from your PC", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = statusColor)
+                                        Spacer(Modifier.weight(1f))
+                                        IconButton(
+                                            onClick = { clipboardManager.setText(AnnotatedString(state.pairingStatus)) },
+                                            modifier = Modifier.size(28.dp),
+                                        ) {
+                                            Icon(Icons.Default.ContentCopy, "Copy commands", Modifier.size(14.dp), tint = statusColor)
+                                        }
+                                    }
+                                    Spacer(Modifier.height(4.dp))
+                                }
+                                SelectionContainer {
+                                    Text(
+                                        state.pairingStatus,
+                                        fontSize = 12.sp,
+                                        fontFamily = if (isPcCommand) FontFamily.Monospace else FontFamily.Default,
+                                        color = statusColor,
+                                        lineHeight = 18.sp,
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     Spacer(Modifier.height(12.dp))

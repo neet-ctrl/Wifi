@@ -110,10 +110,19 @@ class ShizukuViewModel @Inject constructor(
                         connectionState = connState,
                         isAvailable = connState != AccuConnectionManager.ConnectionState.DISCONNECTED,
                         isGranted = isConnected,
+                        // Populate discovered pairing endpoint as soon as mDNS resolves it
+                        discoveredPairingIp = if (connState == AccuConnectionManager.ConnectionState.AWAITING_CODE)
+                            connectionManager.getPairingHost() else it.discoveredPairingIp,
+                        discoveredPairingPort = if (connState == AccuConnectionManager.ConnectionState.AWAITING_CODE)
+                            connectionManager.getPairingPort() else it.discoveredPairingPort,
                     )
                 }
                 if (connState == AccuConnectionManager.ConnectionState.DISCONNECTED) {
                     addLog("ACCU connection lost", LogLevel.WARNING)
+                } else if (connState == AccuConnectionManager.ConnectionState.AWAITING_CODE) {
+                    val h = connectionManager.getPairingHost()
+                    val p = connectionManager.getPairingPort()
+                    addLog("Pairing service detected at $h:$p — enter 6-digit code", LogLevel.INFO)
                 } else if (isConnected) {
                     addLog("ACCU connected — ${connState.name}", LogLevel.SUCCESS)
                 }
@@ -246,11 +255,34 @@ class ShizukuViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isPairing = true, pairingStatus = "Pairing with auto-detected device…") }
             addLog("Completing pairing with code $code", LogLevel.INFO)
-            val ok = connectionManager.completePairing(code)
-            val status = if (ok) "Paired and connected ✓" else "Pairing failed — check the code and try again"
-            _state.update { it.copy(isPairing = false, pairingStatus = status) }
-            addLog(status, if (ok) LogLevel.SUCCESS else LogLevel.ERROR)
-            if (ok) refresh()
+            when (val result = connectionManager.completePairing(code)) {
+                is AccuConnectionManager.PairingResult.Success -> {
+                    val status = "Paired and connected ✓"
+                    _state.update { it.copy(isPairing = false, pairingStatus = status) }
+                    addLog(status, LogLevel.SUCCESS)
+                    refresh()
+                }
+                is AccuConnectionManager.PairingResult.NoAdbBinary -> {
+                    val h = result.host
+                    val p = result.port
+                    val sessionPort = connectionManager.getSessionPort().takeIf { it > 0 } ?: 5555
+                    val pairCmd    = "adb pair $h:$p $code"
+                    val connectCmd = "adb connect $h:$sessionPort"
+                    val status = "No adb binary on this device.\nRun on your PC:\n  $pairCmd\nThen:\n  $connectCmd"
+                    _state.update { it.copy(isPairing = false, pairingStatus = status) }
+                    addLog("No adb binary — PC pair command: $pairCmd", LogLevel.WARNING)
+                }
+                is AccuConnectionManager.PairingResult.WrongCode -> {
+                    val status = "Pairing failed — wrong code or expired. Try again."
+                    _state.update { it.copy(isPairing = false, pairingStatus = status) }
+                    addLog(status, LogLevel.ERROR)
+                }
+                is AccuConnectionManager.PairingResult.NoPairingService -> {
+                    val status = "No pairing service found yet.\nGo to: Developer Options → Wireless debugging → Pair device with pairing code"
+                    _state.update { it.copy(isPairing = false, pairingStatus = status) }
+                    addLog("completePairing: pairingPort=0, mDNS not resolved yet", LogLevel.ERROR)
+                }
+            }
         }
     }
 
