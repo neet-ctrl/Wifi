@@ -88,7 +88,7 @@ jobs:
         env:
           JAVA_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g"
           GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-          JITPACK_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JITPACK_TOKEN: ${{ secrets.JITPACK_TOKEN }}
           KEYSTORE_PATH: release.jks
           KEYSTORE_PASSWORD: "Sh@090609"
           KEY_ALIAS: my-key
