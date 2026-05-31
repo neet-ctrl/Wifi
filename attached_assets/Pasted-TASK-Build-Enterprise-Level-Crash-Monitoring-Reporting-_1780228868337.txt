@@ -1,0 +1,416 @@
+TASK: Build Enterprise-Level Crash Monitoring, Reporting, Recovery & Diagnostics System for ACCU
+
+I want ACCU to have a complete professional crash management system similar to what large production apps use.
+
+This is NOT a simple crash logger.
+
+Build a full crash reporting, crash storage, crash viewer, crash notification, crash recovery and diagnostics framework.
+
+MAIN GOAL
+
+Whenever ACCU crashes for ANY reason:
+
+- Java crash
+- Kotlin crash
+- Compose crash
+- ANR
+- Background service crash
+- Foreground service crash
+- Shizuku crash
+- Root operation crash
+- Native crash
+- Thread crash
+- Coroutine crash
+- Uncaught exception
+- Activity crash
+- Fragment crash
+- ViewModel crash
+- Worker crash
+- BroadcastReceiver crash
+- IPC/Binder crash
+- SDK crash
+- Plugin crash
+- Startup crash
+
+The crash must NEVER disappear.
+
+I want complete crash history permanently available inside ACCU.
+
+---
+
+REQUIREMENTS
+
+1. GLOBAL CRASH HANDLER
+
+Implement:
+
+- Default UncaughtExceptionHandler
+- CoroutineExceptionHandler
+- Thread exception handler
+- Compose error capture
+- Service exception capture
+- Worker exception capture
+- ANR detector
+
+Everything must funnel into one unified ACCU Crash Engine.
+
+---
+
+2. CRASH STORAGE SYSTEM
+
+Create:
+
+CrashRepository
+
+Store every crash permanently.
+
+Fields:
+
+- Crash ID
+- Timestamp
+- App Version
+- Build Version
+- Device Model
+- Android Version
+- RAM Usage
+- CPU Usage
+- Battery Level
+- Process Name
+- Thread Name
+- Exception Type
+- Exception Message
+- Full Stack Trace
+- Cause Chain
+- Activity Name
+- Fragment Name
+- Screen Route
+- Service Name
+- ViewModel Name
+- Network State
+- Shizuku State
+- Root State
+- Wireless ADB State
+- User Actions Before Crash
+- Session ID
+
+Nothing should be lost.
+
+Store locally using Room database.
+
+Maximum history:
+10000+ crashes.
+
+---
+
+3. REAL-TIME CRASH SCREEN
+
+When ACCU crashes:
+
+Immediately show a dedicated crash activity.
+
+Not a simple dialog.
+
+Create:
+
+CrashReportActivity
+
+Modern Material 3 UI.
+
+Show:
+
+- Crash title
+- Error type
+- Full stack trace
+- Device info
+- Build info
+- Timestamp
+- Session details
+
+Buttons:
+
+- Copy Crash Log
+- Share Crash Log
+- Save as TXT
+- Save as JSON
+- Export ZIP
+- Open Full Details
+- Search Error Online
+- Restart ACCU
+- Open Safe Mode
+- Close App
+
+---
+
+4. INSTANT NOTIFICATION
+
+Immediately after crash:
+
+Show high priority notification.
+
+Notification actions:
+
+- Copy Log
+- Share Log
+- Open Crash Details
+- Restart ACCU
+- Dismiss
+
+Notification must survive app restart.
+
+Notification must open exact crash.
+
+---
+
+5. SETTINGS SECTION
+
+Create new settings category:
+
+Crash Center
+
+Modern dashboard.
+
+Show:
+
+- Total Crashes
+- Today Crashes
+- This Week Crashes
+- ANRs
+- Fatal Crashes
+- Non-Fatal Crashes
+
+Charts.
+
+Statistics.
+
+Filters.
+
+Search.
+
+Sorting.
+
+---
+
+6. CRASH HISTORY PAGE
+
+Create:
+
+CrashHistoryScreen
+
+Features:
+
+- Search
+- Filters
+- Pagination
+- Sort
+- Favorite crash
+- Pin crash
+- Delete crash
+- Bulk delete
+- Copy crash
+- Export crash
+- Share crash
+
+Each crash opens detailed inspector.
+
+---
+
+7. CRASH DETAIL VIEWER
+
+Create:
+
+CrashDetailScreen
+
+Show:
+
+- Full stack trace
+- Exception tree
+- Device info
+- Memory info
+- Process info
+- Logs
+- Session data
+
+Buttons:
+
+- Copy
+- Export TXT
+- Export JSON
+- Export ZIP
+- Share
+- Delete
+
+---
+
+8. EXPORT SYSTEM
+
+Allow export:
+
+TXT
+
+JSON
+
+ZIP
+
+HTML Report
+
+Markdown Report
+
+Export single crash.
+
+Export all crashes.
+
+---
+
+9. SAFE MODE
+
+After repeated crashes:
+
+Offer:
+
+Start ACCU in Safe Mode.
+
+Safe Mode should:
+
+- Disable experimental modules
+- Disable plugins
+- Disable automation
+- Disable overlays
+- Disable startup services
+
+User can recover from bad configurations.
+
+---
+
+10. CRASH ANALYSIS
+
+Generate:
+
+Possible Cause
+
+Affected Module
+
+Risk Level
+
+Crash Frequency
+
+Last Seen
+
+Suggested Fix
+
+Automatically.
+
+---
+
+11. PERMISSIONS
+
+Integrate with existing ACCU permission center.
+
+If any permissions are required:
+
+- Notification Permission
+- Storage Access
+- File Export Access
+
+Use existing permission framework.
+
+Do not create duplicate permission systems.
+
+---
+
+12. UI REQUIREMENTS
+
+Material 3.
+
+Modern.
+
+Glassmorphism where appropriate.
+
+Responsive.
+
+Dark Mode.
+
+Light Mode.
+
+Tablet support.
+
+Large screen support.
+
+Search animations.
+
+Loading states.
+
+Empty states.
+
+Error states.
+
+---
+
+13. NAVIGATION
+
+Add:
+
+Settings
+→ Crash Center
+
+Crash Center
+→ Crash History
+
+Crash History
+→ Crash Details
+
+Notification
+→ Crash Details
+
+Crash Screen
+→ Crash Details
+
+Everything must be interconnected.
+
+---
+
+14. IMPLEMENTATION REQUIREMENTS
+
+Create all required:
+
+- Room entities
+- DAO
+- Repository
+- ViewModels
+- UseCases
+- Services
+- Notification manager
+- Export manager
+- Crash engine
+- Safe mode manager
+- UI screens
+- Navigation routes
+
+No placeholders.
+
+No TODOs.
+
+No mock data.
+
+Everything production-ready.
+
+---
+
+15. DOCUMENTATION
+
+Create:
+
+CRASH_SYSTEM_ARCHITECTURE.md
+
+Include:
+
+- Architecture
+- Data flow
+- Database schema
+- Notification flow
+- Export flow
+- Recovery flow
+- Safe mode flow
+
+Provide full documentation.
+
+Build the complete system end-to-end and wire it into ACCU so every crash is captured, stored, displayed instantly, notified instantly, and available later from Settings → Crash Center.

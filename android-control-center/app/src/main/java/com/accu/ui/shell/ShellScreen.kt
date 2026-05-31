@@ -59,6 +59,7 @@ fun ShellScreen(
     onNavigateToFastboot: () -> Unit = {},
     onNavigateToScreenCapture: () -> Unit = {},
     onNavigateToTutorial: () -> Unit = {},
+    onNavigateToQsTileDashboard: () -> Unit = {},
     viewModel: ShellViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -119,6 +120,9 @@ fun ShellScreen(
                         }
                         IconButton(onClick = onNavigateToScripts) {
                             Icon(Icons.Outlined.Code, "Script Manager")
+                        }
+                        IconButton(onClick = onNavigateToQsTileDashboard) {
+                            Icon(Icons.Default.ViewDay, "QS Tile Dashboard")
                         }
                     }
                 )

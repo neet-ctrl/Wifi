@@ -115,6 +115,9 @@ sealed class Screen(val route: String) {
     // aShellYou — missing feature
     data object ScriptEditor        : Screen("script_editor")
 
+    // aShellYou — QS Tile Dashboard (custom shell-command QS tiles)
+    data object ShellQsTileDashboard : Screen("shell_qs_tile_dashboard")
+
     // Hail — missing feature
     data object FreezeScheduler     : Screen("freeze_scheduler")
 

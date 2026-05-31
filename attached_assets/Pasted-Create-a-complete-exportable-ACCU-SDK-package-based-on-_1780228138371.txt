@@ -1,0 +1,124 @@
+Create a complete exportable ACCU SDK package based on the current ACCU System Service architecture and ACCU_THIRD_PARTY_DEVELOPER_GUIDE.md.
+
+Export:
+
+exports/accu-sdk.zip
+
+The ZIP must contain only files that are actually required by the current ACCU implementation.
+
+Structure:
+
+accu-sdk.zip
+
+├── README.md
+│
+├── docs/
+│   ├── ACCU_THIRD_PARTY_DEVELOPER_GUIDE.md
+│   ├── ACCU_API_REFERENCE.md
+│   ├── ACCU_ARCHITECTURE.md
+│   ├── ACCU_TROUBLESHOOTING.md
+│   ├── ACCU_MIGRATION_FROM_SHIZUKU.md
+│   └── ACCU_INTEGRATION_CHECKLIST.md
+│
+├── aidl/
+│   └── com/
+│       └── accu/
+│           └── api/
+│               ├── IAccuService.aidl
+│               ├── IAccuPermissionCallback.aidl
+│               └── IAccuProcessCallback.aidl
+│
+├── sdk/
+│   ├── AccuClient.kt
+│   ├── AccuConstants.kt
+│   ├── AccuScopes.kt
+│   ├── AccuPermissionCodes.kt
+│   ├── AccuConnectionState.kt
+│   └── AccuExceptions.kt
+│
+├── templates/
+│   ├── AndroidManifest_Template.xml
+│   ├── BuildGradle_Template.kts
+│   ├── MainActivity_Template.kt
+│   ├── ViewModel_Template.kt
+│   └── ServiceConnection_Template.kt
+│
+└── samples/
+├── MinimalSample/
+├── ShellSample/
+├── PackageManagerSample/
+├── SettingsSample/
+└── FullDemoApp/
+
+Requirements:
+
+1. Copy the actual AIDL files from the ACCU source tree.
+
+2. Generate a reusable AccuClient.kt based on the current service binding architecture.
+
+3. Generate AccuScopes.kt using the actual scopes currently supported:
+   
+   SHELL
+   PACKAGE_MANAGE
+   PERMISSIONS
+   SETTINGS
+   LOCALE
+   ALL
+
+4. Generate AccuPermissionCodes.kt using the actual codes:
+   
+   PERMISSION_GRANTED = 0
+   PERMISSION_DENIED = 1
+   NOT_YET_REQUESTED = -1
+   SERVICE_UNAVAILABLE = -2
+
+5. Generate AccuConnectionState.kt.
+
+6. Generate AccuExceptions.kt.
+
+7. Create AndroidManifest template.
+
+8. Create Gradle template.
+
+9. Create complete sample projects.
+
+10. Create README.md explaining:
+    
+    - What ACCU is.
+    - How another developer integrates ACCU.
+    - Where AIDL files go.
+    - Where SDK files go.
+    - Manifest changes.
+    - Gradle changes.
+    - How to connect.
+    - How to request permission.
+    - How to call APIs.
+    - How to disconnect.
+
+11. Create ACCU_ARCHITECTURE.md describing:
+    
+    App
+    ↓
+    AccuClient
+    ↓
+    IAccuService Binder
+    ↓
+    AccuSystemService
+    ↓
+    AccuPermissionManager
+    ↓
+    Shizuku / Root Backend
+    ↓
+    Android System
+
+12. Create ACCU_API_REFERENCE.md using the actual 75 API methods currently exposed by IAccuService.
+
+13. Create ACCU_INTEGRATION_CHECKLIST.md containing a full verification checklist.
+
+14. Verify every file referenced by the documentation actually exists in the ZIP.
+
+15. Create a build/export task that automatically generates:
+
+exports/accu-sdk.zip
+
+This SDK package should allow a developer to start with an empty Android Studio project and integrate ACCU System Service without needing any files from the ACCU source code repository.

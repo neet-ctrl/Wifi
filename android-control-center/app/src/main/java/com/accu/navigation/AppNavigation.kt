@@ -128,6 +128,7 @@ import com.accu.ui.shell.AdbDeviceInfoScreen
 import com.accu.ui.shell.AdbFastbootScreen
 import com.accu.ui.shell.AdbScreenCaptureScreen
 import com.accu.ui.shell.AdbTutorialScreen
+import com.accu.ui.shell.ShellQsTileDashboardScreen
 
 @Composable
 fun AppNavigation() {
@@ -220,6 +221,7 @@ fun AppNavigation() {
                     onNavigateToFastboot     = { navController.navigate(Screen.AdbFastboot.route) },
                     onNavigateToScreenCapture = { navController.navigate(Screen.AdbScreenCapture.route) },
                     onNavigateToTutorial     = { navController.navigate(Screen.AdbTutorial.route) },
+                    onNavigateToQsTileDashboard = { navController.navigate(Screen.ShellQsTileDashboard.route) },
                 )
             }
             composable(Screen.AppManager.route) {
@@ -505,6 +507,11 @@ fun AppNavigation() {
             // aShellYou — Script Editor / Manager
             composable(Screen.ScriptEditor.route) {
                 ScriptEditorScreen(onBack = { navController.popBackStack() })
+            }
+
+            // aShellYou — Shell QS Tile Dashboard
+            composable(Screen.ShellQsTileDashboard.route) {
+                ShellQsTileDashboardScreen(onBack = { navController.popBackStack() })
             }
 
             // Hail — Freeze Scheduler
