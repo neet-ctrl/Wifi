@@ -624,6 +624,7 @@ private fun CommandPaletteOverlay(
                                     }
                                 }
                                 items(items, key = { "${category}_${it.route}_${it.title}" }) { result ->
+                                    val accent = categoryAccent[category] ?: MaterialTheme.colorScheme.primary
                                     SearchResultRow(
                                         result = result,
                                         accent = accent,

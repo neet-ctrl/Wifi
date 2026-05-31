@@ -415,8 +415,7 @@ private fun ChannelCard(
     Card(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 5.dp)
-            .animateItem(),
+            .padding(horizontal = 16.dp, vertical = 5.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = cardColor),
         border = if (effectivelyEnabled) BorderStroke(1.dp, accentColor.copy(0.3f)) else null,

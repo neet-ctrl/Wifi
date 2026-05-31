@@ -255,8 +255,7 @@ private val PRELOADED_COMMANDS = listOf(
     CommandExample("wm07","Reset overscan","wm overscan reset","Resets overscan to default.",listOf("wm","system","display","ui")),
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CommandExamplesScreen(
     onBack: () -> Unit = {},

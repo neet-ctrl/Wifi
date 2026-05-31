@@ -278,7 +278,7 @@ private fun SectionTitle(title: String) {
 }
 
 private fun Modifier.clickableWrapper(onClick: () -> Unit): Modifier =
-    androidx.compose.foundation.clickable(this, onClick = onClick)
+    this.clickable(onClick = onClick)
 
 private operator fun PaddingValues.plus(other: PaddingValues): PaddingValues = PaddingValues(
     top = calculateTopPadding() + other.calculateTopPadding(),
