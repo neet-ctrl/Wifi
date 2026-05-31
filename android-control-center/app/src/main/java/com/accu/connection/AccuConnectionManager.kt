@@ -144,6 +144,15 @@ class AccuConnectionManager @Inject constructor(
         try { java.io.File(it).let { f -> f.exists() && f.canExecute() } } catch (_: Exception) { false }
     }
 
+    /** Returns the IP of the currently discovered pairing service (empty if none). */
+    fun getPairingHost(): String = pairingHost
+
+    /** Returns the PORT of the currently discovered pairing service (0 if none). */
+    fun getPairingPort(): Int = pairingPort
+
+    /** Returns the connection port that will be used after pairing (0 if not yet discovered). */
+    fun getSessionPort(): Int = sessionPort
+
     /**
      * True when commands should execute on a REMOTE device (wireless ADB / OTG) rather
      * than the local device running ACCU.
