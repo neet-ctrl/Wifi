@@ -17,7 +17,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.accu.ui.components.ACCTopBar
+import com.accu.ui.shizuku.ShizukuViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +45,10 @@ fun FtpServerScreen(onBack: () -> Unit = {}) {
     var smbEnabled by remember { mutableStateOf(false) }
     var smbShareName by remember { mutableStateOf("Android") }
 
-    val localIp = remember { "192.168.1.42" }
+    // Use the real IP of the connected target device, not a hardcoded placeholder
+    val connectionViewModel: ShizukuViewModel = hiltViewModel()
+    val connectionState by connectionViewModel.state.collectAsStateWithLifecycle()
+    val localIp = connectionState.deviceIp.ifBlank { "—" }
     val ftpUrl = "ftp://$localIp:$ftpPort"
     val sftpUrl = "sftp://$localIp:$sftpPort"
     val context = LocalContext.current

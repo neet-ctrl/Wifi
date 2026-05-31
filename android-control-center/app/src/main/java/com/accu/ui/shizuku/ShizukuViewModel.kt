@@ -341,11 +341,13 @@ class ShizukuViewModel @Inject constructor(
                 val success = result.output.contains("Successfully paired", ignoreCase = true)
                 if (success) {
                     addLog("Paired — now connecting and verifying…", LogLevel.INFO)
-                    shizukuUtils.execAdb("$adb connect $host:5555")
+                    // Use the mDNS-discovered session port; fall back to 5555 only if not yet resolved
+                    val sessionPort = connectionManager.getSessionPort().takeIf { it > 0 } ?: 5555
+                    shizukuUtils.execAdb("$adb connect $host:$sessionPort")
                     // Verify with an actual command — never trust "adb connect" output alone
-                    val verify = shizukuUtils.execAdb("$adb -s $host:5555 shell echo ACCU_OK 2>&1")
+                    val verify = shizukuUtils.execAdb("$adb -s $host:$sessionPort shell echo ACCU_OK 2>&1")
                     val verified = verify.output.trim() == "ACCU_OK"
-                    val status = if (verified) "Connected and verified ✓  $host:5555"
+                    val status = if (verified) "Connected and verified ✓  $host:$sessionPort"
                                  else "Paired but verification failed — device may be unreachable"
                     addLog(status, if (verified) LogLevel.SUCCESS else LogLevel.ERROR)
                     _state.update { it.copy(isPairing = false, pairingStatus = status) }
@@ -359,8 +361,11 @@ class ShizukuViewModel @Inject constructor(
             }
 
             // No adb binary on device — guide user to run from PC
+            // Use mDNS session port if already resolved; otherwise the pairing port
+            // (user can also check Settings → Wireless Debugging for the exact session port)
+            val sessionPort = connectionManager.getSessionPort().takeIf { it > 0 } ?: port.toIntOrNull() ?: 5555
             val pcPairCmd    = "adb pair $host:$port $code"
-            val pcConnectCmd = "adb connect $host:5555"
+            val pcConnectCmd = "adb connect $host:$sessionPort"
             addLog("No adb binary on this device — must pair from PC", LogLevel.WARNING)
             _state.update {
                 it.copy(

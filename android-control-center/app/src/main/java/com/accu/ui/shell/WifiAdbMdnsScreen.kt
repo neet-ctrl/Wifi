@@ -133,17 +133,19 @@ class WifiAdbMdnsViewModel @Inject constructor(
                 // Only trust explicit success text — exitCode is unreliable on many ROM adb builds
                 val pairOk = pairResult.output.contains("Successfully paired", ignoreCase = true)
                 if (pairOk) {
-                    _state.update { it.copy(pairingStatus = "Paired! Connecting to ${s.pairingHost}:5555…") }
-                    connectionManager.execPlainShell("$adb connect ${s.pairingHost}:5555")
+                    // Use the mDNS-discovered session port; fall back to 5555 only if not yet resolved
+                    val sessionPort = connectionManager.getSessionPort().takeIf { it > 0 } ?: 5555
+                    _state.update { it.copy(pairingStatus = "Paired! Connecting to ${s.pairingHost}:$sessionPort…") }
+                    connectionManager.execPlainShell("$adb connect ${s.pairingHost}:$sessionPort")
                     // VERIFY the connection is ACTUALLY live — don't trust "adb connect" output alone
                     // ("already connected" can appear from stale ADB cache even when device is offline)
-                    val verify = connectionManager.execPlainShell("$adb -s ${s.pairingHost}:5555 shell echo ACCU_OK 2>&1")
+                    val verify = connectionManager.execPlainShell("$adb -s ${s.pairingHost}:$sessionPort shell echo ACCU_OK 2>&1")
                     val verified = verify.output.trim() == "ACCU_OK"
                     _state.update { it.copy(
                         isPairing = false,
-                        pairingStatus = if (verified) "Connected and verified ✓  ${s.pairingHost}:5555"
+                        pairingStatus = if (verified) "Connected and verified ✓  ${s.pairingHost}:$sessionPort"
                                         else "Paired but verification failed — device may be offline",
-                        snackbarMessage = if (verified) "Connected to ${s.pairingHost}" else "Verification failed — device unreachable",
+                        snackbarMessage = if (verified) "Connected to ${s.pairingHost}:$sessionPort" else "Verification failed — device unreachable",
                         lastError = if (!verified) verify.combinedOutput.take(200).ifBlank { "echo test returned: ${verify.output}" } else null,
                     )}
                     if (verified) connectionManager.checkAndUpdateState()
@@ -159,8 +161,11 @@ class WifiAdbMdnsViewModel @Inject constructor(
             }
 
             // No adb binary on this device — must be done from PC
+            // Use mDNS session port if already resolved, otherwise use the pairing port
+            // (user can also check Settings → Wireless Debugging for the session port)
+            val sessionPort = connectionManager.getSessionPort().takeIf { it > 0 } ?: port
             val pcPair    = "adb pair ${s.pairingHost}:$port ${s.pairingCode}"
-            val pcConnect = "adb connect ${s.pairingHost}:5555"
+            val pcConnect = "adb connect ${s.pairingHost}:$sessionPort"
             _state.update { it.copy(
                 isPairing = false,
                 pairingStatus = "No adb binary on this device.\nRun on your PC:\n  $pcPair\nThen:\n  $pcConnect",
