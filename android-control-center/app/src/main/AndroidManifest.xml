@@ -404,7 +404,7 @@
             android:process=":crash"
             android:showOnLockScreen="true"
             android:taskAffinity="${applicationId}.crash"
-            android:theme="@style/Theme.ACCU" />
+            android:theme="@style/Theme.ACC" />
 
         <!--
             Handles high-priority notification action buttons:

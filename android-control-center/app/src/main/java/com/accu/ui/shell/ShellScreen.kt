@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.accu.ui.components.InfoTooltipIcon
+import com.accu.ui.theme.ExpandableSection
 import androidx.compose.foundation.lazy.LazyRow
 
 enum class ShellMode(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
@@ -146,22 +147,26 @@ fun ShellScreen(
                     }
                 }
 
-                // ADB Tools quick-access row
-                Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+                // ADB Tools quick-access row — collapsed by default so the terminal gets maximum vertical space
+                ExpandableSection(
+                    title = "ADB Tools",
+                    icon = Icons.Default.Terminal,
+                    initiallyExpanded = false,
+                ) {
+                    data class AdbTool(val icon: androidx.compose.ui.graphics.vector.ImageVector, val label: String, val action: () -> Unit)
+                    val tools = listOf(
+                        AdbTool(Icons.Outlined.Article,       "Logcat",      onNavigateToLogcat),
+                        AdbTool(Icons.Outlined.Speed,         "Processes",   onNavigateToProcesses),
+                        AdbTool(Icons.Outlined.PhoneAndroid,  "Device Info", onNavigateToDeviceInfo),
+                        AdbTool(Icons.Outlined.Screenshot,    "Screenshot",  onNavigateToScreenCapture),
+                        AdbTool(Icons.Outlined.DeveloperMode, "Fastboot",    onNavigateToFastboot),
+                        AdbTool(Icons.Outlined.School,        "Tutorial",    onNavigateToTutorial),
+                        AdbTool(Icons.Outlined.FolderOpen,    "Files",       { onNavigateToFileBrowser(currentMode.toConnectionMode(), uiState.connectedHost) }),
+                    )
                     LazyRow(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        data class AdbTool(val icon: androidx.compose.ui.graphics.vector.ImageVector, val label: String, val action: () -> Unit)
-                        val tools = listOf(
-                            AdbTool(Icons.Outlined.Article,        "Logcat",       onNavigateToLogcat),
-                            AdbTool(Icons.Outlined.Speed,          "Processes",    onNavigateToProcesses),
-                            AdbTool(Icons.Outlined.PhoneAndroid,   "Device Info",  onNavigateToDeviceInfo),
-                            AdbTool(Icons.Outlined.Screenshot,     "Screenshot",   onNavigateToScreenCapture),
-                            AdbTool(Icons.Outlined.DeveloperMode,  "Fastboot",     onNavigateToFastboot),
-                            AdbTool(Icons.Outlined.School,         "Tutorial",     onNavigateToTutorial),
-                            AdbTool(Icons.Outlined.FolderOpen,     "Files",        { onNavigateToFileBrowser(currentMode.toConnectionMode(), uiState.connectedHost) }),
-                        )
                         items(tools) { tool ->
                             SuggestionChip(
                                 onClick = tool.action,
