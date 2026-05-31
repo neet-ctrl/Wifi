@@ -1,5 +1,6 @@
 package com.accu.ui.automation
 
+import android.content.Intent
 import androidx.compose.animation.*
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -12,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -129,7 +131,8 @@ fun KeyMapListScreen(
                         Text("Accessibility Service", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onErrorContainer, fontSize = 13.sp)
                         Text("Enable Key Mapper accessibility service to activate key maps.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onErrorContainer)
                     }
-                    TextButton(onClick = {}) { Text("Enable", color = MaterialTheme.colorScheme.onErrorContainer) }
+                    val ctx = LocalContext.current
+                    TextButton(onClick = { ctx.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }) }) { Text("Enable", color = MaterialTheme.colorScheme.onErrorContainer) }
                 }
             }
 

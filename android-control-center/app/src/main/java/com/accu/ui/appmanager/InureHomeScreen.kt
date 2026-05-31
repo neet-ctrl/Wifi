@@ -63,19 +63,28 @@ fun InureHomeScreen(
     val disabledApps = remember {
         listOf("Carrier Services", "Device Health Services", "Google One").map { AppSummary(it, "com.google.$it") }
     }
+    var showSearch by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
     val quickApps = remember {
         listOf("Settings", "Calculator", "Clock", "Camera").map { AppSummary(it, "com.android.$it") }
     }
 
     Scaffold(
         topBar = {
-            ACCTopBar(
-                title = "Inure Home",
-                onBack = onBack,
-                actions = {
-                    IconButton(onClick = {}) { Icon(Icons.Default.Search, "Search") }
-                }
-            )
+            if (showSearch) {
+                TopAppBar(
+                    title = { OutlinedTextField(searchQuery, { searchQuery = it }, Modifier.fillMaxWidth(), placeholder = { Text("Search apps…") }, singleLine = true) },
+                    navigationIcon = { IconButton(onClick = { showSearch = false; searchQuery = "" }) { Icon(Icons.Default.Close, "Close") } },
+                )
+            } else {
+                ACCTopBar(
+                    title = "Inure Home",
+                    onBack = onBack,
+                    actions = {
+                        IconButton(onClick = { showSearch = true }) { Icon(Icons.Default.Search, "Search") }
+                    }
+                )
+            }
         }
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(bottom = 24.dp)) {

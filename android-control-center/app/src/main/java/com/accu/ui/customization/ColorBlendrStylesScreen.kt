@@ -209,7 +209,18 @@ private fun PerPackageColorsSection() {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Button(onClick = {}) {
+                    var showAddDialog by remember { mutableStateOf(false) }
+                    var overridePackage by remember { mutableStateOf("") }
+                    if (showAddDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showAddDialog = false },
+                            title = { Text("Add App Override") },
+                            text = { Column { Text("Enter the package name of the app to override:"); Spacer(Modifier.height(8.dp)); OutlinedTextField(overridePackage, { overridePackage = it }, Modifier.fillMaxWidth(), label = { Text("Package name") }, placeholder = { Text("e.g. com.google.android.apps.maps") }, singleLine = true) } },
+                            confirmButton = { Button(onClick = { showAddDialog = false; overridePackage = "" }, enabled = overridePackage.contains(".")) { Text("Add") } },
+                            dismissButton = { TextButton(onClick = { showAddDialog = false }) { Text("Cancel") } }
+                        )
+                    }
+                    Button(onClick = { showAddDialog = true }) {
                         Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
                         Text("Add App Override")

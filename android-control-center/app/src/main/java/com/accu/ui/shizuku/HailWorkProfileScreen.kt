@@ -1,5 +1,6 @@
 package com.accu.ui.shizuku
 
+import android.content.Intent
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -9,6 +10,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -103,7 +105,8 @@ fun HailWorkProfileScreen(onBack: () -> Unit) {
                             leadingContent = { Icon(Icons.Default.WorkspacesFilled, null) },
                             trailingContent = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (!islandInstalled) OutlinedButton(onClick = {}) { Text("Install") }
+                                    val ctx = LocalContext.current
+                                if (!islandInstalled) OutlinedButton(onClick = { ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=com.oasisfeng.island")).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }) }) { Text("Install") }
                                     Switch(checked = islandInstalled, onCheckedChange = { islandInstalled = it }, modifier = Modifier.padding(start = 8.dp))
                                 }
                             }
@@ -147,7 +150,7 @@ fun HailWorkProfileScreen(onBack: () -> Unit) {
                                     modifier = Modifier.width(100.dp),
                                     singleLine = true,
                                     readOnly = true,
-                                    trailingIcon = { IconButton(onClick = {}) { Icon(Icons.Default.AccessTime, null) } }
+                                    trailingIcon = { IconButton(onClick = { if (scheduleHour < 23) scheduleHour++ else scheduleHour = 0 }) { Icon(Icons.Default.AccessTime, null) } }
                                 )
                             }
                         }

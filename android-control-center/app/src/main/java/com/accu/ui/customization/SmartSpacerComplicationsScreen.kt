@@ -56,7 +56,16 @@ fun SmartSpacerComplicationsScreen(onBack: () -> Unit = {}) {
                 title = "Complications",
                 onBack = onBack,
                 actions = {
-                    IconButton(onClick = {}) { Icon(Icons.Default.Info, null) }
+                    var showInfoDialog by remember { mutableStateOf(false) }
+                    if (showInfoDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showInfoDialog = false },
+                            title = { Text("About Complications") },
+                            text = { Text("Smartspacer Complications are small widgets that appear alongside your main Smartspace content. They can show weather, time, battery level, and more.\n\nEnable or disable complications using the toggles. Use the FloatingActionButton to add new ones from installed providers.") },
+                            confirmButton = { TextButton(onClick = { showInfoDialog = false }) { Text("OK") } }
+                        )
+                    }
+                    IconButton(onClick = { showInfoDialog = true }) { Icon(Icons.Default.Info, null) }
                 }
             )
         },

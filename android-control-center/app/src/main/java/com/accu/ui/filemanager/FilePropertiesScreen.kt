@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -99,18 +100,34 @@ private fun PermissionsTab(path: String) {
         item { PropRow("Others write", "No") }
         item { PropRow("Others exec", "No") }
         item {
+            val context = LocalContext.current
+            var snackMsg by remember { mutableStateOf<String?>(null) }
             Spacer(Modifier.height(12.dp))
             Text("Change Permissions", fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             Text("Owner", fontWeight = FontWeight.Medium, fontSize = 13.sp)
+            var oR by remember { mutableStateOf(true) }; var oW by remember { mutableStateOf(true) }; var oX by remember { mutableStateOf(false) }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                var r by remember { mutableStateOf(true) }; var w by remember { mutableStateOf(true) }; var x by remember { mutableStateOf(false) }
-                FilterChip(selected = r, onClick = { r = !r }, label = { Text("Read") })
-                FilterChip(selected = w, onClick = { w = !w }, label = { Text("Write") })
-                FilterChip(selected = x, onClick = { x = !x }, label = { Text("Execute") })
+                FilterChip(selected = oR, onClick = { oR = !oR }, label = { Text("Read") })
+                FilterChip(selected = oW, onClick = { oW = !oW }, label = { Text("Write") })
+                FilterChip(selected = oX, onClick = { oX = !oX }, label = { Text("Execute") })
             }
             Spacer(Modifier.height(8.dp))
-            Button(onClick = {}, modifier = Modifier.fillMaxWidth()) { Text("Apply (requires root)") }
+            snackMsg?.let { Text(it, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp) }
+            Button(
+                onClick = {
+                    val mode = (if (oR) 4 else 0) + (if (oW) 2 else 0) + (if (oX) 1 else 0)
+                    val modeStr = "$mode${mode}${mode}"
+                    try {
+                        val proc = Runtime.getRuntime().exec(arrayOf("su", "-c", "chmod $modeStr \"$filePath\""))
+                        val exitCode = proc.waitFor()
+                        snackMsg = if (exitCode == 0) "Permissions applied: $modeStr" else "Root required to change permissions"
+                    } catch (e: Exception) {
+                        snackMsg = "Error: ${e.message}"
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Apply (requires root)") }
         }
     }
 }

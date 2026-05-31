@@ -1,5 +1,7 @@
 package com.accu.ui.appmanager
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,11 +12,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import com.accu.ui.components.ACCTopBar
+import java.io.File
 
 data class ApkFile(
     val name: String,
@@ -30,11 +35,31 @@ data class ApkFile(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InureApksScreen(onBack: () -> Unit = {}) {
+    val context = LocalContext.current
     var isScanning by remember { mutableStateOf(false) }
     var hasScanned by remember { mutableStateOf(true) }
     var search by remember { mutableStateOf("") }
     var sortMode by remember { mutableStateOf("Name") }
     var showSortMenu by remember { mutableStateOf(false) }
+    var deletedPaths by remember { mutableStateOf(setOf<String>()) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    fun installApk(apk: ApkFile) {
+        try {
+            val file = File(apk.path)
+            if (!file.exists()) return
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+            context.startActivity(Intent(Intent.ACTION_VIEW).apply { setDataAndType(uri, "application/vnd.android.package-archive"); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK) })
+        } catch (_: Exception) {}
+    }
+    fun shareApk(apk: ApkFile) {
+        try {
+            val file = File(apk.path)
+            if (!file.exists()) return
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "application/vnd.android.package-archive"; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, "Share APK"))
+        } catch (_: Exception) {}
+    }
 
     val apks = remember {
         listOf(
@@ -112,9 +137,13 @@ fun InureApksScreen(onBack: () -> Unit = {}) {
                                     }
                                     Spacer(Modifier.height(8.dp))
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        OutlinedButton(onClick = {}, Modifier.weight(1f)) { Icon(Icons.Default.InstallMobile, null, Modifier.size(14.dp)); Spacer(Modifier.width(4.dp)); Text("Install", fontSize = 12.sp) }
-                                        OutlinedButton(onClick = {}, Modifier.weight(1f)) { Icon(Icons.Default.Share, null, Modifier.size(14.dp)); Spacer(Modifier.width(4.dp)); Text("Share", fontSize = 12.sp) }
-                                        OutlinedButton(onClick = {}, Modifier.weight(1f)) { Icon(Icons.Default.Delete, null, Modifier.size(14.dp)); Spacer(Modifier.width(4.dp)); Text("Delete", fontSize = 12.sp) }
+                                        OutlinedButton(onClick = { installApk(apk) }, Modifier.weight(1f)) { Icon(Icons.Default.InstallMobile, null, Modifier.size(14.dp)); Spacer(Modifier.width(4.dp)); Text("Install", fontSize = 12.sp) }
+                                        OutlinedButton(onClick = { shareApk(apk) }, Modifier.weight(1f)) { Icon(Icons.Default.Share, null, Modifier.size(14.dp)); Spacer(Modifier.width(4.dp)); Text("Share", fontSize = 12.sp) }
+                                        OutlinedButton(
+                                            onClick = { File(apk.path).takeIf { it.exists() }?.delete(); deletedPaths = deletedPaths + apk.path },
+                                            Modifier.weight(1f),
+                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                                        ) { Icon(Icons.Default.Delete, null, Modifier.size(14.dp)); Spacer(Modifier.width(4.dp)); Text("Delete", fontSize = 12.sp) }
                                     }
                                 }
                             }

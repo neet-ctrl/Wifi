@@ -30,7 +30,7 @@ data class MdnsDevice(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WifiAdbMdnsScreen(onBack: () -> Unit) {
+fun WifiAdbMdnsScreen(onBack: () -> Unit, onLaunchShell: () -> Unit = {}) {
     var wifiAdbEnabled by remember { mutableStateOf(false) }
     var wifiAdbPort by remember { mutableStateOf(5555) }
     var pairingCode by remember { mutableStateOf("") }
@@ -186,7 +186,7 @@ fun WifiAdbMdnsScreen(onBack: () -> Unit) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("OTG / USB to Wi-Fi Bridge", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         Text("Connect an OTG USB cable and use the shell to relay ADB commands between USB and network interfaces.", style = MaterialTheme.typography.bodySmall)
-                        OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(onClick = { onLaunchShell() }, modifier = Modifier.fillMaxWidth()) {
                             Icon(Icons.Default.Usb, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Launch OTG Shell")

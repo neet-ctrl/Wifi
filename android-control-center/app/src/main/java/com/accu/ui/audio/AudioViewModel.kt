@@ -157,9 +157,11 @@ class AudioViewModel @Inject constructor(
     fun toggleLimiter() { _state.update { it.copy(limiterEnabled = !it.limiterEnabled) } }
     fun updateLimiterGain(v: Float) { _state.update { it.copy(limiterGain = v) } }
     fun toggleConvolver() { _state.update { it.copy(convolverEnabled = !it.convolverEnabled) } }
+    fun updateConvolverIrPath(path: String) { _state.update { it.copy(convolverIrPath = path) } }
     fun toggleLiveprog() { _state.update { it.copy(liveprogEnabled = !it.liveprogEnabled) } }
     fun updateLiveprogScript(s: String) { _state.update { it.copy(liveprogScript = s) } }
     fun toggleAutoEq() { _state.update { it.copy(autoEqEnabled = !it.autoEqEnabled) } }
+    fun updateAutoEqProfile(profile: String) { _state.update { it.copy(autoEqProfileName = profile) } }
     fun removeTargetPackage(pkg: String) { _state.update { it.copy(targetPackages = it.targetPackages - pkg) } }
     fun clearSnackbar() { _state.update { it.copy(snackbarMessage = null) } }
 }

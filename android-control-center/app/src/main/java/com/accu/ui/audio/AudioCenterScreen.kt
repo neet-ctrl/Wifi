@@ -1,5 +1,9 @@
 package com.accu.ui.audio
 
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -124,13 +128,34 @@ fun AudioCenterScreen(
             }
 
             // Convolver
-            item { ConvolverCard(enabled = state.convolverEnabled, irPath = state.convolverIrPath, onToggle = viewModel::toggleConvolver) }
+            val irFilePicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    result.data?.data?.lastPathSegment?.let { viewModel.updateConvolverIrPath(it) }
+                }
+            }
+            item { ConvolverCard(enabled = state.convolverEnabled, irPath = state.convolverIrPath, onToggle = viewModel::toggleConvolver, onPickFile = { irFilePicker.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*" }) }) }
 
             // Liveprog
             item { LiveprogCard(enabled = state.liveprogEnabled, script = state.liveprogScript, onToggle = viewModel::toggleLiveprog, onScriptChange = viewModel::updateLiveprogScript) }
 
             // AutoEQ
-            item { AutoEqCard(enabled = state.autoEqEnabled, profileName = state.autoEqProfileName, onToggle = viewModel::toggleAutoEq) }
+            var showAutoEqPicker by remember { mutableStateOf(false) }
+            val autoEqProfiles = listOf("Harman In-Ear 2019", "Harman Over-Ear 2018", "JBL Tune 760NC", "Sony WH-1000XM4", "Sennheiser HD 650", "Bose QuietComfort 45")
+            if (showAutoEqPicker) {
+                androidx.compose.ui.window.Dialog(onDismissRequest = { showAutoEqPicker = false }) {
+                    Card {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("AutoEQ Profiles", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(4.dp))
+                            autoEqProfiles.forEach { profile ->
+                                TextButton(onClick = { viewModel.updateAutoEqProfile(profile); showAutoEqPicker = false }, Modifier.fillMaxWidth()) { Text(profile) }
+                            }
+                            TextButton(onClick = { showAutoEqPicker = false }, Modifier.fillMaxWidth()) { Text("Cancel") }
+                        }
+                    }
+                }
+            }
+            item { AutoEqCard(enabled = state.autoEqEnabled, profileName = state.autoEqProfileName, onToggle = viewModel::toggleAutoEq, onSelectProfile = { showAutoEqPicker = true }) }
 
             // Per-app targeting
             item { PerAppTargetingCard(targetPackages = state.targetPackages, onAdd = {}, onRemove = viewModel::removeTargetPackage) }
@@ -201,9 +226,16 @@ private fun EqualizerCard(bands: List<Float>, onBandChange: (Int, Float) -> Unit
                     }
                 }
             }
+            val eqPresets = mapOf(
+                "Flat"        to List(10) { 0f },
+                "Bass Boost"  to listOf(6f, 5f, 4f, 2f, 0f, 0f, 0f, 0f, 0f, 0f),
+                "Treble Boost"to listOf(0f, 0f, 0f, 0f, 0f, 0f, 2f, 4f, 5f, 6f),
+                "V-Shape"     to listOf(4f, 3f, 1f, -1f, -3f, -3f, -1f, 1f, 3f, 4f),
+                "Vocal"       to listOf(-2f, -1f, 0f, 2f, 4f, 4f, 2f, 0f, -1f, -2f),
+            )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                listOf("Flat", "Bass Boost", "Treble Boost", "V-Shape", "Vocal").forEach { preset ->
-                    TextButton(onClick = {}, contentPadding = PaddingValues(4.dp)) { Text(preset, style = MaterialTheme.typography.labelSmall) }
+                eqPresets.keys.forEach { presetName ->
+                    TextButton(onClick = { eqPresets[presetName]?.forEachIndexed { i, v -> onBandChange(i, v) } }, contentPadding = PaddingValues(4.dp)) { Text(presetName, style = MaterialTheme.typography.labelSmall) }
                 }
             }
         }
@@ -280,7 +312,7 @@ private fun DrcCard(enabled: Boolean, gain: Float, onToggle: () -> Unit, onGainC
 }
 
 @Composable
-private fun ConvolverCard(enabled: Boolean, irPath: String, onToggle: () -> Unit) {
+private fun ConvolverCard(enabled: Boolean, irPath: String, onToggle: () -> Unit, onPickFile: () -> Unit = {}) {
     Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -290,11 +322,9 @@ private fun ConvolverCard(enabled: Boolean, irPath: String, onToggle: () -> Unit
                 }
                 Switch(checked = enabled, onCheckedChange = { onToggle() })
             }
-            if (!enabled) {
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = {}, Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.FolderOpen, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Load Impulse Response (.irs / .wav)")
-                }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = onPickFile, Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.FolderOpen, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Load Impulse Response (.irs / .wav)")
             }
         }
     }
@@ -320,7 +350,7 @@ private fun LiveprogCard(enabled: Boolean, script: String, onToggle: () -> Unit,
 }
 
 @Composable
-private fun AutoEqCard(enabled: Boolean, profileName: String, onToggle: () -> Unit) {
+private fun AutoEqCard(enabled: Boolean, profileName: String, onToggle: () -> Unit, onSelectProfile: () -> Unit = {}) {
     Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -332,7 +362,7 @@ private fun AutoEqCard(enabled: Boolean, profileName: String, onToggle: () -> Un
             }
             if (enabled) {
                 Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = {}, Modifier.fillMaxWidth()) {
+                OutlinedButton(onClick = onSelectProfile, Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.Headphones, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Search AutoEQ Database")
                 }
             }

@@ -1,5 +1,7 @@
 package com.accu.ui.automation
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -171,7 +174,15 @@ private fun ActionsTab(actions: MutableList<String>, onChooseAction: () -> Unit)
                     Icon(Icons.Default.FlashOn, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(action, Modifier.weight(1f))
-                    IconButton(onClick = {}) { Icon(Icons.Default.Settings, "Options", modifier = Modifier.size(18.dp)) }
+                    var showOptMenu by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { showOptMenu = true }) { Icon(Icons.Default.Settings, "Options", modifier = Modifier.size(18.dp)) }
+                        DropdownMenu(showOptMenu, { showOptMenu = false }) {
+                            DropdownMenuItem(text = { Text("Add Delay…") }, leadingIcon = { Icon(Icons.Default.Timer, null) }, onClick = { showOptMenu = false })
+                            DropdownMenuItem(text = { Text("Repeat Action") }, leadingIcon = { Icon(Icons.Default.Repeat, null) }, onClick = { showOptMenu = false })
+                            DropdownMenuItem(text = { Text("Edit…") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { showOptMenu = false })
+                        }
+                    }
                     IconButton(onClick = { actions.removeAt(i) }) { Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp)) }
                 }
             }
@@ -299,7 +310,8 @@ private fun OptionsTab(
             Spacer(Modifier.height(4.dp))
             Text("Change keyboard automatically when this key map is triggered.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Keyboard, null); Spacer(Modifier.width(4.dp)); Text("Select IME to switch to") }
+            val ctx = LocalContext.current
+            OutlinedButton(onClick = { ctx.startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }) }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Keyboard, null); Spacer(Modifier.width(4.dp)); Text("Select IME to switch to") }
         }
     }
 }

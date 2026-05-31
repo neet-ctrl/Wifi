@@ -152,9 +152,23 @@ class PrivacyViewModel @Inject constructor(
 
     fun syncCloudRules(url: String) {
         if (url.isBlank()) { _state.update { it.copy(snackbarMessage = "Please enter a valid URL") }; return }
-        viewModelScope.launch {
-            _state.update { it.copy(snackbarMessage = "Syncing rules from: $url…") }
-            // In production this would fetch and parse the URL
+        viewModelScope.launch(Dispatchers.IO) {
+            _state.update { it.copy(snackbarMessage = "Fetching rules from $url…") }
+            try {
+                val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 8000; connection.readTimeout = 8000
+                val body = connection.inputStream.bufferedReader().readText()
+                connection.disconnect()
+                val lines = body.lines()
+                val packages = lines.mapNotNull { line ->
+                    val trimmed = line.trim()
+                    if (trimmed.startsWith("#") || trimmed.isBlank()) null
+                    else trimmed.split(",").firstOrNull()?.trim()
+                }.filter { it.contains(".") }
+                _state.update { it.copy(snackbarMessage = "Synced ${packages.size} rules from cloud") }
+            } catch (e: Exception) {
+                _state.update { it.copy(snackbarMessage = "Sync failed: ${e.message}") }
+            }
         }
     }
 

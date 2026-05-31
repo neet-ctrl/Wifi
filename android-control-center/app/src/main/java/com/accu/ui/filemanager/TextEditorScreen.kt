@@ -76,7 +76,15 @@ fun TextEditorScreen(
                     IconButton(onClick = { showSearch = !showSearch }) { Icon(Icons.Default.Search, "Find") }
                     IconButton(onClick = { wrapLines = !wrapLines }) { Icon(if (wrapLines) Icons.Default.WrapText else Icons.Default.Notes, "Wrap") }
                     IconButton(onClick = { isModified = false }) { Icon(Icons.Default.Save, "Save") }
-                    IconButton(onClick = {}) { Icon(Icons.Default.MoreVert, "More") }
+                    var showMoreMenu by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { showMoreMenu = true }) { Icon(Icons.Default.MoreVert, "More") }
+                        DropdownMenu(showMoreMenu, { showMoreMenu = false }) {
+                            DropdownMenuItem(text = { Text("Select All") }, leadingIcon = { Icon(Icons.Default.SelectAll, null) }, onClick = { showMoreMenu = false })
+                            DropdownMenuItem(text = { Text("Go to Line…") }, leadingIcon = { Icon(Icons.Default.FormatListNumbered, null) }, onClick = { showMoreMenu = false })
+                            DropdownMenuItem(text = { Text("Encoding: UTF-8") }, leadingIcon = { Icon(Icons.Default.Language, null) }, onClick = { showMoreMenu = false })
+                        }
+                    }
                 }
             )
         },

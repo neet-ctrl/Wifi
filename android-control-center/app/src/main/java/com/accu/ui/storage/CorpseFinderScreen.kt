@@ -1,5 +1,6 @@
 package com.accu.ui.storage
 
+import android.content.Intent
 import androidx.compose.animation.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -191,7 +193,14 @@ private fun OrphanCard(orphan: OrphanedData, isExpanded: Boolean, onToggleExpand
                     Text(orphan.type.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(orphan.path, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
                     Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                        TextButton(onClick = {}) { Text("View Files") }
+                        val ctx = LocalContext.current
+                        TextButton(onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("content://com.android.externalstorage.documents/document/primary:${orphan.path.removePrefix("/sdcard/").removePrefix("/storage/emulated/0/")}")).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                            try { ctx.startActivity(intent) } catch (_: Exception) {
+                                val fm = Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*"; addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                                ctx.startActivity(fm)
+                            }
+                        }) { Text("View Files") }
                         Spacer(Modifier.width(8.dp))
                         Button(onClick = onDelete, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text("Delete") }
                     }

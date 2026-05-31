@@ -446,10 +446,16 @@ private fun AdvancedTab(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Backup & Restore", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilledTonalButton(onClick = {}, Modifier.weight(1f)) {
+                        val context = LocalContext.current
+                        FilledTonalButton(onClick = {
+                            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(android.content.Intent.EXTRA_SUBJECT, "ColorBlendr Config"); putExtra(android.content.Intent.EXTRA_TEXT, "ColorBlendr config export placeholder") }
+                            context.startActivity(android.content.Intent.createChooser(shareIntent, "Export ColorBlendr Config"))
+                        }, Modifier.weight(1f)) {
                             Icon(Icons.Default.IosShare, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Export .colorblendr")
                         }
-                        OutlinedButton(onClick = {}, Modifier.weight(1f)) {
+                        OutlinedButton(onClick = {
+                            context.startActivity(android.content.Intent(android.content.Intent.ACTION_GET_CONTENT).apply { type = "*/*" })
+                        }, Modifier.weight(1f)) {
                             Icon(Icons.Default.FileOpen, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Import Config")
                         }
                     }

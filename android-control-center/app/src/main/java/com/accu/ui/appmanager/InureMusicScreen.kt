@@ -54,18 +54,42 @@ fun InureMusicScreen(onBack: () -> Unit = {}) {
     var repeatMode by remember { mutableStateOf(0) } // 0=off, 1=all, 2=one
     var volume by remember { mutableStateOf(0.8f) }
     var search by remember { mutableStateOf("") }
+    var showSearch by remember { mutableStateOf(false) }
+    var showSortMenu by remember { mutableStateOf(false) }
+    var sortMode by remember { mutableStateOf("Title") }
+    var starredIds by remember { mutableStateOf(setOf<String>()) }
 
-    val filtered = tracks.filter { search.isBlank() || it.title.contains(search, ignoreCase = true) || it.artist.contains(search, ignoreCase = true) }
     val currentSecs = currentTrack?.let { (it.durationSecs * progress).roundToInt() } ?: 0
 
     fun formatTime(secs: Int) = "${secs / 60}:${"%02d".format(secs % 60)}"
 
+    val sortedTracks = when (sortMode) {
+        "Artist" -> tracks.sortedBy { it.artist }
+        "Album" -> tracks.sortedBy { it.album }
+        "Duration" -> tracks.sortedBy { it.durationSecs }
+        else -> tracks.sortedBy { it.title }
+    }.filter { search.isBlank() || it.title.contains(search, ignoreCase = true) || it.artist.contains(search, ignoreCase = true) }
+
     Scaffold(
         topBar = {
-            ACCTopBar(title = "Music Player", onBack = onBack, actions = {
-                IconButton(onClick = {}) { Icon(Icons.Default.Sort, null) }
-                IconButton(onClick = {}) { Icon(Icons.Default.Search, null) }
-            })
+            if (showSearch) {
+                TopAppBar(
+                    title = { OutlinedTextField(search, { search = it }, Modifier.fillMaxWidth(), placeholder = { Text("Search music…") }, singleLine = true) },
+                    navigationIcon = { IconButton(onClick = { showSearch = false; search = "" }) { Icon(Icons.Default.Close, "Close") } },
+                )
+            } else {
+                ACCTopBar(title = "Music Player", onBack = onBack, actions = {
+                    Box {
+                        IconButton(onClick = { showSortMenu = true }) { Icon(Icons.Default.Sort, null) }
+                        DropdownMenu(showSortMenu, { showSortMenu = false }) {
+                            listOf("Title", "Artist", "Album", "Duration").forEach { m ->
+                                DropdownMenuItem(text = { Text(m) }, leadingIcon = { if (sortMode == m) Icon(Icons.Default.Check, null) }, onClick = { sortMode = m; showSortMenu = false })
+                            }
+                        }
+                    }
+                    IconButton(onClick = { showSearch = true }) { Icon(Icons.Default.Search, null) }
+                })
+            }
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -87,7 +111,9 @@ fun InureMusicScreen(onBack: () -> Unit = {}) {
                                 Text(track.artist, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                                 Text(track.album, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                             }
-                            IconButton(onClick = {}) { Icon(Icons.Default.FavoriteBorder, null) }
+                            IconButton(onClick = { starredIds = if (track.id in starredIds) starredIds - track.id else starredIds + track.id }) {
+                                Icon(if (track.id in starredIds) Icons.Default.Favorite else Icons.Default.FavoriteBorder, null, tint = if (track.id in starredIds) MaterialTheme.colorScheme.error else LocalContentColor.current)
+                            }
                         }
 
                         Spacer(Modifier.height(12.dp))
@@ -144,10 +170,10 @@ fun InureMusicScreen(onBack: () -> Unit = {}) {
 
             OutlinedTextField(search, { search = it }, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), placeholder = { Text("Search tracks…") }, leadingIcon = { Icon(Icons.Default.Search, null) }, singleLine = true)
 
-            Text("${filtered.size} tracks", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp))
+            Text("${sortedTracks.size} tracks", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp))
 
             LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
-                items(filtered, key = { it.id }) { track ->
+                items(sortedTracks, key = { it.id }) { track ->
                     val isCurrentTrack = currentTrack?.id == track.id
                     ListItem(
                         headlineContent = { Text(track.title, fontWeight = if (isCurrentTrack) FontWeight.Bold else FontWeight.Normal, color = if (isCurrentTrack) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface) },
@@ -163,7 +189,16 @@ fun InureMusicScreen(onBack: () -> Unit = {}) {
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(track.duration, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                IconButton(onClick = {}) { Icon(Icons.Default.MoreVert, null, modifier = Modifier.size(18.dp)) }
+                                var showTrackMenu by remember { mutableStateOf(false) }
+                                Box {
+                                    IconButton(onClick = { showTrackMenu = true }) { Icon(Icons.Default.MoreVert, null, modifier = Modifier.size(18.dp)) }
+                                    DropdownMenu(showTrackMenu, { showTrackMenu = false }) {
+                                        DropdownMenuItem(text = { Text("Add to queue") }, leadingIcon = { Icon(Icons.Default.QueueMusic, null) }, onClick = { showTrackMenu = false })
+                                        DropdownMenuItem(text = { Text("Add to playlist…") }, leadingIcon = { Icon(Icons.Default.PlaylistAdd, null) }, onClick = { showTrackMenu = false })
+                                        DropdownMenuItem(text = { Text(if (track.isFavorite) "Remove favourite" else "Mark as favourite") }, leadingIcon = { Icon(Icons.Default.Favorite, null) }, onClick = { showTrackMenu = false })
+                                        DropdownMenuItem(text = { Text("Share") }, leadingIcon = { Icon(Icons.Default.Share, null) }, onClick = { showTrackMenu = false })
+                                    }
+                                }
                             }
                         },
                         modifier = Modifier.clickable { currentTrack = track; isPlaying = true; progress = 0f }

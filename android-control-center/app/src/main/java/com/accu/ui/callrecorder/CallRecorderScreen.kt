@@ -36,8 +36,8 @@ fun CallRecorderScreen(
                 title = "Call Recorder",
                 onBack = onBack,
                 actions = {
-                    IconButton(onClick = {}) { Icon(Icons.Default.Search, "Search") }
-                    IconButton(onClick = {}) { Icon(Icons.Default.Settings, "Settings") }
+                    IconButton(onClick = { viewModel.toggleSearch() }) { Icon(Icons.Default.Search, "Search") }
+                    IconButton(onClick = { viewModel.toggleSettingsPanel() }) { Icon(Icons.Default.Settings, "Settings") }
                 },
             )
         },

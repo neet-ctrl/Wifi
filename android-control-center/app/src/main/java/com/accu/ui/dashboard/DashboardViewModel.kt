@@ -219,9 +219,32 @@ class DashboardViewModel @Inject constructor(
         ModuleCard("learning",   "Learning Center",   "Guides & tutorials",            "school",          "learning_center",   0xFF9C27B0),
     )
 
-    private fun buildRecentActions(): List<RecentAction> = listOf(
-        RecentAction(title = "Welcome to ACC", subtitle = "Android Control Center Ultimate", iconRes = "home", route = null),
-    )
+    private fun buildRecentActions(): List<RecentAction> {
+        return try {
+            val pm = context.packageManager
+            pm.getInstalledPackages(0)
+                .filter { pkg -> pkg.applicationInfo?.flags?.and(android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0 }
+                .sortedByDescending { it.lastUpdateTime }
+                .take(8)
+                .map { pkg ->
+                    val name = try { pm.getApplicationLabel(pkg.applicationInfo!!).toString() } catch (_: Exception) { pkg.packageName }
+                    RecentAction(title = name, subtitle = "Updated ${formatRelativeTime(pkg.lastUpdateTime)}", iconRes = "install_mobile", route = "app_detail/${pkg.packageName}")
+                }
+                .ifEmpty { listOf(RecentAction(title = "Welcome to ACC", subtitle = "No recently updated apps", iconRes = "home", route = null)) }
+        } catch (_: Exception) {
+            listOf(RecentAction(title = "Welcome to ACC", subtitle = "Android Control Center", iconRes = "home", route = null))
+        }
+    }
+
+    private fun formatRelativeTime(timeMs: Long): String {
+        val diff = System.currentTimeMillis() - timeMs
+        return when {
+            diff < 60_000 -> "just now"
+            diff < 3_600_000 -> "${diff / 60_000}m ago"
+            diff < 86_400_000 -> "${diff / 3_600_000}h ago"
+            else -> "${diff / 86_400_000}d ago"
+        }
+    }
 
     fun refresh() { loadDashboard() }
 }

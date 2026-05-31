@@ -22,12 +22,59 @@ import androidx.compose.ui.unit.sp
 import com.accu.ui.components.ACCTopBar
 import kotlin.math.roundToInt
 
+private val AUTOEQ_PRESETS = mapOf(
+    "Flat" to List(15) { 0f },
+    "Harman In-Ear" to listOf(2f, 3f, 4f, 3f, 2f, 0f, -1f, -2f, -2f, -1f, 0f, 1f, 2f, 3f, 4f),
+    "Harman Over-Ear" to listOf(4f, 3f, 2f, 1f, 0f, -1f, -1f, -1f, 0f, 1f, 2f, 3f, 3f, 2f, 1f),
+    "AKG K701" to listOf(-1f, 0f, 1f, 2f, 3f, 2f, 1f, 0f, -1f, -2f, -1f, 0f, 1f, 2f, 3f),
+    "Sony WH-1000XM5" to listOf(3f, 4f, 4f, 3f, 2f, 1f, 0f, -1f, -1f, 0f, 1f, 2f, 2f, 1f, 0f),
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GraphicEQScreen(onBack: () -> Unit = {}) {
     val bands15 = listOf(25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000)
     val bandLabels = bands15.map { if (it >= 1000) "${it/1000}k" else "$it" }
     var gains by remember { mutableStateOf(List(15) { 0f }) }
+    var showAutoEqDialog by remember { mutableStateOf(false) }
+    var showStringImportDialog by remember { mutableStateOf(false) }
+    var importString by remember { mutableStateOf("") }
+
+    if (showAutoEqDialog) {
+        AlertDialog(
+            onDismissRequest = { showAutoEqDialog = false },
+            title = { Text("AutoEQ Presets") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    AUTOEQ_PRESETS.keys.forEach { name ->
+                        TextButton(onClick = { AUTOEQ_PRESETS[name]?.let { gains = it }; showAutoEqDialog = false }, modifier = Modifier.fillMaxWidth()) { Text(name) }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showAutoEqDialog = false }) { Text("Cancel") } },
+        )
+    }
+    if (showStringImportDialog) {
+        AlertDialog(
+            onDismissRequest = { showStringImportDialog = false },
+            title = { Text("Load GraphicEQ String") },
+            text = {
+                Column {
+                    Text("Paste a GraphicEQ DSP format string (e.g. from AutoEQ):", style = MaterialTheme.typography.bodySmall)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(importString, { importString = it }, Modifier.fillMaxWidth(), placeholder = { Text("GraphicEQ: 25 0.0; 40 0.0; ...") }, minLines = 3)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val values = importString.removePrefix("GraphicEQ:").split(";").mapNotNull { it.trim().split(" ").lastOrNull()?.toFloatOrNull() }
+                    if (values.size == 15) gains = values
+                    showStringImportDialog = false
+                }) { Text("Apply") }
+            },
+            dismissButton = { TextButton(onClick = { showStringImportDialog = false }) { Text("Cancel") } },
+        )
+    }
     var isEnabled by remember { mutableStateOf(true) }
     var selectedPreset by remember { mutableStateOf("Flat") }
     var showPresetMenu by remember { mutableStateOf(false) }
@@ -157,13 +204,13 @@ fun GraphicEQScreen(onBack: () -> Unit = {}) {
             Spacer(Modifier.height(8.dp))
 
             // AutoEQ import
-            OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = { showAutoEqDialog = true }, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Default.CloudDownload, null)
                 Spacer(Modifier.width(6.dp))
                 Text("Import from AutoEQ database")
             }
             Spacer(Modifier.height(4.dp))
-            OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = { showStringImportDialog = true }, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Default.FileOpen, null)
                 Spacer(Modifier.width(6.dp))
                 Text("Load from string (GraphicEQ DSP format)")

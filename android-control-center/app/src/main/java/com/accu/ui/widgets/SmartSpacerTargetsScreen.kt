@@ -1,5 +1,6 @@
 package com.accu.ui.widgets
 
+import android.content.Intent
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import sh.calvin.reorderable.ReorderableItem
@@ -71,7 +73,11 @@ fun SmartSpacerTargetsScreen(onBack: () -> Unit) {
                 title = { Text("Smartspacer") },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) } },
                 actions = {
-                    IconButton(onClick = {}) { Icon(Icons.Default.Backup, "Backup") }
+                    val ctx = LocalContext.current
+                    IconButton(onClick = {
+                        val targets = "SmartSpacer Targets Backup\n${System.currentTimeMillis()}"
+                        ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, targets) }, "Backup Targets"))
+                    }) { Icon(Icons.Default.Backup, "Backup") }
                 }
             )
         }
@@ -182,7 +188,8 @@ private fun RequirementsTab() {
                         Text(req, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                         Text(desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    OutlinedButton(onClick = {}) { Text("Grant") }
+                    val ctx2 = LocalContext.current
+                    OutlinedButton(onClick = { ctx2.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }) }) { Text("Grant") }
                 }
             }
         }
@@ -197,7 +204,8 @@ private fun PluginsTab() {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Plugin Architecture", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     Text("Smartspacer supports third-party plugins that add new targets, complications, and requirements. Install plugin APKs and they appear here automatically.", style = MaterialTheme.typography.bodySmall)
-                    OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth()) {
+                    val ctx3 = LocalContext.current
+                    OutlinedButton(onClick = { ctx3.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/KieronQuinn/Smartspacer")).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }) }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.Extension, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
                         Text("Browse Plugin Repository")

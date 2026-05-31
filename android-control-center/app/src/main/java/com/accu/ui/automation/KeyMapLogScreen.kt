@@ -1,5 +1,6 @@
 package com.accu.ui.automation
 
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,8 +48,14 @@ fun KeyMapLogScreen(onBack: () -> Unit = {}) {
     }
     var filter by remember { mutableStateOf("ALL") }
     var showClearDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     val filtered = if (filter == "ALL") entries else entries.filter { it.level == filter }
+
+    fun exportLog() {
+        val text = filtered.joinToString("\n") { "[${it.timestamp}] [${it.level}]${if (it.keyMap != null) " [${it.keyMap}]" else ""} ${it.message}" }
+        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_SUBJECT, "KeyMapper Event Log"); putExtra(Intent.EXTRA_TEXT, text) }, "Export Log"))
+    }
 
     if (showClearDialog) {
         AlertDialog(
@@ -66,7 +74,7 @@ fun KeyMapLogScreen(onBack: () -> Unit = {}) {
                 onBack = onBack,
                 actions = {
                     IconButton(onClick = { showClearDialog = true }) { Icon(Icons.Default.DeleteSweep, "Clear log") }
-                    IconButton(onClick = {}) { Icon(Icons.Default.Share, "Export log") }
+                    IconButton(onClick = { exportLog() }) { Icon(Icons.Default.Share, "Export log") }
                 }
             )
         }

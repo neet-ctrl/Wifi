@@ -1,5 +1,6 @@
 package com.accu.ui.widgets
 
+import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
@@ -102,6 +104,21 @@ class SmartSpacerViewModel @Inject constructor(
     fun toggleExpandedMode() { _state.update { it.copy(expandedMode = !it.expandedMode) } }
     fun toggleHideSensitive() { _state.update { it.copy(hideSensitiveContent = !it.hideSensitiveContent) } }
     fun clearSnackbar() { _state.update { it.copy(snackbarMessage = null) } }
+    fun fetchRepository(url: String) {
+        if (url.isBlank()) { _state.update { it.copy(snackbarMessage = "Enter a repository URL first") }; return }
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            _state.update { it.copy(snackbarMessage = "Fetching repository from $url…") }
+            try {
+                val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 8000; conn.readTimeout = 8000
+                val body = conn.inputStream.bufferedReader().readText(); conn.disconnect()
+                val count = body.lines().count { it.trim().startsWith("{") || it.contains("\"name\"") }
+                _state.update { it.copy(snackbarMessage = "Repository fetched — found ~$count plugins") }
+            } catch (e: Exception) {
+                _state.update { it.copy(snackbarMessage = "Fetch failed: ${e.message}") }
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -120,8 +137,15 @@ fun SmartSpacerScreen(
         topBar = {
             Column {
                 ACCTopBar(title = "Smart Widgets", onBack = onBack, actions = {
-                    IconButton(onClick = {}) { Icon(Icons.Default.Add, "Add") }
-                    IconButton(onClick = {}) { Icon(Icons.Default.MoreVert, "More") }
+                    IconButton(onClick = { selectedTab = SmartSpacerTab.REPOSITORY }) { Icon(Icons.Default.Add, "Add") }
+                    var showMenu by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { showMenu = true }) { Icon(Icons.Default.MoreVert, "More") }
+                        DropdownMenu(showMenu, { showMenu = false }) {
+                            DropdownMenuItem(text = { Text("Settings") }, leadingIcon = { Icon(Icons.Default.Settings, null) }, onClick = { selectedTab = SmartSpacerTab.SETTINGS; showMenu = false })
+                            DropdownMenuItem(text = { Text("Repository") }, leadingIcon = { Icon(Icons.Outlined.CloudDownload, null) }, onClick = { selectedTab = SmartSpacerTab.REPOSITORY; showMenu = false })
+                        }
+                    }
                 })
                 TabRow(selectedTabIndex = SmartSpacerTab.entries.indexOf(selectedTab)) {
                     SmartSpacerTab.entries.forEach { tab ->
@@ -310,8 +334,8 @@ private fun RepositoryTab(padding: PaddingValues) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Plugin Repository", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     Text("Install additional Smartspace targets and complications from community repos.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    OutlinedTextField(value = repoUrl, onValueChange = { repoUrl = it }, label = { Text("Repository URL") }, modifier = Modifier.fillMaxWidth(), singleLine = true, trailingIcon = { IconButton(onClick = {}) { Icon(Icons.Default.Refresh, "Reload") } })
-                    Button(onClick = {}, Modifier.fillMaxWidth()) { Icon(Icons.Default.CloudDownload, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Fetch Repository") }
+                    OutlinedTextField(value = repoUrl, onValueChange = { repoUrl = it }, label = { Text("Repository URL") }, modifier = Modifier.fillMaxWidth(), singleLine = true, trailingIcon = { IconButton(onClick = { viewModel.fetchRepository(repoUrl) }) { Icon(Icons.Default.Refresh, "Reload") } })
+                    Button(onClick = { viewModel.fetchRepository(repoUrl) }, Modifier.fillMaxWidth()) { Icon(Icons.Default.CloudDownload, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Fetch Repository") }
                 }
             }
         }
@@ -396,18 +420,36 @@ private fun SmartSpacerSettingsTab(state: SmartSpacerState, viewModel: SmartSpac
         }
 
         item {
+            val context = LocalContext.current
             Text("Backup & Restore", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton(onClick = {}, Modifier.weight(1f)) { Icon(Icons.Default.IosShare, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Export Config") }
-                OutlinedButton(onClick = {}, Modifier.weight(1f)) { Icon(Icons.Default.FileOpen, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Import Config") }
+                FilledTonalButton(onClick = {
+                    val configText = "SmartSpacer Config Export\nMode: ${state.mode}\nNotification Widget: ${state.showNotificationWidget}\nExpanded Mode: ${state.expandedMode}"
+                    context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_SUBJECT, "SmartSpacer Config"); putExtra(Intent.EXTRA_TEXT, configText) }, "Export Config"))
+                }, Modifier.weight(1f)) { Icon(Icons.Default.IosShare, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Export Config") }
+                OutlinedButton(onClick = {
+                    context.startActivity(Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*" })
+                }, Modifier.weight(1f)) { Icon(Icons.Default.FileOpen, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Import Config") }
             }
         }
 
         item {
+            val context = LocalContext.current
             Text("Debug", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = {}, Modifier.fillMaxWidth()) { Icon(Icons.Default.BugReport, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Dump SmartSpacer State") }
+            OutlinedButton(onClick = {
+                val dump = buildString {
+                    appendLine("=== SmartSpacer State Dump ===")
+                    appendLine("Mode: ${state.mode}")
+                    appendLine("Notification Widget: ${state.showNotificationWidget}")
+                    appendLine("Expanded Mode: ${state.expandedMode}")
+                    appendLine("Hide Sensitive: ${state.hideSensitiveContent}")
+                    appendLine("Active targets: ${state.targets.count { it.isEnabled }}")
+                    appendLine("Complications: ${state.complications.count { it.isEnabled }}")
+                }
+                context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, dump) }, "Share Debug Dump"))
+            }, Modifier.fillMaxWidth()) { Icon(Icons.Default.BugReport, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Dump SmartSpacer State") }
         }
     }
 }

@@ -1,5 +1,9 @@
 package com.accu.ui.audio
 
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -16,6 +20,12 @@ import com.accu.ui.components.ACCTopBar
 @Composable
 fun DSPControlsScreen(onBack: () -> Unit = {}) {
     var masterEnabled by remember { mutableStateOf(true) }
+    var ddcProfileName by remember { mutableStateOf<String?>(null) }
+    val ddcFilePicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.data?.let { uri -> ddcProfileName = uri.lastPathSegment?.substringAfterLast("/") ?: uri.toString() }
+        }
+    }
 
     // Output control
     var outputGain by remember { mutableStateOf(0f) }
@@ -207,7 +217,10 @@ fun DSPControlsScreen(onBack: () -> Unit = {}) {
                 DSPSection("DDC (Device Correction)", Icons.Default.Equalizer, ddcEnabled, { ddcEnabled = it }) {
                     Text("Applies Digital Device Correction profiles to compensate for device-specific frequency response characteristics.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(6.dp))
-                    OutlinedButton(onClick = {}, Modifier.fillMaxWidth()) { Icon(Icons.Default.FileOpen, null); Spacer(Modifier.width(4.dp)); Text("Load DDC profile (.vdc file)") }
+                    OutlinedButton(onClick = { ddcFilePicker.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*"; putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("*/*")) }) }, Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.FileOpen, null); Spacer(Modifier.width(4.dp))
+                        Text(ddcProfileName?.let { "Loaded: $it" } ?: "Load DDC profile (.vdc file)")
+                    }
                 }
                 Spacer(Modifier.height(24.dp))
             }

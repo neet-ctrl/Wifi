@@ -1,5 +1,6 @@
 package com.accu.ui.automation
 
+import android.content.Intent
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -135,7 +137,10 @@ fun KeyMapperAdvancedScreen(onBack: () -> Unit) {
 
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("${mappings.count { it.isEnabled }} active mappings", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                TextButton(onClick = {}) { Text("Import/Export") }
+                val ctx = LocalContext.current
+                TextButton(onClick = {
+                    ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_SUBJECT, "Key Mapper Backups"); putExtra(Intent.EXTRA_TEXT, "Key Mapper Backup — ${mappings.size} mappings exported") }, "Export Key Maps"))
+                }) { Text("Import/Export") }
             }
 
             LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -1,5 +1,9 @@
 package com.accu.ui.filemanager
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -8,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -40,6 +45,15 @@ fun FtpServerScreen(onBack: () -> Unit = {}) {
     val localIp = remember { "192.168.1.42" }
     val ftpUrl = "ftp://$localIp:$ftpPort"
     val sftpUrl = "sftp://$localIp:$sftpPort"
+    val context = LocalContext.current
+
+    fun copyToClipboard(url: String) {
+        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        cm.setPrimaryClip(ClipData.newPlainText("Server URL", url))
+    }
+    fun shareUrl(url: String) {
+        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, url) }, "Share server URL"))
+    }
 
     Scaffold(
         topBar = { ACCTopBar(title = "Network File Server", onBack = onBack) },
@@ -94,8 +108,8 @@ fun FtpServerScreen(onBack: () -> Unit = {}) {
                                         Text("FTP", fontWeight = FontWeight.Medium, fontSize = 13.sp)
                                         Text(ftpUrl, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                                     }
-                                    IconButton(onClick = {}) { Icon(Icons.Default.ContentCopy, "Copy", Modifier.size(18.dp)) }
-                                    IconButton(onClick = {}) { Icon(Icons.Default.Share, "Share", Modifier.size(18.dp)) }
+                                    IconButton(onClick = { copyToClipboard(ftpUrl) }) { Icon(Icons.Default.ContentCopy, "Copy", Modifier.size(18.dp)) }
+                                    IconButton(onClick = { shareUrl(ftpUrl) }) { Icon(Icons.Default.Share, "Share", Modifier.size(18.dp)) }
                                 }
                             }
                             if (sftpEnabled) {
@@ -104,7 +118,7 @@ fun FtpServerScreen(onBack: () -> Unit = {}) {
                                         Text("SFTP", fontWeight = FontWeight.Medium, fontSize = 13.sp)
                                         Text(sftpUrl, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                                     }
-                                    IconButton(onClick = {}) { Icon(Icons.Default.ContentCopy, "Copy", Modifier.size(18.dp)) }
+                                    IconButton(onClick = { copyToClipboard(sftpUrl) }) { Icon(Icons.Default.ContentCopy, "Copy", Modifier.size(18.dp)) }
                                 }
                             }
                         }

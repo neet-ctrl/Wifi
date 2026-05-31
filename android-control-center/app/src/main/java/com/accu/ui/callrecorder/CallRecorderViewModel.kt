@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.accu.data.db.dao.CallRecordingDao
 import com.accu.data.db.entities.CallRecordingEntity
+import com.accu.services.CallRecordingService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
@@ -26,6 +27,8 @@ data class CallRecorderUiState(
     val isLoading: Boolean = true,
     val searchQuery: String = "",
     val snackbarMessage: String? = null,
+    val showSearch: Boolean = false,
+    val showSettingsPanel: Boolean = false,
 )
 
 @HiltViewModel
@@ -59,8 +62,20 @@ class CallRecorderViewModel @Inject constructor(
 
     fun toggleRecording() {
         val enabled = !_state.value.isRecordingEnabled
-        _state.update { it.copy(isRecordingEnabled = enabled, snackbarMessage = if (enabled) "Call recording enabled" else "Call recording disabled") }
-        // TODO: Start/stop CallRecordingService
+        _state.update { it.copy(isRecordingEnabled = enabled) }
+        try {
+            val intent = Intent(context, CallRecordingService::class.java).apply {
+                action = if (enabled) CallRecordingService.ACTION_START else CallRecordingService.ACTION_STOP
+                putExtra(CallRecordingService.EXTRA_FORMAT, _state.value.recordingFormat)
+                putExtra(CallRecordingService.EXTRA_SOURCE, _state.value.audioSource)
+                putExtra(CallRecordingService.EXTRA_OUTPUT_DIR, _state.value.outputDirectory)
+            }
+            if (enabled) context.startForegroundService(intent) else context.stopService(intent)
+            _state.update { it.copy(snackbarMessage = if (enabled) "Call recording enabled" else "Call recording disabled") }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to toggle CallRecordingService")
+            _state.update { it.copy(isRecordingEnabled = !enabled, snackbarMessage = "Service error: ${e.message}") }
+        }
     }
 
     fun setFormat(format: String) { _state.update { it.copy(recordingFormat = format) } }
@@ -116,4 +131,6 @@ class CallRecorderViewModel @Inject constructor(
     }
 
     fun clearSnackbar() { _state.update { it.copy(snackbarMessage = null) } }
+    fun toggleSearch() { _state.update { it.copy(showSearch = !it.showSearch) } }
+    fun toggleSettingsPanel() { _state.update { it.copy(showSettingsPanel = !it.showSettingsPanel) } }
 }

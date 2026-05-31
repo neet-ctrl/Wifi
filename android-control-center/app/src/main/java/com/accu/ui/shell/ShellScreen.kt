@@ -316,7 +316,7 @@ fun ShellScreen(
         ) {
             if (filteredOutput.isEmpty() && output.isEmpty()) {
                 item {
-                    ShellWelcomeBanner(mode = currentMode)
+                    ShellWelcomeBanner(mode = currentMode, onSuggestionSelected = { command = it })
                 }
             }
             items(filteredOutput, key = { it.id }) { line ->
@@ -466,7 +466,7 @@ fun ShellScreen(
 }
 
 @Composable
-private fun ShellWelcomeBanner(mode: ShellMode) {
+private fun ShellWelcomeBanner(mode: ShellMode, onSuggestionSelected: (String) -> Unit = {}) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -489,12 +489,12 @@ private fun ShellWelcomeBanner(mode: ShellMode) {
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SuggestionChip(onClick = {}, label = { Text("pm list packages") })
-            SuggestionChip(onClick = {}, label = { Text("getprop ro.build.version.release") })
+            SuggestionChip(onClick = { onSuggestionSelected("pm list packages") }, label = { Text("pm list packages") })
+            SuggestionChip(onClick = { onSuggestionSelected("getprop ro.build.version.release") }, label = { Text("getprop ro.build.version.release") })
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SuggestionChip(onClick = {}, label = { Text("dumpsys battery") })
-            SuggestionChip(onClick = {}, label = { Text("wm density") })
+            SuggestionChip(onClick = { onSuggestionSelected("dumpsys battery") }, label = { Text("dumpsys battery") })
+            SuggestionChip(onClick = { onSuggestionSelected("wm density") }, label = { Text("wm density") })
         }
     }
 }

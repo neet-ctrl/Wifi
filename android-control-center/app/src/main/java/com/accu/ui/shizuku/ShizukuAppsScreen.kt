@@ -1,5 +1,8 @@
 package com.accu.ui.shizuku
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +29,7 @@ data class ShizukuApp(
 
 @Composable
 fun ShizukuAppsScreen(onBack: () -> Unit = {}) {
+    val context = LocalContext.current
     var apps by remember {
         mutableStateOf(listOf(
             ShizukuApp("Android Control Center", "com.accu.controlcenter", "1.0.0", "full", true, "Now"),
@@ -85,7 +90,14 @@ fun ShizukuAppsScreen(onBack: () -> Unit = {}) {
                         Text("Shizuku is running", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                         Text("v13.5.4 · Started via ADB · UID: 2000", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     }
-                    TextButton(onClick = {}) { Text("Restart") }
+                    TextButton(onClick = {
+                        try {
+                            val stopIntent = Intent().apply { component = ComponentName("rikka.shizuku", "rikka.shizuku.ShizukuService"); action = "moe.shizuku.manager.action.STOP_SERVICE" }
+                            context.sendBroadcast(stopIntent)
+                            val startIntent = context.packageManager.getLaunchIntentForPackage("rikka.shizuku")?.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                            if (startIntent != null) context.startActivity(startIntent)
+                        } catch (_: Exception) {}
+                    }) { Text("Restart") }
                 }
             }
 

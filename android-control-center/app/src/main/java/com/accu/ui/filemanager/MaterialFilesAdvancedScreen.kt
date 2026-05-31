@@ -1,5 +1,6 @@
 package com.accu.ui.filemanager
 
+import android.content.Intent
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -143,7 +145,13 @@ private fun RemoteConnectionsTab() {
                         Text("${conn.type.label} • ${conn.host}:${conn.port}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("${conn.username}@${conn.path}", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.outline, fontSize = 10.sp)
                     }
-                    OutlinedButton(onClick = {}) { Text("Connect") }
+                    val ctx = LocalContext.current
+                    OutlinedButton(onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("${conn.type.label.lowercase()}://${conn.host}:${conn.port}${conn.path}")).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                        try { ctx.startActivity(intent) } catch (_: Exception) {
+                            ctx.startActivity(Intent(android.provider.Settings.ACTION_WIFI_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
+                        }
+                    }) { Text("Connect") }
                 }
             }
         }
