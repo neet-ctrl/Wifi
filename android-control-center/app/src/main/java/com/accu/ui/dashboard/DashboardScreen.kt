@@ -98,6 +98,7 @@ fun DashboardScreen(
             CommandPaletteOverlay(
                 query = state.searchQuery,
                 results = state.searchResults,
+                recentScreens = state.recentScreens,
                 onQueryChange = viewModel::onSearchQueryChanged,
                 onResultClick = { result ->
                     viewModel.dismissCommandPalette()
@@ -380,6 +381,7 @@ private val categoryOrder = listOf(
 private fun CommandPaletteOverlay(
     query: String,
     results: List<SearchResult>,
+    recentScreens: List<SearchResult>,
     onQueryChange: (String) -> Unit,
     onResultClick: (SearchResult) -> Unit,
     onDismiss: () -> Unit,
@@ -452,8 +454,52 @@ private fun CommandPaletteOverlay(
                     contentPadding = PaddingValues(bottom = 16.dp),
                 ) {
                     when {
-                        // ── Empty query → Quick Launch ─────────────
+                        // ── Empty query → Recently Visited + Quick Launch ──
                         query.isBlank() -> {
+                            // ── Recently Visited ─────────────────────
+                            if (recentScreens.isNotEmpty()) {
+                                item {
+                                    Row(
+                                        Modifier.padding(horizontal = 20.dp, top = 8.dp, bottom = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Icon(
+                                            Icons.Default.History,
+                                            null,
+                                            tint = MaterialTheme.colorScheme.secondary,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            "Recently Visited",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.secondary,
+                                        )
+                                    }
+                                }
+                                item {
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 12.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.padding(bottom = 4.dp),
+                                    ) {
+                                        items(recentScreens) { screen ->
+                                            RecentScreenChip(
+                                                item = screen,
+                                                onClick = { onResultClick(screen) },
+                                            )
+                                        }
+                                    }
+                                }
+                                item {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                    )
+                                }
+                            }
+                            // ── Quick Launch ─────────────────────────
                             item {
                                 Row(
                                     Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
@@ -645,6 +691,40 @@ private fun QuickLaunchTile(
                 item.title,
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RecentScreenChip(
+    item: SearchResult,
+    onClick: () -> Unit,
+) {
+    val accent = categoryAccent[item.category] ?: MaterialTheme.colorScheme.secondary
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        color = accent.copy(alpha = 0.10f),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.25f)),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(
+                iconForName(item.icon),
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(15.dp),
+            )
+            Text(
+                item.title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

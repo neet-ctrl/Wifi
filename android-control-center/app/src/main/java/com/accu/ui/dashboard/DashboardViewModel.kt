@@ -10,6 +10,7 @@ import android.os.StatFs
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.accu.data.repositories.AppRepository
+import com.accu.data.repositories.NavigationHistoryRepository
 import com.accu.data.repositories.ShellRepository
 import com.accu.utils.ShizukuUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,6 +33,7 @@ data class DashboardUiState(
     val searchQuery: String = "",
     val searchResults: List<SearchResult> = emptyList(),
     val showCommandPalette: Boolean = false,
+    val recentScreens: List<SearchResult> = emptyList(),
 )
 
 enum class ShizukuStatus { UNKNOWN, RUNNING, NOT_RUNNING, NOT_INSTALLED, ROOT_MODE }
@@ -87,6 +89,7 @@ class DashboardViewModel @Inject constructor(
     private val appRepository: AppRepository,
     private val shellRepository: ShellRepository,
     private val shizukuUtils: ShizukuUtils,
+    private val historyRepo: NavigationHistoryRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -97,6 +100,18 @@ class DashboardViewModel @Inject constructor(
     init {
         loadDashboard()
         startShizukuMonitor()
+        collectHistory()
+    }
+
+    private fun collectHistory() {
+        viewModelScope.launch {
+            historyRepo.historyFlow.collect { routes ->
+                val screens = routes.mapNotNull { route ->
+                    SearchIndex.entries.find { it.route == route }
+                }
+                _uiState.update { it.copy(recentScreens = screens) }
+            }
+        }
     }
 
     private fun loadDashboard() {

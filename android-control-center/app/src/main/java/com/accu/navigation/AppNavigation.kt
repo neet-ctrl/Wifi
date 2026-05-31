@@ -116,12 +116,23 @@ import com.accu.ui.shell.AdbConnectionMode
 // Shizuku
 import com.accu.ui.shizuku.AdbPairingScreen
 import com.accu.ui.shizuku.ShizukuAppsScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.accu.ui.dashboard.NavHistoryViewModel
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStack?.destination
+    val navHistoryViewModel: NavHistoryViewModel = hiltViewModel()
+
+    DisposableEffect(navController) {
+        val listener = androidx.navigation.NavController.OnDestinationChangedListener { _, destination, _ ->
+            destination.route?.let { navHistoryViewModel.record(it) }
+        }
+        navController.addOnDestinationChangedListener(listener)
+        onDispose { navController.removeOnDestinationChangedListener(listener) }
+    }
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
