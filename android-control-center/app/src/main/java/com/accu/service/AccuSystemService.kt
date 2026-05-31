@@ -49,6 +49,11 @@ class AccuSystemService : Service() {
         const val ACTION_GRANT          = "com.accu.api.ACTION_GRANT"
         const val ACTION_DENY           = "com.accu.api.ACTION_DENY"
 
+        /** SharedPreferences file name for service-level settings. */
+        const val PREFS_SERVICE         = "accu_service_prefs"
+        /** Boolean pref: true = start AccuSystemService automatically at boot. */
+        const val PREF_AUTOSTART        = "accu_service_autostart"
+
         // Observable service state (shared with ViewModel)
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()

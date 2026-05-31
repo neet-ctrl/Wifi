@@ -67,12 +67,14 @@ fun AccuServiceScreen(
 
             // ── Hero status card ──────────────────────────────────────────────
             ServiceStatusCard(
-                isRunning    = state.isServiceRunning,
-                appCount     = state.connectedApps.count { it.isGranted },
-                pendingCount = state.pendingRequests.size,
-                callCount    = state.totalApiCalls,
-                onStart      = viewModel::startService,
-                onStop       = viewModel::stopService,
+                isRunning        = state.isServiceRunning,
+                appCount         = state.connectedApps.count { it.isGranted },
+                pendingCount     = state.pendingRequests.size,
+                callCount        = state.totalApiCalls,
+                autostartEnabled = state.bootAutostartEnabled,
+                onStart          = viewModel::startService,
+                onStop           = viewModel::stopService,
+                onAutostartToggle = viewModel::setBootAutostart,
             )
 
             // ── Tabs ──────────────────────────────────────────────────────────
@@ -118,8 +120,10 @@ private fun ServiceStatusCard(
     appCount: Int,
     pendingCount: Int,
     callCount: Long,
+    autostartEnabled: Boolean,
     onStart: () -> Unit,
     onStop: () -> Unit,
+    onAutostartToggle: (Boolean) -> Unit,
 ) {
     Card(
         Modifier.fillMaxWidth().padding(16.dp),
@@ -154,6 +158,46 @@ private fun ServiceStatusCard(
                     ) { Text("Start", style = MaterialTheme.typography.labelSmall, color = Color.White) }
                 }
             }
+
+            // ── Boot autostart toggle ─────────────────────────────────────────
+            Spacer(Modifier.height(10.dp))
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(0.5f),
+            ) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        Modifier.size(16.dp),
+                        tint = if (autostartEnabled) AccentGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "Boot autostart",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Text(
+                            "Start the service automatically after reboot",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = autostartEnabled,
+                        onCheckedChange = onAutostartToggle,
+                        thumbContent = if (autostartEnabled) {
+                            { Icon(Icons.Default.Check, null, Modifier.size(12.dp)) }
+                        } else null,
+                    )
+                }
+            }
+
             if (isRunning) {
                 Spacer(Modifier.height(12.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

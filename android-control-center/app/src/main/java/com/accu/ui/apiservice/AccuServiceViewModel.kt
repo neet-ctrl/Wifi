@@ -1,10 +1,8 @@
 package com.accu.ui.apiservice
 
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
-import android.os.IBinder
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.accu.service.AccuClientGrant
@@ -19,6 +17,7 @@ import javax.inject.Inject
 
 data class AccuServiceUiState(
     val isServiceRunning: Boolean = false,
+    val bootAutostartEnabled: Boolean = false,
     val connectedApps: List<AccuClientGrant> = emptyList(),
     val pendingRequests: List<AccuSystemService.PendingPermRequest> = emptyList(),
     val totalApiCalls: Long = 0L,
@@ -36,8 +35,15 @@ class AccuServiceViewModel @Inject constructor(
     private val _state = MutableStateFlow(AccuServiceUiState())
     val state: StateFlow<AccuServiceUiState> = _state.asStateFlow()
 
+    private val servicePrefs by lazy {
+        context.getSharedPreferences(AccuSystemService.PREFS_SERVICE, Context.MODE_PRIVATE)
+    }
+
     init {
         permissionManager.init(context)
+
+        // Load persisted autostart preference
+        _state.update { it.copy(bootAutostartEnabled = servicePrefs.getBoolean(AccuSystemService.PREF_AUTOSTART, false)) }
 
         // Observe service running state
         viewModelScope.launch {
@@ -106,6 +112,14 @@ class AccuServiceViewModel @Inject constructor(
             action = AccuSystemService.ACTION_DENY
             putExtra(AccuSystemService.EXTRA_GRANT_PKG, packageName)
         })
+    }
+
+    // ── Boot autostart ────────────────────────────────────────────────────────
+
+    fun setBootAutostart(enabled: Boolean) {
+        servicePrefs.edit { putBoolean(AccuSystemService.PREF_AUTOSTART, enabled) }
+        _state.update { it.copy(bootAutostartEnabled = enabled) }
+        Timber.i("AccuSystemService boot autostart set to $enabled")
     }
 
     // ── Tab selection ─────────────────────────────────────────────────────────

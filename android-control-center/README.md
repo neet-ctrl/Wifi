@@ -56,6 +56,81 @@
 - **📊 Live Dashboard** — real-time stats (RAM, storage, battery, CPU), Shizuku health card, module grid
 - **🎨 Material 3 Expressive** — glassmorphism surfaces, spring animations, adaptive navigation, dynamic color
 - **🔒 Zero telemetry** — no analytics, no network calls home, fully on-device
+- **🔌 ACCU System Service** — third-party app IPC broker with a full AIDL API, scope-based permission model, boot autostart, and built-in SDK documentation screen
+
+---
+
+## ACCU System Service — Third-Party Developer API
+
+ACCU acts as a **privileged IPC broker** for other Android apps — similar to Shizuku, but built on top of it and packaged directly into ACCU. No Shizuku SDK required by client apps.
+
+### How it works
+
+```
+Your App  →  bindService("com.accu.api.AccuSystemService")  →  AccuSystemService
+                                                                      ↓
+                                                             AccuPermissionManager
+                                                             (user-controlled grants)
+                                                                      ↓
+                                                             Shizuku / root shell
+                                                                      ↓
+                                                             Android System APIs
+```
+
+### Service Hub UI
+
+Navigate to **ACCU → Service Hub** (the API plug icon on the bottom nav or in the dashboard) to:
+
+| Tab | What you see |
+|---|---|
+| **Apps** | All apps that have ever requested ACCU access — grant status, scopes, call count, last used timestamp. Revoke or delete any entry with a single tap. |
+| **Pending** | Real-time list of apps currently waiting for your permission decision. Grant full access or deny from here without opening a separate dialog. |
+| **SDK Docs** | Built-in quick reference with copy-to-clipboard code snippets for binding, shell execution, and the full method list. A button links to the extended developer guide. |
+
+The hero status card shows:
+- Green/red live indicator (running vs. stopped)
+- Start / Stop button
+- **Boot autostart toggle** — when enabled, AccuSystemService starts automatically on every boot via `BootReceiver`
+- Connected app count · Pending count · Total API call counter
+- Binding intent snippet for developers
+
+### API capabilities
+
+| Scope | What client apps can do |
+|---|---|
+| `SHELL` | Run any shell command via `exec()` / `execAsync()` / `execAndGetOutput()` |
+| `PACKAGE_MANAGE` | Install, uninstall, enable, disable, hide, suspend, clear data, manage components, force-stop |
+| `PERMISSIONS` | Grant/revoke runtime permissions, read/write App Ops |
+| `SETTINGS` | Read/write Settings.Secure, Settings.Global, Settings.System |
+| `LOCALE` | Set per-app locale overrides |
+| `ALL` | All of the above |
+
+### Integration (TL;DR for developers)
+
+```kotlin
+// 1. Copy 3 AIDL files into com/accu/api/ in your project
+// 2. Add to AndroidManifest.xml:
+//    <queries><package android:name="com.accu.controlcenter" /></queries>
+// 3. Bind:
+val intent = Intent("com.accu.api.AccuSystemService").setPackage("com.accu.controlcenter")
+context.bindService(intent, connection, BIND_AUTO_CREATE)
+
+// 4. In onServiceConnected:
+val accu = IAccuService.Stub.asInterface(binder)
+accu.requestPermission(callback)          // shows ACCU grant dialog once
+val result = accu.exec("pm list packages") // [stdout, stderr, exitCode]
+```
+
+**Full guide:** [`docs/ACCU_THIRD_PARTY_DEVELOPER_GUIDE.md`](docs/ACCU_THIRD_PARTY_DEVELOPER_GUIDE.md) — 22 sections covering architecture, all 37 API methods, scope reference, error handling, threading model, lifecycle, security model, testing, troubleshooting, and a Shizuku migration guide.
+
+### Boot autostart
+
+The **Boot autostart** toggle in Service Hub persists across reboots. When enabled:
+1. `BootReceiver` fires on `BOOT_COMPLETED` / `QUICKBOOT_POWERON` / `MY_PACKAGE_REPLACED`.
+2. It reads `accu_service_autostart` from `accu_service_prefs` SharedPreferences.
+3. If `true`, it calls `startForegroundService(Intent(AccuSystemService))` immediately.
+
+The toggle is off by default; the user must enable it explicitly in Service Hub.
 
 ---
 
