@@ -1,0 +1,4 @@
+**HOT FIX**
+The app would go in an infinite loop saying "Using root to grant WRITE_SECURE_SETTINGS permission" on screen and then eventually crashing.
+
+See the changelog at http://changelog.keymapper.club for more details.

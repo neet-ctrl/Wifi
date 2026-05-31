@@ -1,0 +1,53 @@
+/*
+ * Copyright (C) 2022 Blocker
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+import "com/merxury/blocker/data/dark_theme_config.proto";
+import "com/merxury/blocker/data/controller_type.proto";
+import "com/merxury/blocker/data/rule_server_provider.proto";
+import "com/merxury/blocker/data/app_sorting.proto";
+import "com/merxury/blocker/data/component_sorting.proto";
+import "com/merxury/blocker/data/component_sorting_order.proto";
+import "com/merxury/blocker/data/component_show_priority.proto";
+import "com/merxury/blocker/data/app_sorting_order.proto";
+import "com/merxury/blocker/data/top_app_type.proto";
+
+option java_package = "com.merxury.blocker.core.datastore";
+option java_multiple_files = true;
+
+message UserPreferences {
+    DarkThemeConfigProto dark_theme_config = 1;
+    ControllerTypeProto controller_type = 2;
+    RuleServerProviderProto rule_server_provider = 3;
+    string rule_backup_folder = 4;
+    bool backup_system_app = 5;
+    bool restore_system_app = 6;
+    bool show_system_apps = 7;
+    bool show_service_info = 8;
+    AppSortingProto app_sorting = 9;
+    AppSortingOrderProto app_sorting_order = 10;
+    ComponentSortingProto component_sorting = 11;
+    ComponentShowPriorityProto component_show_priority = 12;
+    bool use_dynamic_color = 13;
+    TopAppTypeProto top_app_type = 14;
+    ComponentSortingOrderProto component_sorting_order = 15;
+    bool is_first_time_initialization_completed = 16;
+    string rule_commit_id = 17;
+    string app_display_language = 18;
+    string lib_display_language = 19;
+    bool disable_statistics = 20;
+}

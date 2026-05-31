@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name_upgraded">SD Maid</string>
+    <string name="app_name_upgrade_postfix">Pro</string>
+    <string name="upgrade_feature_requires_pro">SD Maid SE Pro ያስፈልጋል</string>
+    <string name="upgrades_dashcard_title">SD Maid SE ያሻሽሉ</string>
+    <string name="upgrades_dashcard_body">SD Maid SE Pro ለላቁ ተጠቃሚዎች የተሻሉ ውጤቶች፣ ተጨማሪ ባህሪያት እና አማራጮችን ይሰጣል።</string>
+    <string name="upgrades_dashcard_upgrade_action">ያሻሽሉ</string>
+    <string name="upgrades_gplay_unavailable_error_title">Google Play አይገኝም</string>
+    <string name="upgrades_gplay_unavailable_error_description">SD Maid ከGoogle Play ጋር መገናኘት አይችልም። Google Play ተጭኖ እና ወቅታዊ ነው? የGoogle መለያዎ ገብቷል? የGoogle Play መተግበሪያ መሸጎጫ ማጥራት እና መሳሪያዎን እንደገና ማስጀመር ይሞክሩ።</string>
+    <string name="upgrades_gplay_billing_error_label">የGoogle Play ችግር</string>
+    <string name="upgrades_gplay_billing_error_description">ከGoogle Play ጋር ችግር ተፈጥሯል። እባክዎ ቆይተው ይሞክሩ ወይም መሳሪያዎን እንደገና ያስጀምሩ።\n\nዝርዝሮች: %s</string>
+    <string name="upgrades_gplay_internal_error_title">የGoogle Play ስህተት</string>
+    <string name="upgrades_gplay_internal_error_description">የGoogle Play ውስጣዊ ስህተት ተከስቷል። እባክዎ የሚከተለውን ይሞክሩ:\n\n• መሳሪያዎን እንደገና ያስጀምሩ\n• የGoogle Play Store መሸጎጫ ያጥሩ\n• ቆይተው እንደገና ይሞክሩ</string>
+    <string name="upgrades_gplay_network_error_title">የግንኙነት ስህተት</string>
+    <string name="upgrades_gplay_network_error_description">ከGoogle Play ጋር መገናኘት አልተቻለም። እባክዎ የበይነመረብ ግንኙነትዎን ያረጋግጡ እና እንደገና ይሞክሩ።</string>
+    <string name="upgrades_gplay_already_owned_error_title">አስቀድሞ ተገዝቷል</string>
+    <string name="upgrades_gplay_already_owned_error_description">ግዢዎን ለመመለስ \"ግዢን ወደነበረበት መልስ\" አማራጩን ይጠቀሙ። ችግሩ ከቀጠለ፣ የGoogle Play መሸጎጫ ማጥራት እና መሳሪያዎን እንደገና ማስጀመር ይሞክሩ።</string>
+    <string name="upgrades_no_purchases_found_check_account">ምንም ግዢዎች አልተገኙም። ትክክለኛውን መለያ እየተጠቀሙ ነው?</string>
+    <string name="upgrade_screen_title">SD Maid SE Pro ያግኙ</string>
+    <string name="upgrade_screen_preamble">SD Maid ማስታወቂያዎች የሉትም እና የተጠቃሚ መረጃ አይሸጥም። የእኔ ስራ በእርስዎ የሚገለገል ነው ❤️።</string>
+    <string name="upgrade_screen_benefits_title">ጥቅሞች</string>
+    <string name="upgrade_screen_benefits_body">• የመተግበሪያ ጽዳት 💯\n• የተመደበ አሠራሮች ⏰\n• ለሁሉም መሣሪያዎች ተጨማሪ አማራጮች ⚙️\n• የራስዎ የመሰረዝ ደንቦች ✍️\n• ተነሳሽ ገንቢ 🧙\nእና ተጨማሪ…</string>
+    <string name="upgrade_screen_how_title">አማራጮች</string>
+    <string name="upgrade_screen_how_body">በአንድ ጊዜ ግዢ እና በርካሽ የዓመታዊ ደንበኝነት መካከል መምረጥ ይችላሉ።\nደንበኝነቱ በነፃ የ14 ቀን ሙከራ ይጀምራል፣ ከዚያ በኋላ በዓመት አንድ ጊዜ ይከፈላሉ። ሙከራ እና ደንበኝነት በማንኛውም ጊዜ ሊሰረዝ ይችላል።\nተመሳሳይ ባህሪያት፣ የተለያዩ የዋጋ አሰጣጥ ሞዴሎች ብቻ።</string>
+    <string name="upgrade_screen_subscription_trial_action">ነፃ የ14 ቀን ሙከራ ይጀምሩ</string>
+    <string name="upgrade_screen_subscription_action">ይመዝገቡ</string>
+    <string name="upgrade_screen_subscription_action_hint">ደንበኝነቱ በዓመት %s ያስከፍላል።</string>
+    <string name="upgrade_screen_iap_action">አንድ ጊዜ ግዢ</string>
+    <string name="upgrade_screen_iap_action_hint">አንድ ጊዜ ግዢው %s ያስከፍላል።</string>
+    <string name="upgrade_screen_thanks_toast">እርስዎ ምርጥ ነዎት! ❤️</string>
+    <string name="upgrade_screen_restore_purchase_action">ግዢን ወደነበረበት መልስ</string>
+    <string name="upgrade_screen_restore_purchase_message">ማሻሻያዎ በተመሳሳይ Google መለያ ላይ በመሳሪያዎች ላይ ልክ ነው።</string>
+    <string name="upgrade_screen_restore_troubleshooting_msg">ለማይታወቁ ማሻሻያዎች የመላ ፍለጋ ምክሮች፡</string>
+    <string name="upgrade_screen_restore_sync_patience_hint">የPlay Store ሲምሪዝሽን ጊዜ ሊወስድ ይችላል። እንደገና ማስጀመር፣ የGoogle Play መሸጎጫ ማጥራት ወይም ብቻ መጠበቅ ይሞክሩ።</string>
+    <string name="upgrade_screen_restore_multiaccount_hint">ብዙ መለያዎች Google Play ማምታታት ይችላሉ። ከሌሎች መለያዎች ይወጡ ወይም በGoogle Play ድርጣቢያ በኩል ይጫኑ፣ ይህም ከተወሰነ መለያ ጋር ግንኙነቶችን ያስገድዳል።</string>
+</resources>

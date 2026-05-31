@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="@dimen/popup_padding"
+    tools:parentTag="android.widget.LinearLayout">
+
+    <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+        android:id="@+id/red"
+        android:layout_width="@dimen/button_size"
+        android:layout_height="@dimen/button_size"
+        android:layout_marginEnd="@dimen/popup_item_gap_length"
+        android:src="@drawable/ic_span_color"
+        android:tint="#f1948a"
+        app:buttonTintType="custom" />
+
+    <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+        android:id="@+id/purple"
+        android:layout_width="@dimen/button_size"
+        android:layout_height="@dimen/button_size"
+        android:layout_marginEnd="@dimen/popup_item_gap_length"
+        android:src="@drawable/ic_span_color"
+        android:tint="#d2b4de"
+        app:buttonTintType="custom" />
+
+    <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+        android:id="@+id/blue"
+        android:layout_width="@dimen/button_size"
+        android:layout_height="@dimen/button_size"
+        android:layout_marginEnd="@dimen/popup_item_gap_length"
+        android:tint="#aed6f1"
+        android:src="@drawable/ic_span_color"
+        app:buttonTintType="custom" />
+
+    <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+        android:id="@+id/green"
+        android:layout_width="@dimen/button_size"
+        android:layout_height="@dimen/button_size"
+        android:src="@drawable/ic_span_color"
+        android:tint="#a2d9ce"
+        app:buttonTintType="custom" />
+
+    <app.simple.inure.decorations.theme.ThemeDivider
+        android:layout_width="1px"
+        android:layout_marginHorizontal="5dp"
+        android:layout_height="match_parent" />
+
+    <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+        android:id="@+id/clear"
+        android:layout_width="@dimen/button_size"
+        android:layout_height="@dimen/button_size"
+        android:src="@drawable/ic_close"
+        android:tint="#DF007A"
+        app:buttonTintType="regular" />
+
+</merge>

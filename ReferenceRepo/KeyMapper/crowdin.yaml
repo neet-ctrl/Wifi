@@ -1,0 +1,15 @@
+# The _env suffix tells crowdin to get these from the environment variables set
+# in the GitHub actions workflow
+project_id_env: "CROWDIN_PROJECT_ID"
+api_token_env: "CROWDIN_PERSONAL_TOKEN"
+preserve_hierarchy: true
+
+files:
+  - source: /base/src/main/res/values/strings.xml
+    translation: /base/src/main/res/values-%two_letters_code%/strings.xml
+  - source: /fastlane/metadata/android/en-US/full_description.txt
+    translation: /fastlane/metadata/android/%locale_with_underscore%/full_description.txt
+  - source: /fastlane/metadata/android/en-US/short_description.txt
+    translation: /fastlane/metadata/android/%locale_with_underscore%/short_description.txt
+  - source: /fastlane/metadata/android/en-US/title.txt
+    translation: /fastlane/metadata/android/%locale_with_underscore%/title.txt

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<app.simple.inure.decorations.ripple.DynamicRippleMaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:layout_margin="5dp"
+    android:orientation="horizontal"
+    android:padding="5dp"
+    android:elevation="@dimen/app_views_elevation"
+    app:cardElevation="5dp"
+    app:contentPadding="@dimen/popup_padding">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/app_icon"
+                android:layout_width="@dimen/button_size"
+                android:layout_height="@dimen/button_size"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="ContentDescription" />
+
+            <app.simple.inure.decorations.typeface.TypeFaceTextView
+                android:id="@+id/app_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textSize="@dimen/info_text_medium"
+                android:gravity="center_vertical"
+                android:drawablePadding="5dp"
+                android:layout_marginTop="4dp"
+                app:appFontStyle="bold"
+                app:drawableTintStyle="accent"
+                app:layout_constraintBottom_toTopOf="@+id/package_id"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/app_icon"
+                app:layout_constraintTop_toTopOf="@+id/app_icon"
+                app:layout_constraintVertical_bias="1.0"
+                app:textColorStyle="primary" />
+
+            <app.simple.inure.decorations.typeface.TypeFaceTextView
+                android:id="@+id/package_id"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/lato_regular"
+                android:maxLines="1"
+                android:textSize="@dimen/desc_text_size"
+                android:layout_marginBottom="4dp"
+                app:appFontStyle="regular"
+                app:layout_constraintBottom_toBottomOf="@+id/app_icon"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/app_icon"
+                app:layout_constraintTop_toBottomOf="@id/app_name"
+                app:layout_constraintVertical_bias="0.0"
+                app:textColorStyle="secondary" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <app.simple.inure.decorations.typeface.TypeFaceTextView
+            android:id="@+id/notes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
+            android:maxLines="7"
+            android:textSize="@dimen/desc_text_size"
+            app:appFontStyle="regular"
+            app:drawableTintStyle="accent"
+            app:textColorStyle="primary" />
+
+        <app.simple.inure.decorations.theme.ThemeDivider
+            android:id="@+id/themeDivider"
+            android:layout_width="match_parent"
+            android:layout_height="1px"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
+
+        <app.simple.inure.decorations.typeface.TypeFaceTextView
+            android:id="@+id/date_updated"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/lato_regular"
+            android:maxLines="1"
+            android:textSize="@dimen/desc_text_size"
+            app:appFontStyle="regular"
+            app:textColorStyle="accent" />
+
+    </LinearLayout>
+
+</app.simple.inure.decorations.ripple.DynamicRippleMaterialCardView>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="smartspace_accessibility_smartspace_page">頁面 %1$d / %2$d</string>
+    <string name="smartspace_long_press_popup_dismiss">關閉</string>
+    <string name="smartspace_long_press_popup_feedback">建議與回饋</string>
+    <string name="smartspace_long_press_popup_about">關於此內容</string>
+    <string name="smartspace_long_press_popup_settings">設定</string>
+    <string name="smartspace_long_press_popup_failed_to_launch">啟動動作失敗</string>
+    <string name="smartspace_toast_could_not_dismiss">此目標無法關閉</string>
+</resources>

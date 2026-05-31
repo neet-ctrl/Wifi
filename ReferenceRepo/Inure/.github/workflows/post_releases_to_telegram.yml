@@ -1,0 +1,126 @@
+name: Post Releases to Telegram
+
+on:
+    release:
+        types: [published, released]
+    workflow_dispatch:
+
+jobs:
+    post:
+        name: Post Releases to Telegram
+        runs-on: ubuntu-latest
+
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v4
+
+            -   name: Extract Version Name and Version Code
+                run: |
+                    # Extract versionName and versionCode from build.gradle
+                    VERSION_NAME=$(cat app/build.gradle | grep -oP 'versionName "\K[^"]*')
+                    VERSION_CODE=$(cat app/build.gradle | grep -oP 'versionCode \K\d+')
+
+                    # Make the version name sentence case
+                    VERSION_NAME=$(echo "$VERSION_NAME" | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2));}1')
+
+                    echo "Version Name: $VERSION_NAME"
+                    echo "Version Code: $VERSION_CODE"
+
+                    # Set these values as environment variables for later steps
+                    echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+                    echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+
+            -   name: Set Tag
+                run: |
+                    TAG=$(echo ${{ env.VERSION_NAME }} | tr '[:upper:]' '[:lower:]')
+                    echo "TAG=${TAG}" >> $GITHUB_ENV
+                    echo "Tag: ${TAG}" # Print tag to console
+
+            -   name: Wipe out the app directory
+                run: |
+                    # Remove the app directory if it exists
+                    if [ -d app ]; then
+                        rm -rf app
+                    fi
+
+            -   name: Fetch latest release
+                id: get_release
+                run: |
+                    echo "Fetching latest release from $GITHUB_REPOSITORY..."
+                    latest_release=$(curl -s "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest")
+                    first_apk_url=$(echo "$latest_release" | jq -r '.assets[0].browser_download_url')
+                    second_apk_url=$(echo "$latest_release" | jq -r '.assets[1].browser_download_url')
+                    echo "First APK URL: $first_apk_url"
+                    echo "Second APK URL: $second_apk_url"
+                    # Set the apk_urls environment variable
+                    echo "apk_urls=$first_apk_url $second_apk_url" >> $GITHUB_ENV
+
+            -   name: Download APKs
+                run: |
+                    for url in ${{ env.apk_urls }}; do
+                        filename=$(basename "$url")
+                        echo "Downloading $filename..."
+                        curl -L -o "$filename" "$url"
+                    done
+
+            -   name: Create app directory
+                run: |
+                    # Create the app directory
+                    mkdir app
+
+            -   name: Move APKs to app directory
+                run: |
+                    # Move the APKs to the app directory
+                    mv *.apk app/
+
+            -   name: Rename APKs
+                run: |
+                    # Rename the APKs to include the version name and version code
+                    # If the file name contains github, then rename it as github_release_versionName_versionCode.apk
+                    # And, if it contains play, then rename it as play_store_versionName_versionCode.apk
+                    for file in app/*.apk; do
+                        if [[ $file == *"github"* ]]; then
+                            mv $file app/github_${{ env.VERSION_NAME }}.apk
+                            echo "Renamed $file to github_${{ env.VERSION_NAME }}.apk"
+                        fi
+                    
+                        if [[ $file == *"play"* ]]; then
+                            mv $file app/play_${{ env.VERSION_NAME }}.apk
+                            echo "Renamed $file to play_${{ env.VERSION_NAME }}.apk"
+                        fi
+                    done
+                    
+                    # List the files in the app directory
+                    ls app
+
+            -   name: Add APK Paths to Env
+                run: |
+                    # Add the APK paths to the environment
+                    echo "GITHUB_APK_PATH=$(find app -type f -name "github_*.apk")" >> $GITHUB_ENV
+                    echo "PLAY_APK_PATH=$(find app -type f -name "play_*.apk")" >> $GITHUB_ENV
+                    echo "GITHUB_APK_PATH=${{ env.GITHUB_APK_PATH }}"
+                    echo "PLAY_APK_PATH=${{ env.PLAY_APK_PATH }}"
+
+            -   name: Send Notification Message
+                uses: appleboy/telegram-action@master
+                with:
+                    to: ${{ secrets.APP_CHANNEL_ID_FOR_TG_BOT }}
+                    token: ${{ secrets.TG_BOT_KEY }}
+                    message: |
+                        ${{ env.VERSION_NAME }} is live on the GitHub and Play Store.
+
+#            -   name: Send First APK to Telegram
+#                uses: appleboy/telegram-action@master
+#                with:
+#                    to: ${{ secrets.APP_CHANNEL_ID_FOR_TG_BOT }}
+#                    token: ${{ secrets.TG_BOT_KEY }}
+#                    document: ${{ env.GITHUB_APK_PATH }}
+#                    message: " "
+#
+#            -   name: Send Second APK to Telegram
+#                uses: appleboy/telegram-action@master
+#                with:
+#                    to: ${{ secrets.APP_CHANNEL_ID_FOR_TG_BOT }}
+#                    token: ${{ secrets.TG_BOT_KEY }}
+#                    document: ${{ env.PLAY_APK_PATH }}
+#                    message: " "

@@ -1,0 +1,57 @@
+Inure is a powerful open source applications manager and analyzer with a good-looking and easy to use interface. This app can be used to manage all apps installed in the device, in addition to that Inure allows you to access all the core components of the app including services, activities etc. and modify them on the go. All that combined with a gorgeous and pleasing interface, with every tap accompanied by fluid animations.
+
+<b>Features</b>
+
+- Organized list of all apps
+- Usage stats of all apps
+- Create notes for specific apps
+- Terminal Emulator with commands manager
+- Sensors information
+- Scan for trackers in any app
+- Inbuilt device information panel
+- App information panel
+- Uninstall, disable, force close user/system app (with and without root)
+- Dedicated app's component viewer and editor
+- Clear data and cache of any app
+- Grant or Deny permissions for any app
+- Root and Shizuku API support
+- Manage per-app battery optimization and boot processes
+- Block trackers in any app
+- AppOps manager for any app
+- Scan apps using VirusTotal
+
+<b>Extra Capabilities</b>
+
+- Audio player
+- Preview any TTF format font
+- Image viewer
+- Inbuilt text viewer and editor
+- Markdown viewer
+- HTML support
+- Pretty code highlighting support for some programming languages
+- XML pretty printing and highlighting
+- SVG support
+
+<b>UI Features</b>
+
+- Full-screen with status and navigation bar
+- Beautiful unique interface
+- Smooth animations for every element of the app
+- Interconnected interface by icons and shared animations
+- Universal accent color picker
+- Ability to change font style of the app
+- Rounded corner support
+- Pleasing colored shadows for every layer of the app
+- Glowing app icons effect
+- Unique switch style
+- Native theme engine to support all dark and light modes
+- AMOLED, Slate, Grey and High Contrast dark modes
+- Monet color palette support
+
+<b>Trial</b>
+
+The full version of Inure is available to try for 15 days, all the features of the app will continue to work except a few of the trial features will be disabled after the period has ended. You can unlock the full version by purchasing the Inure Unlocker.
+
+<b>Note</b>
+
+Inure has reached stable stage, but there maybe some unknown bugs. I am actively developing this app and would love to hear feedback, ideas and general discussions about the app. You can submit your feedback on <a href="https://github.com/Hamza417/Inure/discussions/48">GitHub Discussion</a> or join <a href="https://t.me/inure_app_manager">Telegram Group</a> for the app (Recommended).

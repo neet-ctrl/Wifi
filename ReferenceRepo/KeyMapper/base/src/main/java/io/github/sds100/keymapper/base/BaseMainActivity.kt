@@ -1,0 +1,284 @@
+package io.github.sds100.keymapper.base
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.res.Configuration
+import android.net.Uri
+import android.os.Bundle
+import android.view.MotionEvent
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.content.ContextCompat
+import androidx.core.content.IntentCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.flowWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withStateAtLeast
+import com.anggrayudi.storage.extension.openInputStream
+import com.anggrayudi.storage.extension.openOutputStream
+import com.anggrayudi.storage.extension.toDocumentFile
+import io.github.sds100.keymapper.base.compose.ComposeColors
+import io.github.sds100.keymapper.base.input.InputEventDetectionSource
+import io.github.sds100.keymapper.base.input.InputEventHubImpl
+import io.github.sds100.keymapper.base.keymaps.ConfigKeyMapStateImpl
+import io.github.sds100.keymapper.base.onboarding.OnboardingUseCase
+import io.github.sds100.keymapper.base.system.accessibility.AccessibilityServiceAdapterImpl
+import io.github.sds100.keymapper.base.system.permissions.RequestPermissionDelegate
+import io.github.sds100.keymapper.base.utils.navigation.NavigationProvider
+import io.github.sds100.keymapper.base.utils.ui.ResourceProviderImpl
+import io.github.sds100.keymapper.common.BuildConfigProvider
+import io.github.sds100.keymapper.sysbridge.service.SystemBridgeSetupControllerImpl
+import io.github.sds100.keymapper.system.devices.AndroidDevicesAdapter
+import io.github.sds100.keymapper.system.files.FileUtils
+import io.github.sds100.keymapper.system.inputevents.KMGamePadEvent
+import io.github.sds100.keymapper.system.network.AndroidNetworkAdapter
+import io.github.sds100.keymapper.system.notifications.NotificationReceiverAdapterImpl
+import io.github.sds100.keymapper.system.permissions.AndroidPermissionAdapter
+import io.github.sds100.keymapper.system.root.SuAdapterImpl
+import io.github.sds100.keymapper.system.shizuku.ShizukuAdapter
+import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+
+abstract class BaseMainActivity : AppCompatActivity() {
+
+    companion object {
+        const val ACTION_SHOW_ACCESSIBILITY_SETTINGS_NOT_FOUND_DIALOG =
+            "${BuildConfig.LIBRARY_PACKAGE_NAME}.ACTION_SHOW_ACCESSIBILITY_SETTINGS_NOT_FOUND_DIALOG"
+
+        const val ACTION_SAVE_FILE = "${BuildConfig.LIBRARY_PACKAGE_NAME}.ACTION_SAVE_FILE"
+        const val EXTRA_FILE_URI = "${BuildConfig.LIBRARY_PACKAGE_NAME}.EXTRA_FILE_URI"
+
+        const val ACTION_START_SYSTEM_BRIDGE =
+            "${BuildConfig.LIBRARY_PACKAGE_NAME}.ACTION_START_SYSTEM_BRIDGE"
+    }
+
+    @Inject
+    lateinit var permissionAdapter: AndroidPermissionAdapter
+
+    @Inject
+    lateinit var serviceAdapter: AccessibilityServiceAdapterImpl
+
+    @Inject
+    lateinit var resourceProvider: ResourceProviderImpl
+
+    @Inject
+    lateinit var onboardingUseCase: OnboardingUseCase
+
+    @Inject
+    lateinit var notificationReceiverAdapter: NotificationReceiverAdapterImpl
+
+    @Inject
+    lateinit var shizukuAdapter: ShizukuAdapter
+
+    @Inject
+    lateinit var buildConfigProvider: BuildConfigProvider
+
+    @Inject
+    lateinit var systemBridgeSetupController: SystemBridgeSetupControllerImpl
+
+    @Inject
+    lateinit var suAdapter: SuAdapterImpl
+
+    @Inject
+    lateinit var devicesAdapter: AndroidDevicesAdapter
+
+    @Inject
+    lateinit var networkAdapter: AndroidNetworkAdapter
+
+    @Inject
+    lateinit var inputEventHub: InputEventHubImpl
+
+    @Inject
+    lateinit var navigationProvider: NavigationProvider
+
+    @Inject
+    lateinit var configKeyMapState: ConfigKeyMapStateImpl
+
+    private lateinit var requestPermissionDelegate: RequestPermissionDelegate
+
+    private val currentNightMode: Int
+        get() = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+
+    val viewModel by viewModels<ActivityViewModel>()
+
+    private var originalFileUri: Uri? = null
+
+    private val saveFileLauncher =
+        registerForActivityResult(CreateDocument(FileUtils.MIME_TYPE_ALL)) { uri ->
+            uri ?: return@registerForActivityResult
+
+            originalFileUri?.let { original -> saveFile(originalFile = original, targetFile = uri) }
+        }
+
+    /**
+     * This is used when saving a file with the Android share sheet and want to copy
+     * the private to the public location.
+     */
+    private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            intent ?: return
+
+            when (intent.action) {
+                ACTION_SAVE_FILE -> {
+                    lifecycleScope.launch {
+                        withStateAtLeast(Lifecycle.State.RESUMED) {
+                            selectFileLocationAndSave(intent)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                ComposeColors.surfaceContainerLight.toArgb(),
+                ComposeColors.surfaceContainerDark.toArgb(),
+            ),
+            navigationBarStyle = SystemBarStyle.auto(
+                ComposeColors.surfaceContainerLight.toArgb(),
+                ComposeColors.surfaceContainerDark.toArgb(),
+            ),
+        )
+        super.onCreate(savedInstanceState)
+
+        savedInstanceState?.let { configKeyMapState.restoreState(it) }
+
+        requestPermissionDelegate = RequestPermissionDelegate(
+            this,
+            showDialogs = true,
+            permissionAdapter,
+            notificationReceiverAdapter = notificationReceiverAdapter,
+            buildConfigProvider = buildConfigProvider,
+            shizukuAdapter = shizukuAdapter,
+            navigationProvider = navigationProvider,
+            coroutineScope = lifecycleScope,
+        )
+
+        permissionAdapter.request
+            .flowWithLifecycle(lifecycle, Lifecycle.State.STARTED)
+            .onEach { permission ->
+                requestPermissionDelegate.requestPermission(permission)
+            }
+            .launchIn(lifecycleScope)
+
+        IntentFilter().apply {
+            addAction(ACTION_SAVE_FILE)
+
+            ContextCompat.registerReceiver(
+                this@BaseMainActivity,
+                broadcastReceiver,
+                this,
+                ContextCompat.RECEIVER_EXPORTED,
+            )
+        }
+
+        handleIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        // This must be after onResume to ensure all the fragment lifecycles' have also
+        // resumed which are observing these events.
+        // This is checked here and not in KeyMapperApp's lifecycle observer because
+        // the activities have not necessarily resumed at that point.
+        permissionAdapter.onPermissionsChanged()
+        serviceAdapter.invalidateState()
+        suAdapter.requestPermission()
+        systemBridgeSetupController.invalidateSettings()
+        networkAdapter.invalidateState()
+        onboardingUseCase.handledMigrateScreenOffKeyMapsNotification()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        configKeyMapState.saveState(outState)
+
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onDestroy() {
+        onboardingUseCase.shownAppIntro = true
+
+        viewModel.previousNightMode = currentNightMode
+        unregisterReceiver(broadcastReceiver)
+        super.onDestroy()
+    }
+
+    /**
+     * Process motion events from the activity so that DPAD buttons can be recorded
+     * even when the Key Mapper IME is not being used. DO NOT record the key events because
+     * these are sent from the joy sticks.
+     */
+    override fun onGenericMotionEvent(event: MotionEvent?): Boolean {
+        event ?: return super.onGenericMotionEvent(event)
+
+        val gamepadEvent = KMGamePadEvent.fromMotionEvent(event) ?: return false
+        val consume = inputEventHub.onInputEvent(
+            gamepadEvent,
+            detectionSource = InputEventDetectionSource.INPUT_METHOD,
+        )
+
+        return if (consume) {
+            true
+        } else {
+            // IMPORTANT! return super so that the back navigation button still works.
+            super.onGenericMotionEvent(event)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        when (intent?.action) {
+            ACTION_SHOW_ACCESSIBILITY_SETTINGS_NOT_FOUND_DIALOG -> {
+                viewModel.onCantFindAccessibilitySettings()
+                // Only clear the intent if it is handled in case it is used elsewhere
+                this.intent = null
+            }
+
+            ACTION_START_SYSTEM_BRIDGE -> {
+                viewModel.launchExpertModeSetup()
+
+                // Only clear the intent if it is handled in case it is used elsewhere
+                this.intent = null
+            }
+        }
+    }
+
+    private fun saveFile(originalFile: Uri, targetFile: Uri) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            targetFile.openOutputStream(this@BaseMainActivity)?.use { output ->
+                originalFile.openInputStream(this@BaseMainActivity)?.use { input ->
+                    input.copyTo(output)
+                }
+            }
+        }
+    }
+
+    private fun selectFileLocationAndSave(intent: Intent) {
+        val fileUri =
+            IntentCompat.getParcelableExtra(intent, EXTRA_FILE_URI, Uri::class.java) ?: return
+
+        val fileName = fileUri.toDocumentFile(this@BaseMainActivity)?.name ?: return
+
+        originalFileUri = fileUri
+        saveFileLauncher.launch(fileName)
+    }
+}

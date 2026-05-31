@@ -1,0 +1,58 @@
+{
+    "formatVersion": 1,
+    "database": {
+        "version": 2,
+        "identityHash": "6854cefc41a0eb1c4c8a8158070e173f",
+        "entities": [
+            {
+                "tableName": "terminal_commands",
+                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`command` TEXT, `arguments` TEXT, `label` TEXT, `description` TEXT, `date_created` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)",
+                "fields": [
+                    {
+                        "fieldPath": "command",
+                        "columnName": "command",
+                        "affinity": "TEXT",
+                        "notNull": false
+                    },
+                    {
+                        "fieldPath": "arguments",
+                        "columnName": "arguments",
+                        "affinity": "TEXT",
+                        "notNull": false
+                    },
+                    {
+                        "fieldPath": "label",
+                        "columnName": "label",
+                        "affinity": "TEXT",
+                        "notNull": false
+                    },
+                    {
+                        "fieldPath": "description",
+                        "columnName": "description",
+                        "affinity": "TEXT",
+                        "notNull": false
+                    },
+                    {
+                        "fieldPath": "dateCreated",
+                        "columnName": "date_created",
+                        "affinity": "INTEGER",
+                        "notNull": true
+                    }
+                ],
+                "primaryKey": {
+                    "autoGenerate": true,
+                    "columnNames": [
+                        "date_created"
+                    ]
+                },
+                "indices": [],
+                "foreignKeys": []
+            }
+        ],
+        "views": [],
+        "setupQueries": [
+            "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+            "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6854cefc41a0eb1c4c8a8158070e173f')"
+        ]
+    }
+}

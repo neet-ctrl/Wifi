@@ -1,0 +1,9 @@
+<app.simple.inure.decorations.theme.ThemeDivider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/preferences_text"
+    android:layout_width="match_parent"
+    android:layout_height="1px"
+    android:layout_gravity="center_vertical"
+    android:layout_marginHorizontal="20dp"
+    android:layout_marginVertical="@dimen/popup_padding"
+    tools:ignore="PxUsage" />

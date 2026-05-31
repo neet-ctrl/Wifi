@@ -1,0 +1,309 @@
+package eu.darken.sdmse.main.core.taskmanager
+
+import eu.darken.sdmse.common.ca.toCaString
+import eu.darken.sdmse.common.coroutine.AppScope
+import eu.darken.sdmse.common.coroutine.DispatcherProvider
+import eu.darken.sdmse.common.debug.logging.Logging.Priority.ERROR
+import eu.darken.sdmse.common.debug.logging.Logging.Priority.INFO
+import eu.darken.sdmse.common.debug.logging.Logging.Priority.VERBOSE
+import eu.darken.sdmse.common.debug.logging.asLog
+import eu.darken.sdmse.common.debug.logging.log
+import eu.darken.sdmse.common.debug.logging.logTag
+import eu.darken.sdmse.common.flow.withPrevious
+import eu.darken.sdmse.common.progress.Progress
+import eu.darken.sdmse.common.rngString
+import eu.darken.sdmse.common.sharedresource.KeepAlive
+import eu.darken.sdmse.common.sharedresource.SharedResource
+import eu.darken.sdmse.main.core.SDMTool
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import java.time.Instant
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class TaskManager @Inject constructor(
+    @AppScope private val appScope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider,
+    private val tools: Set<@JvmSuppressWildcards SDMTool>,
+    private val taskWorkerControl: TaskWorkerControl,
+) : TaskSubmitter {
+
+    private val sharedResource = SharedResource.createKeepAlive(TAG, appScope)
+
+    private val managerLock = Mutex()
+    private val concurrencyLock = Semaphore(2)
+    private val taskEntries = MutableStateFlow(emptyMap<String, TaskEntry>())
+
+    private data class TaskEntry(
+        val id: String,
+        val task: SDMTool.Task,
+        val tool: SDMTool,
+        val queuedAt: Instant = Instant.now(),
+        val startedAt: Instant? = null,
+        val cancelledAt: Instant? = null,
+        val completedAt: Instant? = null,
+        val job: Job? = null,
+        val resourceLock: KeepAlive? = null,
+        val result: SDMTool.Task.Result? = null,
+        val error: Exception? = null,
+    ) {
+        val toolType: SDMTool.Type
+            get() = tool.type
+
+        val isComplete: Boolean = completedAt != null
+        val isCancelling: Boolean = cancelledAt != null && completedAt == null
+        val isActive: Boolean = !isComplete && startedAt != null
+        val isQueued: Boolean = !isComplete && startedAt == null && cancelledAt == null
+
+        fun toPublic() = TaskSubmitter.ManagedTask(
+            id = id,
+            toolType = toolType,
+            task = task,
+            queuedAt = queuedAt,
+            startedAt = startedAt,
+            cancelledAt = cancelledAt,
+            completedAt = completedAt,
+            result = result,
+            error = error,
+        )
+
+        override fun toString(): String {
+            return "TaskEntry(${toolType}: ${task.javaClass.simpleName} - queued=$queuedAt, started=$startedAt, completed=$completedAt, cancelled=$cancelledAt) - result=$result, error=$error)"
+        }
+    }
+
+    override val state = taskEntries
+        .map { entries ->
+            TaskSubmitter.State(
+                tasks = entries.values.map { it.toPublic() }
+            )
+        }
+
+    init {
+        state
+            .distinctUntilChanged()
+            .onEach {
+                log(TAG, VERBOSE) { "Task map changed:" }
+                taskEntries.value.values.forEachIndexed { index, entry ->
+                    log(TAG, VERBOSE) { "#$index - $entry" }
+                }
+            }
+            .launchIn(appScope)
+        state
+            .distinctUntilChanged()
+            .onEach {
+                updateTasks {
+                    // We want to keep one result of each type
+                    val tasksByType = this.entries
+                        .asSequence()
+                        .filter { it.value.isComplete }
+                        .groupBy { it.value.toolType }
+
+                    // Keep the newest for each type
+                    val tasksToRemove = tasksByType
+                        .flatMap { (_, tasks) -> tasks.sortedByDescending { it.value.completedAt }.drop(1) }
+                        .map { it.key }
+
+                    tasksToRemove
+                        .onEach {
+                            log(TAG, VERBOSE) { "Pruning old task: $it" }
+                            remove(it)
+                        }
+                        .toList()
+                }
+            }
+            .launchIn(appScope)
+        state
+            .map { it.isIdle }
+            .distinctUntilChanged()
+            .withPrevious()
+            .onEach { (isOldIdle, newIdle) ->
+                if (isOldIdle != false && !newIdle) {
+                    taskWorkerControl.startMonitor()
+                }
+            }
+            .launchIn(appScope)
+    }
+
+    private suspend fun updateTasks(
+        update: MutableMap<String, TaskEntry>.() -> Unit
+    ): Map<String, TaskEntry> = withContext(NonCancellable) {
+        managerLock.withLock {
+            val modMap = taskEntries.value.toMutableMap()
+            update(modMap)
+            modMap.toMap().also {
+                taskEntries.value = it
+            }
+        }
+    }
+
+    private suspend fun stage(taskId: String) {
+        log(TAG) { "stage(): Staging $taskId" }
+        var tempEntry: TaskEntry? = null
+        updateTasks {
+            this[taskId] = this[taskId]!!
+                .also { tempEntry = it }
+        }
+        val entry: TaskEntry = tempEntry ?: throw IllegalStateException("Can't find task $taskId")
+        val tool = entry.tool
+
+        tool.updateProgress {
+            it ?: Progress.Data(
+                primary = eu.darken.sdmse.common.R.string.general_progress_queued.toCaString(),
+                count = Progress.Count.Indeterminate(),
+            )
+        }
+    }
+
+    private suspend fun execute(taskId: String): SDMTool.Task.Result = concurrencyLock.withPermit {
+        log(TAG) { "execute(): Starting $taskId" }
+        val start = System.currentTimeMillis()
+
+        var tempEntry: TaskEntry? = null
+        updateTasks {
+            this[taskId] = this[taskId]!!
+                .copy(startedAt = Instant.now())
+                .also { tempEntry = it }
+        }
+        val entry: TaskEntry = tempEntry ?: throw IllegalStateException("Can't find task $taskId")
+
+        val tool = entry.tool
+        val timeout = getTaskTimeout(entry.task.type)
+        val result = try {
+            withTimeout(timeout) {
+                tool.useRes { tool.submit(entry.task) }
+            }
+        } catch (e: TimeoutCancellationException) {
+            throw TaskTimeoutException(entry.task.type, timeout)
+        }
+
+        val stop = System.currentTimeMillis()
+        log(TAG) { "execute() after ${stop - start}ms: $result : $tempEntry" }
+        log(TAG) { "execute(): Task entries now:\n${taskEntries.value.values.joinToString("\n")}" }
+        result
+    }
+
+    override suspend fun submit(task: SDMTool.Task): SDMTool.Task.Result {
+        log(TAG, INFO) { "submit(): $task" }
+        val taskId = rngString
+
+        val job = appScope.launch(
+            context = dispatcherProvider.IO,
+            start = CoroutineStart.LAZY,
+        ) {
+            var result: SDMTool.Task.Result? = null
+            var error: Exception? = null
+            try {
+                stage(taskId)
+                result = execute(taskId)
+
+                log(TAG) { "Result for ${task.type}-$taskId is $result" }
+            } catch (e: Exception) {
+                if (e is CancellationException) {
+                    log(TAG, INFO) { "execute(): Task was cancelled (${task.type}-$taskId): $task" }
+                } else {
+                    log(TAG, ERROR) { "execute(): Execution failed (${task.type}-$taskId): $task\n${e.asLog()}" }
+                }
+                error = e
+            } finally {
+                updateTasks {
+                    this[taskId]!!.tool.updateProgress { null }
+                    log(TAG) { "Releasing resource lock for ${task.type}-$taskId" }
+                    this[taskId]!!.resourceLock!!.close()
+                    this[taskId] = this[taskId]!!.copy(
+                        completedAt = Instant.now(),
+                        error = error,
+                        result = result,
+                    )
+                }
+            }
+        }
+
+        job.invokeOnCompletion { log(TAG, VERBOSE) { "Task completion: ${taskEntries.value[taskId]}" } }
+
+        withContext(NonCancellable) {
+            // Any task causes the taskmanager to stay "alive" and with it any depending resources
+            // Only release all resources once all tasks are finished.
+            val keepAlive = sharedResource.get()
+
+            val tool = tools.single { it.type == task.type }
+            sharedResource.addChild(tool.sharedResource)
+
+            updateTasks {
+                val entry = TaskEntry(
+                    id = taskId,
+                    task = task,
+                    tool = tool,
+                    job = job,
+                    resourceLock = keepAlive,
+                )
+
+                this[entry.id] = entry
+
+                log(TAG) { "submit(): Queued: $entry" }
+            }
+        }
+
+        job.join()
+
+        val endTask = taskEntries
+            .mapNotNull { it[taskId] }
+            .filter { it.isComplete }
+            .first()
+
+        return endTask.result ?: throw endTask.error!!
+    }
+
+    override fun cancel(type: SDMTool.Type) {
+        appScope.launch {
+            log(TAG, INFO) { "cancel($type)" }
+
+            updateTasks {
+                this
+                    .filter { it.value.tool.type == type && it.value.cancelledAt == null }
+                    .onEach { (key, value) ->
+                        log(TAG) { "Cancelling $value" }
+                        value.job?.cancel()
+                        this[key] = this[key]!!.copy(cancelledAt = Instant.now())
+                    }
+            }
+        }
+    }
+
+    private fun getTaskTimeout(type: SDMTool.Type): Duration = when (type) {
+        SDMTool.Type.APPCLEANER -> 4.hours
+        SDMTool.Type.CORPSEFINDER -> 4.hours
+        SDMTool.Type.SYSTEMCLEANER -> 4.hours
+        SDMTool.Type.DEDUPLICATOR -> 6.hours
+        SDMTool.Type.ANALYZER -> 4.hours
+        SDMTool.Type.APPCONTROL -> 2.hours
+        SDMTool.Type.SQUEEZER -> 4.hours
+        SDMTool.Type.SWIPER -> 2.hours
+    }
+
+    companion object {
+        private val TAG = logTag("TaskManager")
+    }
+}

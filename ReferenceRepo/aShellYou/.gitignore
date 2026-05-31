@@ -1,0 +1,15 @@
+*.iml
+.gradle
+/.kotlin
+.vscode
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+keystore.properties
+local.properties
+.androidide/
+signing-foss.properties

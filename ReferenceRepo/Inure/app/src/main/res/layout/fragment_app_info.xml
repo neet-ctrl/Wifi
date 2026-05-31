@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<app.simple.inure.decorations.padding.PaddingAwareNestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/fragment_app_info_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    app:layout_behavior="@string/over_scroll_behavior">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:animateLayoutChanges="true"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:orientation="vertical"
+        android:padding="@dimen/panel_item_padding">
+
+        <include layout="@layout/sub_app_header" />
+
+        <app.simple.inure.decorations.views.TagsRecyclerView
+            android:id="@+id/tags_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="5dp"
+            android:paddingHorizontal="10dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:layout_height="wrap_content" />
+
+        <include layout="@layout/sub_app_options" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+                android:id="@+id/fold_app_info_menu"
+                android:layout_width="@dimen/folding_arrow_size"
+                android:layout_height="@dimen/folding_arrow_size"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="5dp"
+                android:src="@drawable/ic_arrow_drop_down_24dp"
+                app:buttonTintType="regular" />
+
+            <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+                android:id="@+id/layout_app_info_menu"
+                android:layout_width="@dimen/folding_arrow_size"
+                android:layout_height="@dimen/folding_arrow_size"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="10dp"
+                android:contentDescription="@string/menu_layout"
+                android:src="@drawable/ic_grid_2_16dp"
+                app:buttonTintType="regular" />
+
+            <app.simple.inure.decorations.theme.ThemeDivider
+                android:layout_width="match_parent"
+                android:layout_height="1px"
+                android:layout_gravity="center_vertical"
+                android:layout_marginHorizontal="10dp" />
+
+        </LinearLayout>
+
+        <app.simple.inure.decorations.views.GridRecyclerView
+            android:id="@+id/app_info_menu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layoutAnimation="@anim/grid_list_animation_controller"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never"
+            android:scrollbars="none" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+                android:id="@+id/fold_app_info_actions"
+                android:layout_width="@dimen/folding_arrow_size"
+                android:layout_height="@dimen/folding_arrow_size"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="5dp"
+                android:src="@drawable/ic_arrow_drop_down_24dp"
+                app:buttonTintType="regular" />
+
+            <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+                android:id="@+id/layout_app_info_actions"
+                android:layout_width="@dimen/folding_arrow_size"
+                android:layout_height="@dimen/folding_arrow_size"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="10dp"
+                android:contentDescription="@string/menu_layout"
+                android:src="@drawable/ic_grid_2_16dp"
+                app:buttonTintType="regular" />
+
+            <app.simple.inure.decorations.theme.ThemeDivider
+                android:layout_width="match_parent"
+                android:layout_height="1px"
+                android:layout_gravity="center_vertical"
+                android:layout_marginHorizontal="10dp" />
+
+        </LinearLayout>
+
+        <app.simple.inure.decorations.views.GridRecyclerView
+            android:id="@+id/app_info_options"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layoutAnimation="@anim/grid_list_animation_controller"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never"
+            android:scrollbars="none" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+                android:id="@+id/fold_app_info_misc"
+                android:layout_width="@dimen/folding_arrow_size"
+                android:layout_height="@dimen/folding_arrow_size"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="5dp"
+                android:src="@drawable/ic_arrow_drop_down_24dp"
+                app:buttonTintType="regular" />
+
+            <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+                android:id="@+id/layout_app_info_misc"
+                android:layout_width="@dimen/folding_arrow_size"
+                android:layout_height="@dimen/folding_arrow_size"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="10dp"
+                android:contentDescription="@string/menu_layout"
+                android:src="@drawable/ic_grid_2_16dp"
+                app:buttonTintType="regular" />
+
+            <app.simple.inure.decorations.theme.ThemeDivider
+                android:layout_width="match_parent"
+                android:layout_height="1px"
+                android:layout_gravity="center_vertical"
+                android:layout_marginHorizontal="10dp" />
+
+        </LinearLayout>
+
+        <app.simple.inure.decorations.views.GridRecyclerView
+            android:id="@+id/app_info_miscellaneous"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layoutAnimation="@anim/grid_list_animation_controller"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never"
+            android:scrollbars="none" />
+
+    </LinearLayout>
+
+</app.simple.inure.decorations.padding.PaddingAwareNestedScrollView>

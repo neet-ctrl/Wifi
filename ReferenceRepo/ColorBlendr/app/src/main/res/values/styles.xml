@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="SnackBarStyle" parent="Widget.Material3.Snackbar">
+        <item name="android:backgroundTint">?attr/colorSecondaryContainer</item>
+    </style>
+
+    <style name="SnackBarStyle.TextView" parent="Widget.Material3.Snackbar.TextView">
+        <item name="android:textColor">?attr/colorOnSecondaryContainer</item>
+    </style>
+
+    <style name="SnackBarStyle.Button" parent="Widget.Material3.Button.TextButton.Snackbar">
+        <item name="android:textColor">?attr/colorPrimary</item>
+    </style>
+
+    <style name="Base.Theme.ColorBlendr.SplashScreen" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_round</item>
+        <item name="postSplashScreenTheme">@style/Base.Theme</item>
+        <item name="android:windowSplashScreenBrandingImage">@drawable/ic_branding_image</item>
+    </style>
+
+    <style name="Toolbar.TitleText" parent="TextAppearance.Material3.TitleLarge" />
+
+    <style name="Seekbar" parent="Widget.AppCompat.SeekBar">
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingEnd">0dp</item>
+        <item name="android:thumb">@null</item>
+        <item name="android:progressDrawable">@drawable/seekbar_track</item>
+    </style>
+
+    <style name="PopupMenuStyles" parent="@style/Widget.Material3.PopupMenu">
+        <item name="android:dropDownHorizontalOffset">-16dp</item>
+        <item name="android:popupBackground">@drawable/bg_popup_menu</item>
+    </style>
+
+    <style name="PopupMenuDefault" parent="@style/Widget.Material3.PopupMenu">
+        <item name="android:popupBackground">@drawable/bg_popup_menu</item>
+    </style>
+
+    <style name="RoundedTextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">16dp</item>
+        <item name="boxCornerRadiusTopEnd">16dp</item>
+        <item name="boxCornerRadiusBottomStart">16dp</item>
+        <item name="boxCornerRadiusBottomEnd">16dp</item>
+    </style>
+</resources>

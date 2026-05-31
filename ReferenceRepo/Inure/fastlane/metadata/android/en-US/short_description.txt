@@ -1,0 +1,1 @@
+Fast, refined app manager for power users, with root and Shizuku support.

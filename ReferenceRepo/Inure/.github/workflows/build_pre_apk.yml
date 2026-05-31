@@ -1,0 +1,169 @@
+name: Build APK (Pre-Release)
+
+on:
+    push:
+        branches:
+            - master
+        paths-ignore:
+            - '**.md'
+            - '**.yml'
+            - '**.json'
+            - '**.lock'
+            - '**.properties'
+            - '**.py'
+            - '**.sh'
+    workflow_dispatch:
+        inputs:
+            message:
+                description: 'Message to be sent'
+                required: true
+                default: 'New pre-release APK available for testing!'
+
+jobs:
+    validation:
+        name: Commit Validation
+        runs-on: ubuntu-latest
+
+        outputs:
+            CANCEL_WORKFLOW: ${{ steps.check_commit_message.outputs.CANCEL_WORKFLOW }}
+
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v4
+
+            -   name: Check commit message
+                run: |
+                    if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+                        echo "Workflow was manually dispatched. Skipping commit message check."
+                        echo "CANCEL_WORKFLOW=false" >> $GITHUB_OUTPUT
+                    else
+                        commit_message=$(git log --format=%B -n 1)
+                        if [[ ! "$commit_message" == *"build pre"* ]]; then
+                            echo "Commit message does not contain 'build pre'. Cancelling workflow."
+                            echo "CANCEL_WORKFLOW=true" >> $GITHUB_OUTPUT
+                        else
+                            echo "Commit message contains 'build pre'. Proceeding with the workflow."
+                            echo "CANCEL_WORKFLOW=false" >> $GITHUB_OUTPUT
+                        fi
+                    fi
+                id: check_commit_message
+
+            -   name: Verify Actor
+                run: |
+                    encoded_actor=$(echo "SGFtemE0MTc=" | base64 --decode)
+                    if [[ "${{ github.actor }}" != "$encoded_actor" ]]; then
+                        exit 1
+                    fi
+
+    build:
+        needs: validation
+        if: needs.validation.outputs.CANCEL_WORKFLOW == 'false'
+        name: Build APK
+        runs-on: ubuntu-latest
+
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v4
+
+            -   name: Set up JDK
+                uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: '17'
+                    cache: 'gradle'
+
+            -   name: Cache Gradle dependencies
+                uses: actions/cache@v4
+                with:
+                    path: ~/.gradle/caches
+                    key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+                    restore-keys: |
+                        ${{ runner.os }}-gradle-
+
+            -   name: Decode Keystore
+                id: decode_keystore
+                uses: timheuer/base64-to-file@v1
+                with:
+                    fileName: 'keystore/key.jks'
+                    encodedString: ${{ secrets.SIGN_KEY }}
+
+            -   name: Extract Version Name and Version Code
+                run: |
+                    VERSION_NAME=$(cat app/build.gradle | grep -oP 'versionName "\K[^"]*')
+                    VERSION_CODE=$(cat app/build.gradle | grep -oP 'versionCode \K\d+')
+                    VERSION_NAME=$(echo "$VERSION_NAME" | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2));}1')
+                    echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+                    echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+
+            -   name: Append Latest Commit ID to Version Name
+                run: |
+                    VERSION_NAME="${{ env.VERSION_NAME }}_$(git rev-parse --short HEAD)"
+                    echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+                    echo "COMMIT_ID=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+            -   name: Set Current Commit Message
+                run: |
+                    echo "COMMIT_MESSAGE=$(git log --format=%B -n 1 | head -n 1)" >> $GITHUB_ENV
+
+            -   name: Accept Android SDK licenses
+                run: yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
+
+            -   name: Build APK (Pre-Release)
+                run: |
+                    if [[ -n "${{ env.GRADLE_PATH }}" ]]; then
+                        chmod +x "${{ env.GRADLE_PATH }}"
+                        ${{ env.GRADLE_PATH }} clean assembleGithubRelease
+                    else
+                        chmod +x ./gradlew
+                        ./gradlew clean assembleGithubRelease
+                    fi
+                env:
+                    SIGNING_KEY_ALIAS: ${{ secrets.ALIAS }}
+                    SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+                    SIGNING_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+
+            -   name: Find APK
+                id: find_apk
+                run: |
+                    apk=$(find . -type f -name "*.apk")
+                    if [ -z "$apk" ]; then
+                        echo "No APK file found."
+                        exit 1
+                    else
+                        echo "APK_PATH=$apk" >> $GITHUB_ENV
+                        echo "${{ env.APK_PATH }}"
+                    fi
+
+            -   name: Rename APK
+                run: |
+                    mv "${{ env.APK_PATH }}" "${{ env.VERSION_NAME }}.apk"
+                    echo "APK_PATH=$(find . -type f -name "*.apk")" >> $GITHUB_ENV
+                    echo "${{ env.APK_PATH }}"
+
+            -   name: Check File Permissions
+                run: |
+                    ls -l "${{ env.APK_PATH }}"
+                    echo "File Permissions: $(stat -c '%A' "${{ env.APK_PATH }}")"
+
+            -   name: Set Read Permission
+                run: |
+                    chmod +r "${{ env.APK_PATH }}"
+                    echo "File Permissions: $(stat -c '%A' "${{ env.APK_PATH }}")"
+
+            -   name: Send APK to Telegram
+                uses: appleboy/telegram-action@master
+                with:
+                    to: ${{ secrets.TG_TO }}
+                    token: ${{ secrets.TG_BOT_KEY }}
+                    document: ${{ env.APK_PATH }}
+                    message: |
+                        ${{ github.event.inputs.message }}
+                        Current Build Code: ${{ env.VERSION_CODE }}
+                        Current Commit ID: ${{ env.COMMIT_ID }}
+                        Commit Message: ${{ env.COMMIT_MESSAGE }}
+
+            -   name: Archive APK
+                uses: actions/upload-artifact@v4
+                with:
+                    name: Pre-Release APK (GitHub)
+                    path: ${{ env.APK_PATH }}

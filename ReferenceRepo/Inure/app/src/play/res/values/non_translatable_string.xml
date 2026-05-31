@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Inure</string>
+    <string name="app_name_full" translatable="false">Inure App Manager</string>
+    <string name="mini_player_name" translatable="false">Inure Mini Player</string>
+    <string name="dex_classes" translatable="false">Dex Classes</string>
+    <string name="public_identifier" translatable="false">Public</string>
+    <string name="private_identifier" translatable="false">Private</string>
+    <string name="protected_identifier" translatable="false">Protected</string>
+    <string name="default_identifier" translatable="false">Default</string>
+    <string name="annotation_identifier" translatable="false">Annotation</string>
+    <string name="interface_identifier" translatable="false">Interface</string>
+    <string name="enum_identifier" translatable="false">Enum</string>
+    <string name="static_identifier" translatable="false">Static</string>
+    <string name="time_placeholder" translatable="false">--:--</string>
+    <string name="audio_file_info" translatable="false">%1$s | %2$s | %3$s</string>
+    <string name="play_store" translatable="false">Play Store</string>
+    <string name="amazon" translatable="false" />
+    <string name="fdroid" translatable="false" />
+    <string name="izzyondroid" translatable="false" />
+    <string name="galaxy_store" translatable="false" />
+    <string name="px" translatable="false">%1$s px</string>
+    <string name="amoled" translatable="false">AMOLED</string>
+    <string name="shell" translatable="false">Shell</string>
+    <string name="text" translatable="false">Text</string>
+    <string name="over_scroll_behavior" translatable="false">app.simple.inure.decorations.behaviors.OverScrollBehavior</string>
+    <string name="github" translatable="false">GitHub</string>
+    <string name="kofi" translatable="false" />
+    <string name="exodus" translatable="false">εxodus</string>
+    <string name="progress" translatable="false">%d%%</string>
+    <string name="x_509" translatable="false">X.509</string>
+    <string name="hide_preferences_indicators" translatable="false">Hide Preferences Indicators</string>
+    <string name="use_webview_xml_viewer" translatable="false"><strike>Use WebView Xml Viewer</strike></string>
+    <string name="material" translatable="false">Material</string>
+    <string name="android" translatable="false">Android</string>
+    <string name="wifi" translatable="false">Wi-Fi</string>
+    <string name="system_excidle" translatable="false">System-Excidle</string>
+    <string name="help_url" translatable="false">http://jackpal.github.com/Android-Terminal-Emulator/help/index.html</string>
+
+    <!-- The word CTRLKEY should be left un-translated. It will be replaced at run-time with the
+         actual control key key name. -->
+    <string name="control_key_dialog_control_text" translatable="false">CTRLKEY Space : Control-@ (NUL)\nCTRLKEY A..Z : Control-A..Z\nCTRLKEY 5 : Control-]\nCTRLKEY 6 : Control-^\nCTRLKEY 7 : Control-_\nCTRLKEY 9 : F11\nCTRLKEY 0 : F12</string>
+
+    <!-- The word FNKEY should be left un-translated. It will be replaced at run-time with the
+     actual function key key name. -->
+    <string name="control_key_dialog_fn_text" translatable="false">FNKEY 1..9 : F1-F9\nFNKEY 0 : F10\nFNKEY W : Up\nFNKEY A : Left\nFNKEY S : Down\nFNKEY D : Right\nFNKEY P : PageUp\nFNKEY N : PageDown\nFNKEY T : Tab\nFNKEY L : | (pipe)\nFNKEY U : _ (underscore)\nFNKEY E : Control-[ (ESC)\nFNKEY X : Delete\nFNKEY I : Insert\nFNKEY H : Home\nFNKEY F : End\nFNKEY . : Control-\\</string>
+
+    <!-- AddShortcut.java -->
+    <string name="addshortcut_example_hint" translatable="false">--example=\""a\"</string>
+
+    <!-- ColorValue.java -->
+    <string name="colorvalue_letter_alpha" translatable="false">α</string>
+    <string name="colorvalue_letter_red" translatable="false">R</string>
+    <string name="colorvalue_letter_green" translatable="false">G</string>
+    <string name="colorvalue_letter_blue" translatable="false">B</string>
+    <string name="markdown" translatable="false">.MD</string>
+    <string name="html" translatable="false">.HTML</string>
+    <string name="txt" translatable="false">.TXT</string>
+    <string name="xml" translatable="false">.XML</string>
+    <string name="json" translatable="false">.JSON</string>
+    <string name="csv" translatable="false">.CSV</string>
+    <string name="shizuku" translatable="false">Shizuku</string>
+    <string name="github_profile_link" translatable="false">https://github.com/Hamza417</string>
+    <string name="play_profile_link" translatable="false">https://play.google.com/store/apps/dev?id=9002962740272949113</string>
+    <string name="hamza_rizwan" translatable="false">Hamza Rizwan</string>
+    <string name="sample" translatable="false">sample</string>
+    <string name="apk" translatable="false">APK</string>
+    <string name="apks" translatable="false">APKS</string>
+    <string name="apkm" translatable="false">APKM</string>
+    <string name="xapk" translatable="false">XAPK</string>
+    <!--suppress CheckTagEmptyBody -->
+    <string name="empty" translatable="false"></string>
+    <string name="telegram" translatable="false">Telegram</string>
+    <string name="nomedia" translatable="false">.nomedia</string>
+    <string name="foss" translatable="false">FOSS</string>
+</resources>

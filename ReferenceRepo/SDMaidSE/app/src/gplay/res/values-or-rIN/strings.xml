@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name_upgraded">SD Maid SE Pro</string>
+    <string name="app_name_upgrade_postfix">Pro</string>
+    <string name="upgrade_feature_requires_pro">SD Maid SE Pro ଆବଶ୍ୟକ</string>
+    <string name="upgrades_dashcard_title">SD Maid SE ଅପଗ୍ରେଡ୍ କରନ୍ତୁ</string>
+    <string name="upgrades_dashcard_body">SD Maid SE Pro ଉନ୍ନତ ଫଳାଫଳ, ଅଧିକ ବୈଶିଷ୍ଟ୍ୟ ଏବଂ ପାୱାର ବ୍ୟବହାରକାରୀଙ୍କ ପାଇଁ ବିକଳ୍ପ ପ୍ରଦାନ କରେ।</string>
+    <string name="upgrades_dashcard_upgrade_action">ଅପଗ୍ରେଡ୍</string>
+    <string name="upgrades_gplay_unavailable_error_title">Google Play ଉପଲବ୍ଧ ନାହିଁ</string>
+    <string name="upgrades_gplay_unavailable_error_description">SD Maid Google Play ସହିତ ସଂଯୋଗ କରିପାରୁନାହିଁ। Google Play ସଂସ୍ଥାପିତ ଏବଂ ଅପଡେଟ୍ ହୋଇଛି କି? ଆପଣଙ୍କର Google ଆକାଉଣ୍ଟ ଲଗ୍ ଇନ୍ ହୋଇଛି କି? Google Play ଆପ୍‌ର କ୍ୟାଶ୍ ସଫା କରିବାକୁ ଏବଂ ଆପଣଙ୍କ ଡିଭାଇସ୍ ପୁନଃ ଆରମ୍ଭ କରିବାକୁ ଚେଷ୍ଟା କରନ୍ତୁ।</string>
+    <string name="upgrades_gplay_billing_error_label">Google Play ସମସ୍ୟା</string>
+    <string name="upgrades_gplay_billing_error_description">Google Play ସହିତ ଏକ ସମସ୍ୟା ହୋଇଥିଲା। ଦୟାକରି ପରେ ପୁନଃ ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଆପଣଙ୍କ ଡିଭାଇସ୍ ପୁନଃ ଆରମ୍ଭ କରନ୍ତୁ।\n\nବିବରଣୀ: %s</string>
+    <string name="upgrades_gplay_internal_error_title">Google Play ତ୍ରୁଟି</string>
+    <string name="upgrades_gplay_internal_error_description">ଏକ ଆଭ୍ୟନ୍ତରୀଣ Google Play ତ୍ରୁଟି ଘଟିଲା। ଦୟାକରି ନିମ୍ନଲିଖିତ ଚେଷ୍ଟା କରନ୍ତୁ:\n\n• ଆପଣଙ୍କ ଡିଭାଇସ୍ ପୁନଃ ଆରମ୍ଭ କରନ୍ତୁ\n• Google Play Store କ୍ୟାଶ୍ ସଫା କରନ୍ତୁ\n• ପରେ ପୁନଃ ଚେଷ୍ଟା କରନ୍ତୁ</string>
+    <string name="upgrades_gplay_network_error_title">ସଂଯୋଗ ତ୍ରୁଟି</string>
+    <string name="upgrades_gplay_network_error_description">Google Play ସହିତ ସଂଯୋଗ କରିବାରେ ଅସମର୍ଥ। ଦୟାକରି ଆପଣଙ୍କ ଇଣ୍ଟରନେଟ୍ ସଂଯୋଗ ଯାଞ୍ଚ କରନ୍ତୁ ଏବଂ ପୁନଃ ଚେଷ୍ଟା କରନ୍ତୁ।</string>
+    <string name="upgrades_gplay_already_owned_error_title">ପୂର୍ବରୁ କ୍ରୟ ହୋଇସାରିଛି</string>
+    <string name="upgrades_gplay_already_owned_error_description">ଆପଣଙ୍କ କ୍ରୟ ପୁନଃସ୍ଥାପନ କରିବାକୁ \"କ୍ରୟ ପୁନଃସ୍ଥାପନ କରନ୍ତୁ\" ବିକଳ୍ପ ବ୍ୟବହାର କରନ୍ତୁ। ଯଦି ସମସ୍ୟା ଜାରି ରହେ, Google Play କ୍ୟାଶ୍ ସଫା କରିବାକୁ ଏବଂ ଆପଣଙ୍କ ଡିଭାଇସ୍ ପୁନଃ ଆରମ୍ଭ କରିବାକୁ ଚେଷ୍ଟା କରନ୍ତୁ।</string>
+    <string name="upgrades_no_purchases_found_check_account">କୌଣସି କ୍ରୟ ମିଳିଲାନାହିଁ। ଆପଣ ସଠିକ୍ ଆକାଉଣ୍ଟ ବ୍ୟବହାର କରୁଛନ୍ତି କି?</string>
+    <string name="upgrade_screen_title">SD Maid SE Pro ପାଆନ୍ତୁ</string>
+    <string name="upgrade_screen_preamble">SD Maid ରେ କୌଣସି ବିଜ୍ଞାପନ ନାହିଁ ଏବଂ ବ୍ୟବହାରକାରୀ ତଥ୍ୟ ବିକ୍ରୟ କରେନାହିଁ। ମୋର କାର୍ଯ୍ୟ ଆପଣଙ୍କ ଦ୍ୱାରା ଅର୍ଥାୟନ ହୋଇଥାଏ ❤️।</string>
+    <string name="upgrade_screen_benefits_title">ସୁବିଧାଗୁଡ଼ିକ</string>
+    <string name="upgrade_screen_benefits_body">• ଆପ୍ ସଫା କରିବା 💯\n• ନିର୍ଧାରିତ କାର୍ଯ୍ୟକ୍ରମ ⏰\n• ସମସ୍ତ ସାଧନ ପାଇଁ ଅତିରିକ୍ତ ବିକଳ୍ପ ⚙️\n• ଆପଣଙ୍କର ନିଜସ୍ୱ ବିଲୋପନ ନିୟମ ✍️\n• ଏକ ପ୍ରେରିତ ଡେଭଲପର୍ 🧙\nଏବଂ ଆହୁରି ଅଧିକ…</string>
+    <string name="upgrade_screen_how_title">ବିକଳ୍ପଗୁଡ଼ିକ</string>
+    <string name="upgrade_screen_how_body">ଆପଣ ଏକା-ଥରକ କ୍ରୟ ଓ ଶସ୍ତା ବାର୍ଷିକ ସଦସ୍ୟତା ମଧ୍ୟରୁ ଗୋଟିଏ ବାଛିପାରନ୍ତି।\nସଦସ୍ୟତା ଏକ ମାଗଣା ୧୪-ଦିନିଆ ପରୀକ୍ଷଣ ସହିତ ଆରମ୍ଭ ହୁଏ, ଯାହା ସରିବା ପରେ ଆପଣଙ୍କୁ ବର୍ଷକୁ ଥରେ ଚାର୍ଜ କରାଯିବ। ପରୀକ୍ଷଣ ଏବଂ ସଦସ୍ୟତା ଯେକୌଣସି ସମୟରେ ବାତିଲ୍ କରିହେବ।\nବୈଶିଷ୍ଟ୍ୟସବୁ ସମାନ, କେବଳ ଭିନ୍ନ ମୂଲ୍ୟ ଆଧାର କରି ମଡେଲ୍।</string>
+    <string name="upgrade_screen_subscription_trial_action">୧୪-ଦିନିଆ ମାଗଣା ପରୀକ୍ଷଣ ଆରମ୍ଭ କରିଦେଖନ୍ତୁ</string>
+    <string name="upgrade_screen_subscription_action">ସଦସ୍ୟତା</string>
+    <string name="upgrade_screen_subscription_action_hint">ସଦସ୍ୟତା ବର୍ଷକୁ %s ହେବ।</string>
+    <string name="upgrade_screen_iap_action">ଏକା-ଥରକ କ୍ରୟ</string>
+    <string name="upgrade_screen_iap_action_hint">ଏକା-ଥରକ କ୍ରୟ %s ହେବ।</string>
+    <string name="upgrade_screen_thanks_toast">ଆପଣ ଶ୍ରେଷ୍ଠ ଅଟନ୍ତି! ❤️</string>
+    <string name="upgrade_screen_restore_purchase_action">କ୍ରୟ ପୁନଃସ୍ଥାପନ କରନ୍ତୁ</string>
+    <string name="upgrade_screen_restore_purchase_message">ଆପଣଙ୍କର ଅପଗ୍ରେଡ୍ ସମାନ Google ଆକାଉଣ୍ଟରେ ଥିବା ସମସ୍ତ ଡିଭାଇସରେ ବୈଧ ଅଟେ।</string>
+    <string name="upgrade_screen_restore_troubleshooting_msg">ଚିହ୍ନଟ ହୋଇନଥିବା ଅପଗ୍ରେଡ୍ ପାଇଁ ସମସ୍ୟା ସମାଧାନ ଟିପ୍ସ:</string>
+    <string name="upgrade_screen_restore_sync_patience_hint">Play Store ସିଙ୍କ୍ରୋନାଇଜେସନ୍ ସମୟ ନେଇପାରେ। ପୁନଃ ଆରମ୍ଭ କରିବାକୁ, Google Play କ୍ୟାଶ୍ ସଫା କରିବାକୁ କିମ୍ବା କେବଳ ଅପେକ୍ଷା କରିବାକୁ ଚେଷ୍ଟା କରନ୍ତୁ।</string>
+    <string name="upgrade_screen_restore_multiaccount_hint">ଏକାଧିକ ଆକାଉଣ୍ଟ Google Play କୁ ବିଭ୍ରାନ୍ତ କରିପାରେ। ଅନ୍ୟ ଆକାଉଣ୍ଟରୁ ଲଗ୍ ଆଉଟ୍ ହୁଅନ୍ତୁ କିମ୍ବା Google Play ୱେବସାଇଟ୍ ମାଧ୍ୟମରେ ସଂସ୍ଥାପନ କରନ୍ତୁ, ଯାହା ଏକ ନିର୍ଦ୍ଦିଷ୍ଟ ଆକାଉଣ୍ଟ ସହିତ ସଂଯୋଗ ବାଧ୍ୟ କରେ।</string>
+</resources>

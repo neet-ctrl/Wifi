@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:canPerformGestures="true"
+    android:canRequestFilterKeyEvents="true"
+    android:canRequestFingerprintGestures="true"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/accessibility_service_explanation"
+    android:notificationTimeout="200" /><!-- IMPORTANT. Set an accessibility event timeout because WINDOW_CONTENT_CHANGED events can be sent very frequently. -->

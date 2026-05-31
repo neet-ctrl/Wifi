@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <!--  This is required because sysbridge has a min sdk of 29 since it depends
+      on the binder-ndk library. Building will fail without this because the min sdk
+      of the app is 26.-->
+    <uses-sdk tools:overrideLibrary="io.github.sds100.keymapper.sysbridge, io.github.sds100.keymapper.evdev" />
+
+    <application
+        android:name="io.github.sds100.keymapper.KeyMapperApp"
+        android:allowBackup="true"
+        android:directBootAware="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme.NoActionBar"
+        android:usesCleartextTraffic="true"
+        android:extractNativeLibs="true"
+        tools:ignore="GoogleAppIndexingWarning,MissingTvBanner">
+        <!--  Allow clear text traffic due to the HTTP Request Action. -->
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.App.Starting"
+            android:windowSoftInputMode="adjustResize">
+            <!--  IMPORTANT! windowSoftInputMode is needed for IME padding to work
+               properly in the ChooseActionScreen search bar for example. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <!-- Set as default so the Assistant Trigger app isn't opened by default. -->
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <!-- Set as default so the Assistant Trigger app isn't opened by default. -->
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".system.accessibility.MyAccessibilityService"
+            android:configChanges="orientation|screenSize"
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/config_accessibility_service" />
+        </service>
+
+    </application>
+</manifest>

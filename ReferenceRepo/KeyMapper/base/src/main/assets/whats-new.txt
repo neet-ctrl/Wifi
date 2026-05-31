@@ -1,0 +1,9 @@
+🎯 New Actions
+• Select all text at the cursor
+• Input on-screen keyboard enter/send button
+• Show a toast message
+
+🔧 Improvements
+• Bug fixes
+
+📖 View the complete changelog at: http://keymapper.app/changelog

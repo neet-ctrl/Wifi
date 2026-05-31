@@ -1,0 +1,557 @@
+/*
+ * Copyright 2025 Blocker
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.merxury.blocker.core.git
+
+import kotlinx.coroutines.test.runTest
+import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.internal.storage.file.FileRepository
+import org.eclipse.jgit.transport.URIish
+import org.eclipse.jgit.treewalk.TreeWalk
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import java.io.File
+import kotlin.io.path.createTempDirectory
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+class DefaultGitClientTest {
+
+    private lateinit var repositoryInfo: RepositoryInfo
+    private lateinit var gitAction: DefaultGitClient
+    private lateinit var tempDir: File
+    private lateinit var remoteDir: File
+    private lateinit var remoteGit: Git
+
+    /** A GitClient whose base directory has no .git folder — used for error path tests. */
+    private lateinit var noGitDir: File
+    private lateinit var noGitAction: DefaultGitClient
+
+    @Before
+    fun setUp() {
+        tempDir = createTempDirectory().toFile()
+        remoteDir = createTempDirectory().toFile()
+        repositoryInfo = RepositoryInfo(
+            remoteName = "origin",
+            url = remoteDir.toURI().toString(),
+            repoName = "repo",
+            branch = "main",
+        )
+        gitAction = DefaultGitClient(repositoryInfo, tempDir)
+
+        // Set up a base directory with no git repository for error-path tests
+        noGitDir = createTempDirectory().toFile()
+        noGitAction = DefaultGitClient(repositoryInfo, noGitDir)
+
+        // Initialize remote repository
+        remoteGit = Git.init()
+            .setDirectory(remoteDir)
+            .call()
+
+        val file = File(remoteDir, "test.txt")
+        file.writeText("Hello, World!")
+        remoteGit.add()
+            .addFilepattern(".")
+            .call()
+        remoteGit.commit()
+            .setMessage("Initial commit")
+            .call()
+        // Rename the master branch to main
+        remoteGit.branchRename()
+            .setOldName("master")
+            .setNewName("main")
+            .call()
+    }
+
+    @After
+    fun tearDown() {
+        tempDir.deleteRecursively()
+        remoteDir.deleteRecursively()
+        noGitDir.deleteRecursively()
+    }
+
+    @Test
+    fun givenNewRepository_whenCreateRepository_thenRepositoryIsCreated() = runTest {
+        val result = gitAction.createGitRepository()
+        assertTrue(result)
+
+        // Verify that the repository was created
+        val gitDir = File(tempDir, repositoryInfo.repoName)
+        assertTrue(gitDir.exists())
+        assertTrue(File(gitDir, ".git").exists())
+    }
+
+    @Test
+    fun givenRepositoryWithChanges_whenCommitChanges_thenChangesAreCommitted() = runTest {
+        // Create a repository first
+        gitAction.createGitRepository()
+
+        // Add a file to the repository
+        val file = File(tempDir, "${repositoryInfo.repoName}/test.txt")
+        file.writeText("Hello, World!")
+        val result = gitAction.commitChanges("Test commit")
+        assertTrue(result)
+
+        // Verify that the changes were committed
+        val git = Git(FileRepository(File(tempDir, "${repositoryInfo.repoName}/.git")))
+        val status = git.status().call()
+        assertFalse(status.hasUncommittedChanges())
+
+        // Verify commit message
+        val commit = git.log().call().iterator().next()
+        assertTrue(commit.fullMessage.contains("Test commit"))
+
+        // Verify that the file was added in the commit
+        val tree = commit.tree
+        val treeWalk = TreeWalk(git.repository)
+        treeWalk.addTree(tree)
+        treeWalk.isRecursive = true
+        var found = false
+        while (treeWalk.next()) {
+            if (treeWalk.pathString == "test.txt") {
+                found = true
+                break
+            }
+        }
+        assertTrue(found)
+
+        // Verify that no local changes are detected
+        val resultNoChanges = gitAction.hasLocalChanges()
+        assertFalse(resultNoChanges)
+    }
+
+    @Test
+    fun givenRepositoryWithChanges_whenHasLocalChanges_thenTrue() = runTest {
+        // Create a repository first
+        gitAction.createGitRepository()
+
+        // Add a file to the repository
+        val file = File(tempDir, "${repositoryInfo.repoName}/test.txt")
+        file.writeText("Hello, World!")
+        val result = gitAction.commitChanges("Test commit")
+        assertTrue(result)
+
+        assertFalse(gitAction.hasLocalChanges())
+
+        // Write new content to the file
+        file.writeText("Hello, World! Again!")
+        assertTrue(gitAction.hasLocalChanges())
+    }
+
+    @Test
+    fun givenFileAddedToRepository_whenAdd_thenFileIsAdded() = runTest {
+        gitAction.createGitRepository()
+
+        // Add a file to the repository
+        val file = File(tempDir, "${repositoryInfo.repoName}/test.txt")
+        file.writeText("Hello, World!")
+        val result = gitAction.add(".")
+        assertTrue(result == 1)
+
+        // Verify that the file was added
+        val git = Git(FileRepository(File(tempDir, "${repositoryInfo.repoName}/.git")))
+        val status = git.status().call()
+        assertTrue(status.added.contains("test.txt"))
+    }
+
+    @Test
+    fun givenBranchExists_whenCheckout_thenBranchIsCheckedOut() = runTest {
+        val mainBranchName = "main"
+        gitAction.createGitRepository()
+        // An empty repository does not have a HEAD yet
+        // We should commit something first
+        val file = File(tempDir, "${repositoryInfo.repoName}/test.txt")
+        file.writeText("Hello, World!")
+        gitAction.add(".")
+        gitAction.commitChanges("Initial commit")
+        gitAction.renameBranch(mainBranchName)
+
+        val testBranchName = "test-branch"
+        val createResult = gitAction.createBranch(testBranchName)
+        assertTrue(createResult)
+
+        val checkoutResult = gitAction.checkoutLocalBranch(testBranchName)
+        assertTrue(checkoutResult)
+        assertEquals(testBranchName, gitAction.getCurrentBranch())
+
+        val resultMain = gitAction.checkoutLocalBranch("main")
+        assertTrue(resultMain)
+        assertEquals(mainBranchName, gitAction.getCurrentBranch())
+    }
+
+    @Test
+    fun givenBranchNotExists_whenGetCurrentBranch_thenReturnMaster() = runTest {
+        gitAction.createGitRepository()
+        // For local repository, the default branch is master
+        assertEquals("master", gitAction.getCurrentBranch())
+    }
+
+    @Test
+    fun givenBranchExists_whenRenameBranch_thenBranchIsRenamed() = runTest {
+        gitAction.createGitRepository()
+        // An empty repository does not have a HEAD yet
+        // We should commit something first
+        val file = File(tempDir, "${repositoryInfo.repoName}/test.txt")
+        file.writeText("Hello, World!")
+        gitAction.add(".")
+        gitAction.commitChanges("Initial commit")
+        val mainBranchName = "main"
+        gitAction.renameBranch(mainBranchName)
+        assertEquals(mainBranchName, gitAction.getCurrentBranch())
+    }
+
+    @Test
+    fun givenRemoteDoesNotExist_whenSetRemote_thenRemoteIsSetWithRefSpecs() = runTest {
+        gitAction.createGitRepository()
+        val url = "https://www.example.com/repo.git"
+        val name = "example"
+        val result = gitAction.setRemote(url, name)
+        assertTrue(result)
+
+        // Verify that the remote was set
+        val git = Git(FileRepository(File(tempDir, "${repositoryInfo.repoName}/.git")))
+        val remoteConfig = git.remoteList().call()
+        val remote = remoteConfig.find { it.name == name }
+        assertNotNull(remote)
+        assertTrue(remote.urIs.contains(URIish(url)))
+        // Verify fetch refspecs are present (remoteAdd sets these, remoteSetUrl does not)
+        assertTrue(remote.fetchRefSpecs.isNotEmpty())
+    }
+
+    @Test
+    fun givenRemoteExists_whenSetRemote_thenRemoteUrlIsUpdated() = runTest {
+        gitAction.cloneRepository()
+        val newUrl = "https://www.example.com/new-repo.git"
+        val result = gitAction.setRemote(newUrl, repositoryInfo.remoteName)
+        assertTrue(result)
+
+        val git = Git(FileRepository(File(tempDir, "${repositoryInfo.repoName}/.git")))
+        val remote = git.remoteList().call().find { it.name == repositoryInfo.remoteName }
+        assertNotNull(remote)
+        assertTrue(remote.urIs.contains(URIish(newUrl)))
+    }
+
+    @Test
+    fun givenValidRemoteRepository_whenCloneRepository_thenRepositoryIsCloned() = runTest {
+        val result = gitAction.cloneRepository()
+        assertTrue(result)
+
+        // Verify that the repository was cloned
+        val gitDir = File(tempDir, repositoryInfo.repoName)
+        assertTrue(gitDir.exists())
+        assertTrue(File(gitDir, ".git").exists())
+        assertTrue(File(gitDir, "test.txt").exists())
+    }
+
+    @Test
+    fun givenValidRemoteRepository_whenPull_thenRepositoryIsPulled() = runTest {
+        gitAction.cloneRepository()
+
+        // Add a new commit on the remote repository
+        val newFileName = "new.txt"
+        val fileContent = "Hello, World!"
+        val file = File(remoteDir, newFileName)
+        file.writeText(fileContent)
+        remoteGit.add()
+            .addFilepattern(".")
+            .call()
+        remoteGit.commit()
+            .setMessage("New commit")
+            .call()
+
+        // Pull the changes
+        val result = gitAction.pull()
+        assertTrue(result)
+
+        // Check the file is pulled in the local folder
+        val targetFile = File(tempDir, "${repositoryInfo.repoName}/$newFileName")
+        assertTrue(targetFile.exists())
+
+        // Check file content
+        assertEquals(fileContent, targetFile.readText())
+    }
+
+    @Test
+    fun givenClonedFromOneRemote_whenResetToRemote_thenFilesMatchNewRemote() = runTest {
+        // Clone from the original remote
+        gitAction.cloneRepository()
+
+        // Create a second remote repository with different content
+        val secondRemoteDir = createTempDirectory().toFile()
+        val secondRemoteGit = Git.init().setDirectory(secondRemoteDir).call()
+        val secondRemoteFile = File(secondRemoteDir, "second.txt")
+        secondRemoteFile.writeText("Content from second remote")
+        secondRemoteGit.add().addFilepattern(".").call()
+        secondRemoteGit.commit().setMessage("Initial commit on second remote").call()
+        secondRemoteGit.branchRename().setOldName("master").setNewName("main").call()
+
+        // Add the second remote and reset to it
+        val secondRemoteName = "second"
+        gitAction.setRemote(secondRemoteDir.toURI().toString(), secondRemoteName)
+        val result = gitAction.resetToRemote(secondRemoteName, "main")
+        assertTrue(result)
+
+        // Verify local files match the second remote
+        val localDir = File(tempDir, repositoryInfo.repoName)
+        assertTrue(File(localDir, "second.txt").exists())
+        assertEquals("Content from second remote", File(localDir, "second.txt").readText())
+        // Original file from first remote should be gone
+        assertFalse(File(localDir, "test.txt").exists())
+
+        // Verify branch tracking config
+        val git = Git(FileRepository(File(localDir, ".git")))
+        val config = git.repository.config
+        assertEquals(secondRemoteName, config.getString("branch", "main", "remote"))
+
+        // Clean up
+        secondRemoteDir.deleteRecursively()
+    }
+
+    // Test for fetchAndMergeFromMain
+    @Test
+    fun givenValidRemoteRepository_whenFetchAndMergeFromMain_thenRepositoryIsMerged() = runTest {
+        gitAction.cloneRepository()
+
+        // Create a new branch and make changes
+        val newBranchName = "new-branch"
+        gitAction.createBranch(newBranchName)
+        val newFileName = "new.txt"
+        val fileContent = "Hello, World!"
+        val file = File(tempDir, "${repositoryInfo.repoName}/$newFileName")
+        file.writeText(fileContent)
+        gitAction.add(".")
+        gitAction.commitChanges("New commit")
+
+        // Add a new commit on the remote repository
+        val remoteChangedFileName = "remote-changed.txt"
+        val remoteChangedFileContent = "Hello, World! Remote"
+        val remoteChangedFile = File(remoteDir, remoteChangedFileName)
+        remoteChangedFile.writeText(remoteChangedFileContent)
+        remoteGit.add()
+            .addFilepattern(".")
+            .call()
+        remoteGit.commit()
+            .setMessage("Remote commit")
+            .call()
+
+        // Fetch and merge from main
+        val result = gitAction.fetchAndMergeFromMain()
+        assertEquals(MergeStatus.MERGED, result)
+
+        // Check the file is pulled in the local folder
+        val targetFile = File(tempDir, "${repositoryInfo.repoName}/$remoteChangedFileName")
+        assertTrue(targetFile.exists())
+    }
+
+    // ── getTrackingRemote() ──────────────────────────────────────────────
+
+    @Test
+    fun givenClonedRepo_whenGetTrackingRemote_thenReturnsOrigin() = runTest {
+        gitAction.cloneRepository()
+        val remote = gitAction.getTrackingRemote()
+        assertEquals(repositoryInfo.remoteName, remote)
+    }
+
+    @Test
+    fun givenLocalRepoWithNoTracking_whenGetTrackingRemote_thenReturnsNull() = runTest {
+        gitAction.createGitRepository()
+        val remote = gitAction.getTrackingRemote()
+        assertNull(remote)
+    }
+
+    @Test
+    fun givenNoGitFolder_whenGetTrackingRemote_thenReturnsNull() = runTest {
+        val remote = noGitAction.getTrackingRemote()
+        assertNull(remote)
+    }
+
+    // ── resetToRemote() error paths ──────────────────────────────────────
+
+    @Test
+    fun givenNoGitFolder_whenResetToRemote_thenReturnsFalse() = runTest {
+        val result = noGitAction.resetToRemote("origin", "main")
+        assertFalse(result)
+    }
+
+    @Test
+    fun givenClonedRepo_whenResetToRemote_thenTrackingConfigIsUpdated() = runTest {
+        gitAction.cloneRepository()
+
+        // Create a second remote repository
+        val secondRemoteDir = createTempDirectory().toFile()
+        val secondRemoteGit = Git.init().setDirectory(secondRemoteDir).call()
+        val secondRemoteFile = File(secondRemoteDir, "second.txt")
+        secondRemoteFile.writeText("Content from second remote")
+        secondRemoteGit.add().addFilepattern(".").call()
+        secondRemoteGit.commit().setMessage("Initial commit on second remote").call()
+        secondRemoteGit.branchRename().setOldName("master").setNewName("main").call()
+
+        val secondRemoteName = "second"
+        gitAction.setRemote(secondRemoteDir.toURI().toString(), secondRemoteName)
+        gitAction.resetToRemote(secondRemoteName, "main")
+
+        // Verify tracking config points to the new remote
+        assertEquals(secondRemoteName, gitAction.getTrackingRemote())
+
+        secondRemoteDir.deleteRecursively()
+    }
+
+    // ── setRemote() error path ───────────────────────────────────────────
+
+    @Test
+    fun givenNoGitFolder_whenSetRemote_thenReturnsFalse() = runTest {
+        val result = noGitAction.setRemote("https://example.com/repo.git", "origin")
+        assertFalse(result)
+    }
+
+    // ── Other methods: no-git-folder error paths ─────────────────────────
+
+    @Test
+    fun givenNoGitFolder_whenPull_thenReturnsFalse() = runTest {
+        val result = noGitAction.pull()
+        assertFalse(result)
+    }
+
+    @Test
+    fun givenNoGitFolder_whenFetchAndMergeFromMain_thenReturnsFailed() = runTest {
+        val result = noGitAction.fetchAndMergeFromMain()
+        assertEquals(MergeStatus.FAILED, result)
+    }
+
+    @Test
+    fun givenNoGitFolder_whenCheckoutLocalBranch_thenReturnsFalse() = runTest {
+        val result = noGitAction.checkoutLocalBranch("main")
+        assertFalse(result)
+    }
+
+    @Test
+    fun givenNoGitFolder_whenCreateBranch_thenReturnsFalse() = runTest {
+        val result = noGitAction.createBranch("test")
+        assertFalse(result)
+    }
+
+    @Test
+    fun givenNoGitFolder_whenRenameBranch_thenReturnsFalse() = runTest {
+        val result = noGitAction.renameBranch("test")
+        assertFalse(result)
+    }
+
+    @Test
+    fun givenNoGitFolder_whenGetCurrentBranch_thenReturnsNull() = runTest {
+        val result = noGitAction.getCurrentBranch()
+        assertNull(result)
+    }
+
+    // ── fetchAndMergeFromMain() conflict scenario ────────────────────────
+
+    @Test
+    fun givenConflictingChanges_whenFetchAndMergeFromMain_thenReturnsConflicts() = runTest {
+        gitAction.cloneRepository()
+
+        // Create a local branch and modify test.txt
+        gitAction.createBranch("feature")
+        val localFile = File(tempDir, "${repositoryInfo.repoName}/test.txt")
+        localFile.writeText("Local conflicting change")
+        gitAction.add(".")
+        gitAction.commitChanges("Local conflicting commit")
+
+        // Modify the same file on the remote with different content
+        val remoteFile = File(remoteDir, "test.txt")
+        remoteFile.writeText("Remote conflicting change")
+        remoteGit.add().addFilepattern(".").call()
+        remoteGit.commit().setMessage("Remote conflicting commit").call()
+
+        // Attempt merge — should detect conflicts and hard-reset
+        val result = gitAction.fetchAndMergeFromMain()
+        assertEquals(MergeStatus.CONFLICTS, result)
+
+        // Verify local state is clean (hard reset happened)
+        val git = Git(FileRepository(File(tempDir, "${repositoryInfo.repoName}/.git")))
+        val status = git.status().call()
+        assertFalse(status.hasUncommittedChanges())
+    }
+
+    // ── commitChanges / hasLocalChanges / add: no-git-folder error paths ─
+
+    @Test
+    fun givenNoGitFolder_whenCommitChanges_thenReturnsFalse() = runTest {
+        val result = noGitAction.commitChanges("should fail")
+        assertFalse(result)
+    }
+
+    @Test
+    fun givenNoGitFolder_whenHasLocalChanges_thenReturnsFalse() = runTest {
+        val result = noGitAction.hasLocalChanges()
+        assertFalse(result)
+    }
+
+    @Test
+    fun givenNoGitFolder_whenAdd_thenReturnsZero() = runTest {
+        val result = noGitAction.add(".")
+        assertEquals(0, result)
+    }
+
+    // ── fetchAndMergeFromMain with custom branch ────────────────────────
+
+    @Test
+    fun givenCustomBranch_whenFetchAndMergeFromMain_thenUsesConfiguredBranch() = runTest {
+        // Create remote with a non-main branch name
+        val customBranchName = "develop"
+        val customRemoteDir = createTempDirectory().toFile()
+        val customRemoteGit = Git.init().setDirectory(customRemoteDir).call()
+        val file = File(customRemoteDir, "dev.txt")
+        file.writeText("develop content")
+        customRemoteGit.add().addFilepattern(".").call()
+        customRemoteGit.commit().setMessage("Initial commit on develop").call()
+        customRemoteGit.branchRename().setOldName("master").setNewName(customBranchName).call()
+
+        val customRepoInfo = RepositoryInfo(
+            remoteName = "origin",
+            url = customRemoteDir.toURI().toString(),
+            repoName = "custom-repo",
+            branch = customBranchName,
+        )
+        val customClient = DefaultGitClient(customRepoInfo, tempDir)
+        customClient.cloneRepository()
+
+        // Create a local branch
+        customClient.createBranch("feature")
+        val localFile = File(tempDir, "custom-repo/local.txt")
+        localFile.writeText("local content")
+        customClient.add(".")
+        customClient.commitChanges("Local commit")
+
+        // Add a new commit on remote develop branch
+        val remoteFile = File(customRemoteDir, "remote-new.txt")
+        remoteFile.writeText("new remote content")
+        customRemoteGit.add().addFilepattern(".").call()
+        customRemoteGit.commit().setMessage("Remote commit on develop").call()
+
+        // fetchAndMergeFromMain should use "develop" not "main"
+        val result = customClient.fetchAndMergeFromMain()
+        assertEquals(MergeStatus.MERGED, result)
+
+        // Verify the remote file was merged
+        val mergedFile = File(tempDir, "custom-repo/remote-new.txt")
+        assertTrue(mergedFile.exists())
+
+        customRemoteDir.deleteRecursively()
+    }
+}

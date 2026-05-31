@@ -1,0 +1,69 @@
+[versions]
+agp = "9.2.1"
+androidUtils = "0.0.5"
+annotation = "1.10.0"
+appcompat = "1.7.1"
+bcprovJdk15to18 = "1.84"
+blurView = "version-2.0.6"
+circleimageview = "3.1.0"
+constraintlayout = "2.2.1"
+coreKtx = "1.18.0"
+coreSplashscreen = "1.2.0"
+flexbox = "3.0.0"
+glide = "5.0.7"
+gson = "2.14.0"
+hiddenapibypassVersion = "6.1"
+ksp = "2.3.6"
+libsuVersion = "6.0.0"
+material = "1.14.0"
+palette = "1.0.0"
+preferenceKtx = "1.2.1"
+recyclerview = "1.4.0"
+recyclerviewSelection = "1.2.0"
+remotepreferences = "0.8"
+roomVersion = "2.8.4"
+shizuku = "13.1.5"
+spake2Android = "-SNAPSHOT"
+sunSecurityAndroid = "1.1"
+workRuntime = "2.11.2"
+lifecycleCommonJvm = "2.10.0"
+zip4j = "2.11.6"
+
+[plugins]
+agp-app = { id = "com.android.application", version.ref = "agp" }
+agp-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+
+[libraries]
+androidUtils = { module = "me.jfenn:AndroidUtils", version.ref = "androidUtils" }
+annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
+appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+bcprov-jdk15to18 = { module = "org.bouncycastle:bcprov-jdk15to18", version.ref = "bcprovJdk15to18" }
+blurView = { module = "com.github.Dimezis:BlurView", version.ref = "blurView" }
+circleimageview = { module = "de.hdodenhof:circleimageview", version.ref = "circleimageview" }
+core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+glide-compiler = { module = "com.github.bumptech.glide:ksp", version.ref = "glide" }
+constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
+core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
+flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "flexbox" }
+glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsuVersion" }
+libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "libsuVersion" }
+lsposed-hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenapibypassVersion" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
+palette = { module = "androidx.palette:palette", version.ref = "palette" }
+preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
+recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
+recyclerview-selection = { module = "androidx.recyclerview:recyclerview-selection", version.ref = "recyclerviewSelection" }
+remotepreferences = { module = "com.crossbowffs.remotepreferences:remotepreferences", version.ref = "remotepreferences" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomVersion" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomVersion" }
+shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
+shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
+spake2-android = { module = "com.github.Mahmud0808.spake2-java:spake2-android", version.ref = "spake2Android" }
+sun-security-android = { module = "com.github.MuntashirAkon:sun-security-android", version.ref = "sunSecurityAndroid" }
+work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
+lifecycle-common-jvm = { group = "androidx.lifecycle", name = "lifecycle-common-jvm", version.ref = "lifecycleCommonJvm" }
+zip4j = { module = "net.lingala.zip4j:zip4j", version.ref = "zip4j" }

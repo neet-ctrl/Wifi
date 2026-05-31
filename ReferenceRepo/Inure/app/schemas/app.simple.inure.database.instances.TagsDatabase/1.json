@@ -1,0 +1,52 @@
+{
+    "formatVersion": 1,
+    "database": {
+        "version": 1,
+        "identityHash": "5d3334689e549bdb7356cfbfa15955a2",
+        "entities": [
+            {
+                "tableName": "tags",
+                "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`tag` TEXT NOT NULL, `packages` TEXT, `icon` INTEGER NOT NULL, `date_added` INTEGER NOT NULL, PRIMARY KEY(`date_added`))",
+                "fields": [
+                    {
+                        "fieldPath": "tag",
+                        "columnName": "tag",
+                        "affinity": "TEXT",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "packages",
+                        "columnName": "packages",
+                        "affinity": "TEXT",
+                        "notNull": false
+                    },
+                    {
+                        "fieldPath": "icon",
+                        "columnName": "icon",
+                        "affinity": "INTEGER",
+                        "notNull": true
+                    },
+                    {
+                        "fieldPath": "dateAdded",
+                        "columnName": "date_added",
+                        "affinity": "INTEGER",
+                        "notNull": true
+                    }
+                ],
+                "primaryKey": {
+                    "autoGenerate": false,
+                    "columnNames": [
+                        "date_added"
+                    ]
+                },
+                "indices": [],
+                "foreignKeys": []
+            }
+        ],
+        "views": [],
+        "setupQueries": [
+            "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+            "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5d3334689e549bdb7356cfbfa15955a2')"
+        ]
+    }
+}

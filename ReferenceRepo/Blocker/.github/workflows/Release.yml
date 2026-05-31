@@ -1,0 +1,150 @@
+name: GitHub Release with APKs
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '!v*-fdroid'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls /dev/kvm
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: 'true'
+          fetch-depth: 0
+
+      - name: Copy CI gradle.properties
+        run: mkdir -p ~/.gradle ; cp .github/ci-gradle.properties ~/.gradle/gradle.properties
+
+      - name: Write sign info
+        run: |
+          if [ ! -z "${{ secrets.KEYSTORE }}" ]; then
+            echo releaseStorePassword='${{ secrets.SIGNING_STORE_PASSWORD }}' >> gradle.properties
+            echo releaseKeyAlias='${{ secrets.SIGNING_KEY_ALIAS }}' >> gradle.properties
+            echo releaseKeyPassword='${{ secrets.SIGNING_KEY_PASSWORD }}' >> gradle.properties
+            echo releaseStoreFile='${{ github.workspace }}/key.jks' >> gradle.properties
+            echo ${{ secrets.KEYSTORE }} | base64 --decode > ${{ github.workspace }}/key.jks
+          fi
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Accept licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Setup GMD
+        run: ./gradlew :benchmarks:pixel6Api33Setup
+          --info
+          -Pandroid.experimental.testOptions.managedDevices.emulator.showKernelLogging=true
+          -Pandroid.testoptions.manageddevices.emulator.gpu="swiftshader_indirect"
+
+      - name: Build release variant including baseline profile generation
+        run: ./gradlew :app-compose:assembleRelease :app-compose:bundleRelease
+          -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=BaselineProfile
+          -Pandroid.testoptions.manageddevices.emulator.gpu="swiftshader_indirect"
+          -Pandroid.experimental.testOptions.managedDevices.emulator.showKernelLogging=true
+          -Pandroid.experimental.androidTest.numManagedDeviceShards=1
+          -Pandroid.experimental.testOptions.managedDevices.maxConcurrentDevices=1
+
+      - name: Set apk path
+        id: apk-path
+        run: |
+          foss_path=$(find **/build/outputs/apk/foss -name '*.apk' -type f | head -1)
+          echo "foss_path=$foss_path" >> $GITHUB_OUTPUT
+          market_path=$(find **/build/outputs/apk/market -name '*.apk' -type f | head -1)
+          echo "market_path=$market_path" >> $GITHUB_OUTPUT
+
+      - name: Get apk info
+        id: apk-info
+        uses: zhaobozhen/apk-info-action@v1.1.3
+        with:
+          apk-path: ${{ steps.apk-path.outputs.foss_path }}
+
+      - name: Build Changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+
+      - name: Write whats new info
+        env:
+          CHANGELOG: ${{ steps.build_changelog.outputs.changelog }}
+        run: |
+          mkdir -p ${{ github.workspace }}/distribution/whatsnew/
+          printf '%s' "$CHANGELOG" | head -c 490 > ${{ github.workspace }}/distribution/whatsnew/whatsnew-en-US
+
+      - name: Upload built Market apk
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Blocker-${{ steps.apk-info.outputs.version-name }}-market-release.apk
+          path: ${{ steps.apk-path.outputs.market_path }}
+
+      - name: Upload built Foss apk
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Blocker-${{ steps.apk-info.outputs.version-name }}-foss-release.apk
+          path: ${{ steps.apk-path.outputs.foss_path }}
+
+      - name: Upload mappings
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mappings
+          path: "app-compose/build/outputs/mapping/marketRelease"
+
+      - name: Publish to Play Store open beta track
+        uses: r0adkll/upload-google-play@v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.ANDROID_SERVICE_ACCOUNT_JSON }}
+          packageName: com.merxury.blocker
+          releaseFiles: app-compose/build/outputs/bundle/marketRelease/app-compose-market-release.aab
+          track: beta
+          inAppUpdatePriority: 2
+          mappingFile: app-compose/build/outputs/mapping/marketRelease/mapping.txt
+          whatsNewDirectory: ${{ github.workspace }}/distribution/whatsnew
+
+      - name: Rename output APKs
+        run: |
+          mv ${{ steps.apk-path.outputs.market_path }} Blocker-${{ steps.apk-info.outputs.version-name }}-market-release.apk
+          mv ${{ steps.apk-path.outputs.foss_path }} Blocker-${{ steps.apk-info.outputs.version-name }}-foss-release.apk
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+        with:
+          tag_name: v${{ steps.apk-info.outputs.version-name }}
+          draft: false
+          prerelease: true
+          append_body: true
+          generate_release_notes: true
+          body: ${{steps.build_changelog.outputs.changelog}}
+          files: |
+            Blocker-${{ steps.apk-info.outputs.version-name }}-market-release.apk
+            Blocker-${{ steps.apk-info.outputs.version-name }}-foss-release.apk

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright 2025 Blocker
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="core_ui_application_with_count">App (%1$d)</string>
+    <string name="core_ui_component_with_count">Component (%1$d)</string>
+    <string name="core_ui_online_rule_with_count">Online rule (%1$d)</string>
+    <string name="core_ui_clear_cache">Clear cache</string>
+    <string name="core_ui_clear_data">Clear data</string>
+    <string name="core_ui_force_stop">Force stop</string>
+    <string name="core_ui_uninstall">Uninstall</string>
+    <string name="core_ui_enable">Enable</string>
+    <string name="core_ui_disable">Disable</string>
+    <string name="core_ui_running">Running</string>
+    <string name="core_ui_disabled">Disabled</string>
+    <string name="core_ui_version_code_template" translatable="false">%1$s (%2$s)</string>
+    <string name="core_ui_service_status_template" tools:ignore="PluralsCandidate">Service: %1$d running, %2$d blocked, %3$d in total.</string>
+    <string name="core_ui_rule_icon_description">Rule icon</string>
+    <string name="core_ui_copy_name">Copy name</string>
+    <string name="core_ui_copy_full_name">Copy full name</string>
+    <string name="core_ui_launch_activity">Launch activity</string>
+    <string name="core_ui_stop_service">Stop service</string>
+    <string name="core_ui_edit_ifw_rule">Custom interception rule</string>
+    <string name="core_ui_no_components">No components</string>
+    <string name="core_ui_matched" tools:ignore="PluralsCandidate">%1$d matched, %2$d blocked, %3$d enabled.</string>
+    <string name="core_ui_description">Description</string>
+    <string name="core_ui_applicable_application">Applicable app</string>
+    <string name="core_ui_loading">Loading</string>
+    <string name="core_ui_error">Error</string>
+    <string name="core_ui_no_applicable_app">No applicable app</string>
+    <string name="core_ui_app_info">App info</string>
+    <string name="core_ui_activity_with_count">Activity (%1$d)</string>
+    <string name="core_ui_service_with_count">Service (%1$d)</string>
+    <string name="core_ui_receiver_with_count">Receiver (%1$d)</string>
+    <string name="core_ui_provider_with_count">Provider (%1$d)</string>
+    <string name="core_ui_initializing_database">Initializing database</string>
+    <string name="core_ui_more_menu">More menu</string>
+    <string name="core_ui_search_icon">Search</string>
+    <string name="core_ui_block_all_components">Block all components</string>
+    <string name="core_ui_enable_all_components">Enable all components</string>
+    <string name="core_ui_open_app_detail">Open app detail</string>
+    <string name="core_ui_open_rule_detail">Open rule detail</string>
+    <string name="core_ui_sort_options">Sort options</string>
+    <string name="core_ui_collapse_list">Collapse list</string>
+    <string name="core_ui_expand_list">Expand more</string>
+    <string name="core_ui_close">Close</string>
+    <string name="core_ui_block_selected">Block selected</string>
+    <string name="core_ui_select_all">Select all</string>
+    <string name="core_ui_enable_selected">Enable selected</string>
+    <string name="core_ui_not_found_icon">Not found icon</string>
+    <plurals name="core_ui_block_all">
+        <item quantity="one">This operation will disable %1$d component, do you want to continue?</item>
+        <item quantity="other">This operation will disable %1$d components, do you want to continue?</item>
+    </plurals>
+    <plurals name="core_ui_enable_all">
+        <item quantity="one">This operation will enable %1$d component, do you want to continue?</item>
+        <item quantity="other">This operation will enable %1$d components, do you want to continue?</item>
+    </plurals>
+    <plurals name="core_ui_selected_app_count">
+        <item quantity="one">%1$d app selected</item>
+        <item quantity="other">%1$d apps selected</item>
+    </plurals>
+    <string name="core_ui_disabling_component_hint">Disabling components, please wait… (%1$d/%2$d)</string>
+    <string name="core_ui_enabling_component_hint">Enabling components, please wait… (%1$d/%2$d)</string>
+    <string name="core_ui_operation_completed">Operation completed</string>
+    <string name="core_ui_sdk" translatable="false">SDK</string>
+    <string name="core_ui_do_you_want_to_clear_data_of_this_app">Do you want to clear data of this app?</string>
+    <string name="core_ui_do_you_want_to_uninstall_this_app">Do you want to uninstall this app?</string>
+    <string name="core_ui_found">Found</string>
+    <string name="core_ui_not_found">Not found</string>
+    <string name="core_ui_ifw_add_condition">Add condition</string>
+    <string name="core_ui_ifw_add_group">Add group</string>
+    <string name="core_ui_ifw_group_logic">Match when</string>
+    <string name="core_ui_ifw_group_all">all are true</string>
+    <string name="core_ui_ifw_group_any">any is true</string>
+    <string name="core_ui_ifw_group_exclude">Exclude matches in this group</string>
+    <string name="core_ui_ifw_group_all_title">All of these conditions</string>
+    <string name="core_ui_ifw_group_all_summary">The rule matches only when every item in this group matches.</string>
+    <string name="core_ui_ifw_group_any_title">Any of these conditions</string>
+    <string name="core_ui_ifw_group_any_summary">The rule matches when at least one item in this group matches.</string>
+    <string name="core_ui_ifw_group_excluded_title">Exclude these cases</string>
+    <string name="core_ui_ifw_group_excluded_summary">Anything that matches this group will be excluded from the rule.</string>
+    <string name="core_ui_ifw_condition_type">Condition type</string>
+    <string name="core_ui_ifw_condition_exclude">Exclude this condition</string>
+    <string name="core_ui_ifw_match_type">Match type</string>
+    <string name="core_ui_ifw_sender_type">Caller type</string>
+    <string name="core_ui_ifw_port_exact">Exact port</string>
+    <string name="core_ui_ifw_port_range">Port range</string>
+    <string name="core_ui_ifw_port_exact_value">Port</string>
+    <string name="core_ui_ifw_port_min_value">Min port</string>
+    <string name="core_ui_ifw_port_max_value">Max port</string>
+    <string name="core_ui_ifw_match_exact">Exact match</string>
+    <string name="core_ui_ifw_match_starts_with">Starts with</string>
+    <string name="core_ui_ifw_match_contains">Contains</string>
+    <string name="core_ui_ifw_match_pattern">Wildcard pattern</string>
+    <string name="core_ui_ifw_match_regex">Regular expression</string>
+    <string name="core_ui_ifw_match_is_empty">Is empty</string>
+    <string name="core_ui_ifw_match_is_not_empty">Is not empty</string>
+    <string name="core_ui_ifw_picker_section_intent">Intent basics</string>
+    <string name="core_ui_ifw_picker_section_caller">Who sent it</string>
+    <string name="core_ui_ifw_picker_section_link">Link and data</string>
+    <string name="core_ui_ifw_picker_section_component">Target component</string>
+    <string name="core_ui_ifw_condition_action">Intent action</string>
+    <string name="core_ui_ifw_condition_action_desc">Match a specific action string, like BOOT_COMPLETED.</string>
+    <string name="core_ui_ifw_condition_category">Intent category</string>
+    <string name="core_ui_ifw_condition_category_desc">Match a category attached to the intent.</string>
+    <string name="core_ui_ifw_condition_caller_type">Caller type</string>
+    <string name="core_ui_ifw_condition_caller_type_desc">Match whether the caller is system, signature, or same user ID.</string>
+    <string name="core_ui_ifw_condition_caller_package">Caller package</string>
+    <string name="core_ui_ifw_condition_caller_package_desc">Match a specific app package that sends the intent.</string>
+    <string name="core_ui_ifw_condition_caller_permission">Caller permission</string>
+    <string name="core_ui_ifw_condition_caller_permission_desc">Match a permission the caller must hold.</string>
+    <string name="core_ui_ifw_condition_component">Component name</string>
+    <string name="core_ui_ifw_condition_component_desc">Match the full component name with its package.</string>
+    <string name="core_ui_ifw_condition_component_name">Component class name</string>
+    <string name="core_ui_ifw_condition_component_name_desc">Match only the class name part of the component.</string>
+    <string name="core_ui_ifw_condition_component_package">Component package</string>
+    <string name="core_ui_ifw_condition_component_package_desc">Match the package of the target component.</string>
+    <string name="core_ui_ifw_condition_component_filter">Exact target component</string>
+    <string name="core_ui_ifw_condition_component_filter_desc">Match one exact target component in package/class form.</string>
+    <string name="core_ui_ifw_condition_host">Link host</string>
+    <string name="core_ui_ifw_condition_host_desc">Match the host part of the intent data URI.</string>
+    <string name="core_ui_ifw_condition_scheme">Link scheme</string>
+    <string name="core_ui_ifw_condition_scheme_desc">Match the URI scheme, such as https or content.</string>
+    <string name="core_ui_ifw_condition_scheme_specific_part">Link special part</string>
+    <string name="core_ui_ifw_condition_scheme_specific_part_desc">Match the scheme-specific part of the URI.</string>
+    <string name="core_ui_ifw_condition_path">Link path</string>
+    <string name="core_ui_ifw_condition_path_desc">Match the path part of the intent data URI.</string>
+    <string name="core_ui_ifw_condition_data">Full data URI</string>
+    <string name="core_ui_ifw_condition_data_desc">Match the full data URI as one string.</string>
+    <string name="core_ui_ifw_condition_mime_type">MIME type</string>
+    <string name="core_ui_ifw_condition_mime_type_desc">Match the resolved MIME type of the intent.</string>
+    <string name="core_ui_ifw_condition_port">Port</string>
+    <string name="core_ui_ifw_condition_port_desc">Match one port or a port range from the data URI.</string>
+    <string name="core_ui_ifw_value_hint_action" translatable="false">android.intent.action.BOOT_COMPLETED</string>
+    <string name="core_ui_ifw_value_hint_category" translatable="false">android.intent.category.DEFAULT</string>
+    <string name="core_ui_ifw_value_hint_permission" translatable="false">android.permission.INTERNET</string>
+    <string name="core_ui_ifw_value_hint_package_name" translatable="false">com.example.app</string>
+    <string name="core_ui_ifw_value_hint_component" translatable="false">com.example/.Receiver</string>
+    <string name="core_ui_ifw_value_hint_component_name" translatable="false">.MainActivity</string>
+    <string name="core_ui_ifw_value_hint_component_filter" translatable="false">com.example/.Receiver</string>
+    <string name="core_ui_ifw_value_hint_host" translatable="false">example.com</string>
+    <string name="core_ui_ifw_value_hint_scheme" translatable="false">https</string>
+    <string name="core_ui_ifw_value_hint_scheme_specific_part" translatable="false">//example.com/path</string>
+    <string name="core_ui_ifw_value_hint_path" translatable="false">/path/to/item</string>
+    <string name="core_ui_ifw_value_hint_data" translatable="false">content://com.example/items/1</string>
+    <string name="core_ui_ifw_value_hint_mime_type" translatable="false">text/plain</string>
+    <string name="core_ui_ifw_sender_system">System</string>
+    <string name="core_ui_ifw_sender_signature">Signature</string>
+    <string name="core_ui_ifw_sender_system_or_signature">System or signature</string>
+    <string name="core_ui_ifw_sender_user_id">Same user ID</string>
+</resources>

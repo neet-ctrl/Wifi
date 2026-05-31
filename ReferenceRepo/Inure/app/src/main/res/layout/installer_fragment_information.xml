@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <app.simple.inure.decorations.overscroll.CustomVerticalRecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="true"
+        android:fadingEdge="vertical"
+        android:fadingEdgeLength="25dp"
+        android:layoutAnimation="@anim/list_animation_controller"
+        android:requiresFadingEdge="vertical"
+        android:paddingTop="5dp"
+        app:isFastScrollRequired="false"
+        app:statusBarPaddingRequired="false" />
+
+    <app.simple.inure.decorations.theme.ThemeLinearProgressIndicator
+        android:id="@+id/loader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:indeterminate="true" />
+
+</FrameLayout>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="xposed_scope">
+        <!-- Pixel Launcher -->
+        <item>com.google.android.apps.nexuslauncher</item>
+        <!-- Lawnchair -->
+        <item>app.lawnchair</item>
+        <item>app.lawnchair.debug</item>
+        <item>app.lawnchair.twelvel</item>
+        <item>app.lawnchair.lawnfeed</item>
+        <!-- Total Launcher -->
+        <item>com.ss.launcher2</item>
+        <!-- Hyperion Launcher -->
+        <item>projekt.hyperion.dock</item>
+        <!-- Rootless Pixel Launcher -->
+        <item>amirz.aidlbridge</item>
+        <!-- Action Launcher -->
+        <item>com.actionlauncher.nowbridge</item>
+    </string-array>
+    <!-- Widget components for predictions, supposed to be copied from the Pixel Launcher but currently custom as theirs are empty. This is what I expect theirs will look like. -->
+    <array name="weather_recommendations">
+        <!-- Google Weather -->
+        <item>com.google.android.googlequicksearchbox/com.google.android.apps.search.assistant.verticals.snapshot.widgets.weather.WeatherWidget_Receiver</item>
+        <item>com.google.android.googlequicksearchbox/com.google.android.apps.search.assistant.verticals.snapshot.widgets.weather.FreeformWeatherWidget_Receiver</item>
+    </array>
+    <array name="fitness_recommendations">
+        <!-- Google Fit -->
+        <item>com.google.android.apps.fitness/com.google.android.apps.fitness.v2.widget.HaloAppWidgetProvider</item>
+        <item>com.google.android.apps.fitness/com.google.android.apps.fitness.v2.widget.MetricsAppWidgetProvider</item>
+        <item>com.google.android.apps.fitness/com.google.android.apps.fitness.v2.widget.SingleMetricAppWidgetProvider</item>
+        <!-- Fitbit -->
+        <item>com.fitbit.FitbitMobile/com.fitbit.widget.ui.PrimaryGoalWidgetProvider</item>
+        <item>com.fitbit.FitbitMobile/com.fitbit.widget.ui.QuickAccessWidgetProvider</item>
+    </array>
+    <array name="conversations_recommendations">
+        <item>com.android.systemui/.people.widget.PeopleSpaceWidgetProvider</item>
+    </array>
+    <array name="note_taking_recommendations">
+        <item>com.android.systemui/com.android.systemui.notetask.shortcut.CreateNoteTaskShortcutActivity</item>
+    </array>
+    <array name="battery_recommendations">
+        <item>com.google.android.settings.intelligence/com.google.android.settings.intelligence.modules.batterywidget.impl.BatteryAppWidgetProvider</item>
+    </array>
+    <array name="snapshot_recommendations">
+        <item>com.google.android.apps.pixel.familyspace/com.google.android.apps.pixel.familyspace.widget.FamilySpaceWidgetProvider</item>
+    </array>
+    <string-array name="target_widget_settings_limitations">
+        <item>@string/target_widget_settings_limitations_bull1</item>
+        <item>@string/target_widget_settings_limitations_bull2</item>
+        <item>@string/target_widget_settings_limitations_bull3</item>
+        <item>@string/target_widget_settings_limitations_bull4</item>
+        <item>@string/target_widget_settings_limitations_bull5</item>
+        <item>@string/target_widget_settings_limitations_bull6</item>
+        <item>@string/target_widget_settings_limitations_bull7</item>
+        <item>@string/target_widget_settings_limitations_bull8</item>
+    </string-array>
+</resources>

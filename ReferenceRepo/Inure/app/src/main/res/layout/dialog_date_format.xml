@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<app.simple.inure.decorations.corners.DynamicCornerLinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:backgroundTint="@android:color/transparent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:orientation="vertical"
+    android:padding="@dimen/dialog_padding">
+
+    <app.simple.inure.decorations.typeface.TypeFaceTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/date_format"
+        android:textSize="@dimen/popup_text_size"
+        app:appFontStyle="bold"
+        app:textColorStyle="primary" />
+
+    <app.simple.inure.decorations.corners.DynamicCornerEditText
+        android:id="@+id/date_format_edit_text"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginVertical="@dimen/dialog_padding"
+        android:hint="@string/format"
+        android:importantForAutofill="no"
+        android:inputType="textNoSuggestions"
+        android:maxLines="1"
+        android:paddingHorizontal="@dimen/dialog_padding"
+        android:textCursorDrawable="@drawable/text_cursor"
+        app:appFontStyle="medium"
+        app:textColorStyle="primary" />
+
+    <app.simple.inure.decorations.typeface.TypeFaceTextView
+        android:id="@+id/date_format_update"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:textSize="@dimen/info_text_small"
+        app:appFontStyle="regular"
+        app:drawableStartCompat="@drawable/ic_arrow_right"
+        app:drawableTintStyle="secondary"
+        app:textColorStyle="secondary" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="@dimen/dialog_padding"
+        android:animateLayoutChanges="true"
+        android:orientation="horizontal">
+
+        <app.simple.inure.decorations.ripple.DynamicRippleTextView
+            android:id="@+id/date_format_default"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|center_vertical"
+            android:gravity="center"
+            android:padding="@dimen/dialog_padding"
+            android:text="@string/reset"
+            android:textSize="@dimen/info_text_small"
+            app:appFontStyle="bold"
+            app:textColorStyle="accent" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+        <app.simple.inure.decorations.ripple.DynamicRippleTextView
+            android:id="@+id/date_format_cheatsheet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|center_vertical"
+            android:gravity="center"
+            android:padding="@dimen/dialog_padding"
+            android:drawablePadding="5dp"
+            android:text="@string/cheatsheet"
+            android:textSize="@dimen/info_text_small"
+            app:appFontStyle="bold"
+            app:drawableEndCompat="@drawable/ic_web_page_12dp"
+            app:drawableTintStyle="secondary"
+            app:textColorStyle="accent" />
+
+        <app.simple.inure.decorations.ripple.DynamicRippleTextView
+            android:id="@+id/date_format_save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginStart="10dp"
+            android:gravity="center"
+            android:padding="@dimen/dialog_padding"
+            android:text="@string/save"
+            android:textSize="@dimen/info_text_small"
+            android:visibility="gone"
+            app:appFontStyle="bold"
+            app:textColorStyle="accent" />
+
+    </LinearLayout>
+
+</app.simple.inure.decorations.corners.DynamicCornerLinearLayout>

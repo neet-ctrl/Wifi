@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- This app is completely free from Google's weird theming APIs
+         and uses its own custom theming engine which I spent more
+         than 24 hours developing.
+
+         This file is not in use but I'm leaving it here as a reminder
+         for how stupid it was to use it in the first place.
+
+         -->
+
+    <!-- ALL HAIL FREEDOM FROM GOOGLE'S PATHETIC CODES -->
+</resources>

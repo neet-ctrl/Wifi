@@ -1,0 +1,37 @@
+<!--
+  ~ Copyright 2025 Blocker
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     https://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 36 68 a 4 4 0 0 0 4 4 h 28 a 4 4 0 0 0 4 -4 v -12 a 18 18 0 0 0 -36 0 Z M 46.5 46 a 1.25 1.25 0 0 1 0 5 a 1.25 1.25 0 0 1 0 -5 Z M 61.5 46 a 1.25 1.25 0 0 1 0 5 a 1.25 1.25 0 0 1 0 -5 Z M 42 69 h -3 v -5.5714 Z M 46 69 l -7 -13 h 5 l 7 13 Z M 55 69 l -7 -13 h 5 l 7 13 Z M 64 69 l -7 -13 h 5 l 7 13 Z M 66 56 h 3 v 5.5714 Z" />
+    <path
+        android:pathData="M 39.5 35.5 L 54 56 Z"
+        android:strokeColor="#000000"
+        android:strokeLineCap="round"
+        android:strokeWidth="3"
+        android:trimPathStart="0.8" />
+    <path
+        android:pathData="M 68.5 35.5 L 54 56 Z"
+        android:strokeColor="#000000"
+        android:strokeLineCap="round"
+        android:strokeWidth="3"
+        android:trimPathStart="0.8" />
+</vector>

@@ -1,0 +1,47 @@
+/*
+ * Copyright 2025 Blocker
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.merxury.blocker.core.database
+
+import com.merxury.blocker.core.database.app.AppComponentDao
+import com.merxury.blocker.core.database.app.InstalledAppDao
+import com.merxury.blocker.core.database.app.InstalledAppDatabase
+import com.merxury.blocker.core.database.debloater.DebloatableComponentDao
+import com.merxury.blocker.core.database.debloater.DebloaterDatabase
+import com.merxury.blocker.core.database.generalrule.GeneralRuleDao
+import com.merxury.blocker.core.database.generalrule.GeneralRuleDatabase
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+internal object DaosModule {
+    @Provides
+    fun provideInstalledAppDao(database: InstalledAppDatabase): InstalledAppDao = database.installedAppDao()
+
+    @Provides
+    fun provideAppComponentDao(database: InstalledAppDatabase): AppComponentDao = database.appComponentDao()
+
+    @Provides
+    @Singleton
+    fun provideGeneralRuleDao(database: GeneralRuleDatabase): GeneralRuleDao = database.generalRuleDao()
+
+    @Provides
+    fun provideDebloatableComponentDao(database: DebloaterDatabase): DebloatableComponentDao = database.DebloatableComponentDao()
+}

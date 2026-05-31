@@ -1,0 +1,28 @@
+name: Copy Community Permission Database
+
+on:
+    push:
+        branches:
+            - master
+        paths:
+            - 'community/permissions/community_permission_database.json'
+
+jobs:
+    copy_file:
+        runs-on: ubuntu-latest
+
+        steps:
+            -   name: Checkout Code
+                uses: actions/checkout@v4
+
+            -   name: Copy Community Permission Database File
+                run: |
+                    cp community/permissions/community_permission_database.json app/src/main/resources/community_permission_database.json
+
+            -   name: Commit Changes
+                run: |
+                    git config --global user.email "actions@github.com"
+                    git config --global user.name "GitHub Actions"
+                    git add .
+                    git commit -m "Update community permission database file" || true
+                    git push origin master

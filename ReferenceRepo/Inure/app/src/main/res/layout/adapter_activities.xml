@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<app.simple.inure.decorations.condensed.CondensedDynamicRippleConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/adapter_activity_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <app.simple.inure.decorations.views.AppIconImageView
+        android:id="@+id/adapter_activity_icon"
+        android:layout_width="@dimen/app_icon_dimension"
+        android:layout_height="@dimen/app_icon_dimension"
+        android:clickable="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="ContentDescription" />
+
+    <app.simple.inure.decorations.typeface.TypeFaceTextView
+        android:id="@+id/adapter_activity_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginTop="16dp"
+        android:textSize="@dimen/info_text_medium"
+        app:appFontStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/adapter_activity_status"
+        app:layout_constraintEnd_toStartOf="@id/divider"
+        app:layout_constraintStart_toEndOf="@id/adapter_activity_icon"
+        app:layout_constraintTop_toTopOf="@+id/adapter_activity_icon"
+        app:layout_constraintVertical_bias="0.0"
+        app:textColorStyle="primary" />
+
+    <app.simple.inure.decorations.typeface.TypeFaceTextView
+        android:id="@+id/adapter_activity_status"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="10dp"
+        android:textSize="@dimen/desc_text_size"
+        app:appFontStyle="regular"
+        app:layout_constraintBottom_toTopOf="@+id/adapter_activity_package"
+        app:layout_constraintEnd_toStartOf="@id/divider"
+        app:layout_constraintStart_toEndOf="@+id/adapter_activity_icon"
+        app:layout_constraintTop_toBottomOf="@id/adapter_activity_name"
+        app:textColorStyle="accent" />
+
+    <app.simple.inure.decorations.typeface.TypeFaceTextView
+        android:id="@+id/adapter_activity_package"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginBottom="16dp"
+        android:drawablePadding="10dp"
+        android:gravity="center_vertical"
+        android:textSize="@dimen/desc_text_size"
+        app:appFontStyle="regular"
+        app:layout_constraintBottom_toBottomOf="@+id/adapter_activity_icon"
+        app:layout_constraintEnd_toStartOf="@id/divider"
+        app:layout_constraintStart_toEndOf="@+id/adapter_activity_icon"
+        app:layout_constraintTop_toBottomOf="@id/adapter_activity_status"
+        app:textColorStyle="secondary" />
+
+    <app.simple.inure.decorations.theme.ThemeDivider
+        android:id="@+id/divider"
+        android:layout_width="1px"
+        android:layout_height="0dp"
+        android:layout_marginEnd="8dp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/adapter_activity_launch_button"
+        app:layout_constraintStart_toEndOf="@id/adapter_activity_status"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+        android:id="@+id/adapter_activity_launch_button"
+        android:layout_width="@dimen/button_size"
+        android:layout_height="0dp"
+        android:layout_marginVertical="8dp"
+        android:layout_marginEnd="8dp"
+        android:clickable="false"
+        android:src="@drawable/ic_launch"
+        android:visibility="visible"
+        app:buttonTintType="regular"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/divider"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</app.simple.inure.decorations.condensed.CondensedDynamicRippleConstraintLayout>

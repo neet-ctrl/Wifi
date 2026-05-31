@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<app.simple.inure.decorations.theme.ThemeCoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:orientation="vertical">
+
+    <app.simple.inure.decorations.padding.PaddingAwareNestedScrollView
+        android:id="@+id/scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="20dp"
+        app:layout_behavior="@string/over_scroll_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:orientation="horizontal"
+                android:padding="@dimen/header_padding">
+
+                <app.simple.inure.decorations.theme.ThemeIcon
+                    android:id="@+id/imageView4"
+                    android:layout_width="@dimen/adapter_header_icon_size"
+                    android:layout_height="@dimen/adapter_header_icon_size"
+                    android:layout_gravity="center_vertical"
+                    android:contentDescription="@string/analytics"
+                    android:transitionName="@string/analytics"
+                    app:srcCompat="@drawable/ic_analytics"
+                    app:tintType="accent" />
+
+                <app.simple.inure.decorations.typeface.TypeFaceTextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_weight="1"
+                    android:text="@string/analytics"
+                    android:textSize="@dimen/header_font_size"
+                    app:appFontStyle="light"
+                    app:textColorStyle="heading" />
+
+            </LinearLayout>
+
+            <app.simple.inure.decorations.typeface.TypeFaceTextView
+                android:id="@+id/filter_style"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:drawablePadding="@dimen/popup_padding"
+                android:layout_marginHorizontal="@dimen/panel_item_padding"
+                android:textSize="@dimen/info_text_small"
+                app:appFontStyle="regular"
+                app:drawableStartCompat="@drawable/ic_filter_16dp"
+                app:drawableTintStyle="secondary"
+                app:textColorStyle="tertiary" />
+
+            <app.simple.inure.decorations.typeface.TypeFaceTextView
+                android:id="@+id/min_sdk_heading"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawablePadding="@dimen/panel_item_padding"
+                android:padding="@dimen/panel_item_padding"
+                android:text="@string/minimum_sdk"
+                android:layout_marginHorizontal="@dimen/popup_padding"
+                android:textSize="@dimen/info_text_large"
+                app:appFontStyle="bold"
+                app:drawableStartCompat="@drawable/ic_dot_16dp"
+                app:drawableTintStyle="accent"
+                app:textColorStyle="primary" />
+
+            <app.simple.inure.decorations.theme.ThemePieChart
+                android:id="@+id/minimum_os_pie"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/pie_chart_height" />
+
+            <app.simple.inure.decorations.views.LegendRecyclerView
+                android:id="@+id/minimum_os_legend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <app.simple.inure.decorations.typeface.TypeFaceTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawablePadding="@dimen/panel_item_padding"
+                android:padding="@dimen/panel_item_padding"
+                android:text="@string/target_sdk"
+                android:textSize="@dimen/info_text_large"
+                android:layout_marginHorizontal="@dimen/popup_padding"
+                app:appFontStyle="bold"
+                app:drawableStartCompat="@drawable/ic_dot_16dp"
+                app:drawableTintStyle="accent"
+                app:textColorStyle="primary" />
+
+            <app.simple.inure.decorations.theme.ThemePieChart
+                android:id="@+id/target_os_pie"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/pie_chart_height" />
+
+            <app.simple.inure.decorations.views.LegendRecyclerView
+                android:id="@+id/target_os_legend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <app.simple.inure.decorations.typeface.TypeFaceTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawablePadding="@dimen/panel_item_padding"
+                android:padding="@dimen/panel_item_padding"
+                android:text="@string/package_type"
+                android:textSize="@dimen/info_text_large"
+                android:layout_marginHorizontal="@dimen/popup_padding"
+                app:appFontStyle="bold"
+                app:drawableStartCompat="@drawable/ic_dot_16dp"
+                app:drawableTintStyle="accent"
+                app:textColorStyle="primary" />
+
+            <app.simple.inure.decorations.theme.ThemePieChart
+                android:id="@+id/package_type_pie"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/pie_chart_height" />
+
+            <app.simple.inure.decorations.views.LegendRecyclerView
+                android:id="@+id/package_type_legend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+
+            <app.simple.inure.decorations.typeface.TypeFaceTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawablePadding="@dimen/panel_item_padding"
+                android:padding="@dimen/panel_item_padding"
+                android:text="@string/installer"
+                android:textSize="@dimen/info_text_large"
+                android:layout_marginHorizontal="@dimen/popup_padding"
+                app:appFontStyle="bold"
+                app:drawableStartCompat="@drawable/ic_dot_16dp"
+                app:drawableTintStyle="accent"
+                app:textColorStyle="primary" />
+
+            <app.simple.inure.decorations.theme.ThemePieChart
+                android:id="@+id/installer_pie"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/pie_chart_height" />
+
+            <app.simple.inure.decorations.views.LegendRecyclerView
+                android:id="@+id/installer_legend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <app.simple.inure.decorations.typeface.TypeFaceTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawablePadding="@dimen/panel_item_padding"
+                android:padding="@dimen/panel_item_padding"
+                android:text="@string/sign_algorithm"
+                android:textSize="@dimen/info_text_large"
+                android:layout_marginHorizontal="@dimen/popup_padding"
+                app:appFontStyle="bold"
+                app:drawableStartCompat="@drawable/ic_dot_16dp"
+                app:drawableTintStyle="accent"
+                app:textColorStyle="primary" />
+
+            <app.simple.inure.decorations.theme.ThemePieChart
+                android:id="@+id/sign_algorithm_pie"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/pie_chart_height" />
+
+            <app.simple.inure.decorations.views.LegendRecyclerView
+                android:id="@+id/sign_algorithm_legend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="100dp" />
+
+        </LinearLayout>
+
+    </app.simple.inure.decorations.padding.PaddingAwareNestedScrollView>
+
+    <app.simple.inure.decorations.views.FloatingMenuRecyclerView
+        android:id="@+id/bottom_menu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/popup_padding" />
+
+</app.simple.inure.decorations.theme.ThemeCoordinatorLayout>

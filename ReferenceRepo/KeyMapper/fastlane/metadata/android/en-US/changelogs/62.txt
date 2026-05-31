@@ -1,0 +1,1 @@
+Action for doing swipe gestures on the screen with 1 or more fingers. Many thanks to Tino (@pixel-shock) for working on this feature. 😊

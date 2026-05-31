@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/app_container"
+    android:background="@android:color/black"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:fitsSystemWindows="false">
+
+    <com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
+        android:id="@+id/image_viewer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:ignore="ContentDescription" />
+
+    <app.simple.inure.decorations.views.ZoomImageView
+        android:id="@+id/gif_viewer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:ignore="ContentDescription" />
+
+    <LinearLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:elevation="2dp"
+        android:background="@android:color/black"
+        android:padding="@dimen/header_padding">
+
+        <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+            android:id="@+id/image_viewer_back_button"
+            android:layout_width="@dimen/header_icon_size"
+            android:layout_height="@dimen/header_icon_size"
+            android:layout_gravity="center_vertical|start"
+            android:layout_marginEnd="@dimen/header_padding"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_arrow_back"
+            android:transitionName="@string/app_information"
+            app:buttonTintType="white"
+            tools:ignore="ContentDescription" />
+
+        <app.simple.inure.decorations.typeface.TypeFaceTextView
+            android:id="@+id/image_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginEnd="@dimen/header_padding"
+            android:layout_weight="1"
+            android:textSize="@dimen/header_name_text_size"
+            app:appFontStyle="bold"
+            app:textColorStyle="white" />
+
+        <app.simple.inure.decorations.ripple.DynamicRippleImageButton
+            android:id="@+id/bg_mode"
+            android:layout_width="@dimen/header_icon_size"
+            android:layout_marginEnd="5dp"
+            android:layout_height="@dimen/header_icon_size"
+            android:layout_gravity="center_vertical"
+            android:src="@drawable/ic_dark_mode"
+            app:buttonTintType="white"
+            tools:ignore="ContentDescription" />
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

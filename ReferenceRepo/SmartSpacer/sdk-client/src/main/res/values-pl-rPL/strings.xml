@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="smartspace_accessibility_smartspace_page">Strona %1$d z %2$d</string>
+    <string name="smartspace_long_press_popup_dismiss">Odrzuć</string>
+    <string name="smartspace_long_press_popup_feedback">Opinia</string>
+    <string name="smartspace_long_press_popup_about">O tej treści</string>
+    <string name="smartspace_long_press_popup_settings">Ustawienia</string>
+    <string name="smartspace_long_press_popup_failed_to_launch">Nie udało się wykonać akcji</string>
+    <string name="smartspace_toast_could_not_dismiss">Ten Cel nie może zostać odrzucony</string>
+</resources>

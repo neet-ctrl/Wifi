@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="key_pref_version" translatable="false">key_version</string>
+    <string name="key_pref_changelog" translatable="false">changelog</string>
+    <string name="key_pref_xda_thread" translatable="false">xda_thread</string>
+    <string name="key_pref_rate_review" translatable="false">rate_review</string>
+    <string name="key_pref_developer_github" translatable="false">developer_github</string>
+    <string name="key_pref_source_code" translatable="false">source_code</string>
+    <string name="key_pref_translate" translatable="false">translate</string>
+    <string name="key_pref_credits" translatable="false">credits</string>
+    <string name="key_pref_license" translatable="false">license</string>
+    <string name="key_pref_privacy_policy" translatable="false">privacy_policy</string>
+    <string name="key_pref_discord" translatable="false">discord</string>
+    <string name="key_pref_youtube_channel" translatable="false">youtube_channel</string>
+</resources>

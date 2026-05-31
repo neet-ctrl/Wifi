@@ -1,0 +1,35 @@
+plugins {
+    alias(libs.plugins.agp.library)
+}
+
+android {
+    compileSdk = 36
+    namespace "me.jfenn.colorpickerdialog"
+
+    defaultConfig {
+        minSdk = 31
+        aarMetadata {
+            minCompileSdk = 31
+        }
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
+}
+
+dependencies {
+    implementation libs.annotation
+    implementation libs.material
+    implementation libs.androidUtils
+    implementation libs.glide
+}

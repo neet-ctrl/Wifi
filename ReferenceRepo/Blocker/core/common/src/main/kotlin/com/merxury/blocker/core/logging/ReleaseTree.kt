@@ -1,0 +1,109 @@
+/*
+ * Copyright 2025 Blocker
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.merxury.blocker.core.logging
+
+import android.annotation.SuppressLint
+import android.util.Log
+import com.merxury.blocker.core.di.ApplicationScope
+import com.merxury.blocker.core.di.FilesDir
+import com.merxury.blocker.core.dispatchers.BlockerDispatchers.IO
+import com.merxury.blocker.core.dispatchers.Dispatcher
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
+import timber.log.Timber
+import java.io.File
+import javax.inject.Inject
+import kotlin.time.Clock
+
+const val LOG_DIR = "logs"
+private const val TAG = "ReleaseTree"
+class ReleaseTree @Inject constructor(
+    @FilesDir private val filesDir: File,
+    @ApplicationScope private val coroutineScope: CoroutineScope,
+    @Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
+) : Timber.DebugTree() {
+    @Volatile
+    private var writeFile: File? = null
+    private val initComplete = CompletableDeferred<Unit>()
+
+    @SuppressLint("LogNotTimber")
+    private val initErrorHandler = CoroutineExceptionHandler { _, throwable ->
+        Log.e(TAG, "Error occurred while initializing log file", throwable)
+        initComplete.complete(Unit)
+    }
+
+    @SuppressLint("LogNotTimber")
+    private val writeErrorHandler = CoroutineExceptionHandler { _, throwable ->
+        Log.e(TAG, "Error occurred while writing log", throwable)
+    }
+
+    init {
+        coroutineScope.launch(ioDispatcher + initErrorHandler) {
+            createLogFile()
+            clearOldLogsIfNecessary(days = 7)
+            initComplete.complete(Unit)
+        }
+    }
+
+    private suspend fun createLogFile() = withContext(ioDispatcher) {
+        val logFolder = filesDir.resolve(LOG_DIR)
+        if (!logFolder.exists()) {
+            logFolder.mkdirs()
+        }
+        val date = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        val fileName = "$date.log"
+        val logFile = logFolder.resolve(fileName)
+        writeFile = logFile
+    }
+
+    private suspend fun clearOldLogsIfNecessary(days: Int) = withContext(ioDispatcher) {
+        val logFolder = filesDir.resolve(LOG_DIR)
+        val files = logFolder.listFiles()
+        if (files != null && files.size > days) {
+            files.sortedBy { it.lastModified() }
+                .take(files.size - days)
+                .forEach { it.delete() }
+        }
+    }
+
+    override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+        if (priority == Log.VERBOSE) {
+            return
+        }
+        coroutineScope.launch(ioDispatcher + writeErrorHandler) {
+            initComplete.await()
+            val logFile = writeFile ?: return@launch
+            val time = Clock.System.now().toString()
+            val level = when (priority) {
+                Log.DEBUG -> "D"
+                Log.INFO -> "I"
+                Log.WARN -> "W"
+                Log.ERROR -> "E"
+                Log.ASSERT -> "A"
+                else -> "Unknown"
+            }
+            val log = "$time $level/$tag: $message\n"
+            logFile.appendText(log)
+        }
+    }
+}

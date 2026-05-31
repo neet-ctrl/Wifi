@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2025 Blocker
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     https://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<resources>
+    <string name="core_ui_application_with_count">應用程式（%1$d）</string>
+    <string name="core_ui_component_with_count">元件（%1$d）</string>
+    <string name="core_ui_online_rule_with_count">線上規則（%1$d）</string>
+    <string name="core_ui_clear_cache">清理緩存</string>
+    <string name="core_ui_clear_data">清除數據</string>
+    <string name="core_ui_force_stop">強制停止</string>
+    <string name="core_ui_uninstall">卸載</string>
+    <string name="core_ui_enable">啟用</string>
+    <string name="core_ui_disable">禁用</string>
+    <string name="core_ui_service_status_template">服務: 正在運行%1$d個, 已阻止%2$d個, 共計%3$d個.</string>
+    <string name="core_ui_running">運行中</string>
+    <string name="core_ui_disabled">已禁用</string>
+    <string name="core_ui_rule_icon_description">規則圖標</string>
+    <string name="core_ui_copy_name">複製組件名</string>
+    <string name="core_ui_copy_full_name">複製完整組件名</string>
+    <string name="core_ui_launch_activity">複製包名</string>
+    <string name="core_ui_stop_service">停止服務</string>
+    <string name="core_ui_no_components">無組件</string>
+    <string name="core_ui_close">關閉</string>
+    <string name="core_ui_block_selected">禁用選中</string>
+    <string name="core_ui_select_all">全選</string>
+    <string name="core_ui_enable_selected">啟用選中</string>
+    <string name="core_ui_matched">%1$d 匹配，%2$d 阻擋，%3$d 啟用。</string>
+    <string name="core_ui_description">描述</string>
+    <string name="core_ui_applicable_application">適用應用程序</string>
+    <string name="core_ui_loading">正在加載</string>
+    <string name="core_ui_error">錯誤</string>
+    <string name="core_ui_no_applicable_app">沒有適用的應用</string>
+    <string name="core_ui_app_info">應用信息</string>
+    <string name="core_ui_activity_with_count">活動 (%1$d)</string>
+    <string name="core_ui_service_with_count">服務 (%1$d)</string>
+    <string name="core_ui_receiver_with_count">廣播接收器 (%1$d)</string>
+    <string name="core_ui_provider_with_count">內容提供者 (%1$d)</string>
+    <string name="core_ui_initializing_database">初始化數據</string>
+    <string name="core_ui_more_menu">更多</string>
+    <string name="core_ui_search_icon">搜索</string>
+    <string name="core_ui_block_all_components">禁用所有組件</string>
+    <string name="core_ui_enable_all_components">啟用所有組件</string>
+    <string name="core_ui_open_app_detail">打開應用詳情</string>
+    <string name="core_ui_open_rule_detail">打開规则詳情</string>
+    <string name="core_ui_sort_options">排序選項</string>
+    <string name="core_ui_collapse_list">折疊列表</string>
+    <string name="core_ui_expand_list">展開列表</string>
+    <string name="core_ui_not_found_icon">未找到圖標</string>
+    <plurals name="core_ui_block_all">
+        <item quantity="other">此操作將禁用%1$d個組件，是否要繼續？</item>
+    </plurals>
+    <plurals name="core_ui_enable_all">
+        <item quantity="other">此操作將启用%1$d個組件，是否要繼續？</item>
+    </plurals>
+    <plurals name="core_ui_selected_app_count">
+        <item quantity="other">%1$d個應用程式已選取</item>
+    </plurals>
+    <string name="core_ui_disabling_component_hint">正在禁用組件，請稍候…（%1$d/%2$d）</string>
+    <string name="core_ui_enabling_component_hint">正在啟用組件，請稍候…（%1$d/%2$d）</string>
+    <string name="core_ui_operation_completed">操作已完成</string>
+    <string name="core_ui_do_you_want_to_clear_data_of_this_app">您想要清除此應用的數據嗎？</string>
+    <string name="core_ui_do_you_want_to_uninstall_this_app">您想要卸載此應用嗎？</string>
+    <string name="core_ui_found">已找到</string>
+    <string name="core_ui_not_found">未找到</string>
+    <string name="core_ui_edit_ifw_rule">自訂攔截規則</string>
+    <string name="core_ui_ifw_add_condition">新增條件</string>
+    <string name="core_ui_ifw_add_group">新增條件群組</string>
+    <string name="core_ui_ifw_group_logic">符合方式</string>
+    <string name="core_ui_ifw_group_all">全部成立</string>
+    <string name="core_ui_ifw_group_any">任一成立</string>
+    <string name="core_ui_ifw_group_exclude">排除此群組中的匹配</string>
+    <string name="core_ui_ifw_group_all_title">以下條件全部成立</string>
+    <string name="core_ui_ifw_group_all_summary">只有當這個群組中的每一項都符合時，規則才會命中。</string>
+    <string name="core_ui_ifw_group_any_title">以下條件任一成立</string>
+    <string name="core_ui_ifw_group_any_summary">只要這個群組中有任一項符合，規則就會命中。</string>
+    <string name="core_ui_ifw_group_excluded_title">排除以下情況</string>
+    <string name="core_ui_ifw_group_excluded_summary">凡是符合這個群組的內容，都會從規則中排除。</string>
+</resources>

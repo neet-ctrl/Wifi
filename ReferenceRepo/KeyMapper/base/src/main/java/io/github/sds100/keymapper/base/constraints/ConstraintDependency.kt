@@ -1,0 +1,21 @@
+package io.github.sds100.keymapper.base.constraints
+
+enum class ConstraintDependency {
+    FOREGROUND_APP,
+    APP_PLAYING_MEDIA,
+    MEDIA_PLAYING,
+    CONNECTED_BT_DEVICES,
+    SCREEN_STATE,
+    DISPLAY_ORIENTATION,
+    PHYSICAL_ORIENTATION,
+    FLASHLIGHT_STATE,
+    WIFI_SSID,
+    WIFI_STATE,
+    CHOSEN_IME,
+    KEYBOARD_VISIBLE,
+    DEVICE_LOCKED_STATE,
+    LOCK_SCREEN_SHOWING,
+    PHONE_STATE,
+    CHARGING_STATE,
+    HINGE_STATE,
+}

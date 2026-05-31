@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <attr name="colorAppAccent" format="color" />
+    <attr name="colorAppAccentLight" format="color" />
+    <attr name="colorAccentRipple" format="color" />
+
+    <declare-styleable name="DynamicCornerLayout">
+        <!-- At least one of them needs to be true else roundness will be applies to all corners
+                default is false for both of them -->
+        <attr name="roundTopCorners" format="boolean" />
+        <attr name="roundBottomCorners" format="boolean" />
+        <attr name="roundAllCorners" format="boolean" />
+    </declare-styleable>
+
+    <!-- Fast Scroll -->
+    <attr name="indicatorFastScrollerStyle" format="reference" />
+    <attr name="indicatorFastScrollerThumbStyle" format="reference" />
+
+    <attr name="fastScrollerIconSize" format="dimension" />
+    <attr name="fastScrollerIconColor" format="color" />
+    <attr name="fastScrollerTextPadding" format="dimension" />
+    <attr name="fastScrollerThumbColor" format="color" />
+
+    <!-- Icon View -->
+    <declare-styleable name="AppTheme">
+        <attr name="iconViewStyle" format="reference" />
+    </declare-styleable>
+
+    <declare-styleable name="IconView">
+        <attr name="icon" format="reference" />
+        <attr name="constantShadowTranslationY" format="dimension" />
+        <attr name="variableShadowTranslationY" format="dimension" />
+        <attr name="scaleDown" format="float" />
+        <attr name="bigBlurRadius" format="float" />
+        <attr name="smallBlurRadius" format="float" />
+    </declare-styleable>
+
+    <!-- Type Face Text View -->
+    <declare-styleable name="TypeFaceTextView">
+        <attr name="appFontStyle" format="string">
+            <flag name="light" value="0" />
+            <flag name="regular" value="1" />
+            <flag name="medium" value="2" />
+            <flag name="bold" value="3" />
+        </attr>
+
+        <attr name="textColorStyle" format="string">
+            <flag name="heading" value="0" />
+            <flag name="primary" value="1" />
+            <flag name="secondary" value="2" />
+            <flag name="tertiary" value="3" />
+            <flag name="quaternary" value="4" />
+            <flag name="accent" value="5" />
+            <flag name="white" value="6" />
+            <flag name="black" value="7" />
+        </attr>
+
+        <attr name="drawableTintStyle" format="string">
+            <flag name="accent" value="0" />
+            <flag name="regular" value="1" />
+            <flag name="secondary" value="2" />
+            <flag name="warning" value="3" />
+            <flag name="error" value="4" />
+            <flag name="success" value="5" />
+            <flag name="custom" value="6" />
+        </attr>
+
+        <attr name="isDrawableHidden" format="boolean" />
+    </declare-styleable>
+
+    <!-- Use <code>scale</code>as the root tag of the XML resource that
+         describes a {@link  com.transitionseverywhere.extra.Scale} transition.
+         The attributes of the {@link android.R.styleable#Transition Transition}
+         resource are available in addition to the specific attributes of Scale
+         described here. -->
+    <declare-styleable name="Scale">
+        <!--Value of scale on start of appearing or in finish of disappearing.
+         Default value is 0. Can be useful for mixing some Visibility transitions,
+         for example Scale and Fade. -->
+        <attr name="disappearedScale" format="float" />
+    </declare-styleable>
+
+    <declare-styleable name="SwitchView">
+        <attr name="switchWidth" format="dimension" />
+        <attr name="switchPadding" format="dimension" />
+    </declare-styleable>
+
+    <declare-styleable name="RecyclerView">
+        <attr name="statusBarPaddingRequired" format="boolean" />
+        <attr name="manuallyAnimated" format="boolean" />
+        <attr name="isFastScrollRequired" format="boolean" />
+        <attr name="isEdgeColorRequired" format="boolean" />
+        <attr name="isFadingEdgeRequired" format="boolean" />
+        <attr name="isTopFadingEdgeOnly" format="boolean" />
+    </declare-styleable>
+
+    <!-- These are the standard attributes that make up a complete theme. -->
+    <declare-styleable name="Theme">
+        <!-- ============== -->
+        <!-- Generic styles -->
+        <!-- ============== -->
+        <eat-comment />
+
+        <!-- Default ListView style. -->
+        <attr name="listViewStyle" format="reference" />
+
+    </declare-styleable>
+
+    <declare-styleable name="LoaderImageView">
+        <attr name="loaderStyle" format="string">
+            <flag name="rotary" value="0" />
+            <flag name="still" value="1" />
+        </attr>
+    </declare-styleable>
+
+    <declare-styleable name="ThemeIcon">
+        <attr name="tintType" format="string">
+            <flag name="regular" value="0" />
+            <flag name="secondary" value="1" />
+            <flag name="accent" value="2" />
+            <flag name="custom" value="3" />
+        </attr>
+    </declare-styleable>
+
+    <declare-styleable name="ThemeButton">
+        <attr name="buttonTintType" format="string">
+            <flag name="regular" value="0" />
+            <flag name="secondary" value="1" />
+            <flag name="accent" value="2" />
+            <flag name="white" value="3" />
+            <flag name="custom" value="-1" />
+        </attr>
+    </declare-styleable>
+
+    <declare-styleable name="LrcView">
+        <attr name="lrcTextSize" format="dimension" />
+        <attr name="lrcLineSpaceSize" format="dimension" />
+        <attr name="lrcNormalTextColor" format="reference|color" />
+        <attr name="lrcCurrentTextColor" format="reference|color" />
+        <attr name="lrcTouchDelay" format="integer" />
+        <attr name="noLrcTextSize" format="dimension" />
+        <attr name="noLrcTextColor" format="reference|color" />
+        <attr name="indicatorLineHeight" format="dimension" />
+        <attr name="indicatorTextSize" format="dimension" />
+        <attr name="indicatorTextColor" format="reference|color" />
+        <attr name="currentIndicateLrcColor" format="reference|color" />
+        <attr name="indicatorTouchDelay" format="integer" />
+        <attr name="indicatorLineColor" format="reference|color" />
+        <attr name="indicatorStartEndMargin" format="dimension" />
+        <attr name="iconLineGap" format="dimension" />
+        <attr name="playIconWidth" format="dimension" />
+        <attr name="playIconHeight" format="dimension" />
+        <attr name="playIcon" format="reference" />
+        <attr name="isLrcCurrentTextBold" format="boolean" />
+        <attr name="isLrcIndicatorTextBold" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="TransitionArcMotion">
+        <attr name="arcRadius" format="integer" />
+    </declare-styleable>
+
+</resources>
