@@ -1,6 +1,9 @@
 package com.accu.ui.settings
 
 import android.Manifest
+import android.app.AlarmManager
+import android.app.AppOpsManager
+import android.app.NotificationManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -8,7 +11,12 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
+import android.os.Process
 import android.provider.Settings
+import android.view.accessibility.AccessibilityManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -34,9 +42,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.accu.connection.AccuConnectionManager
 import com.accu.ui.components.ACCTopBar
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 // ═══════════════════════════════════════════════════════════
 //  DATA MODELS
@@ -63,7 +77,7 @@ enum class PermImportance(val label: String, val color: Color) {
 enum class GrantMethod(val label: String, val icon: ImageVector) {
     AUTOMATIC   ("Auto-granted",   Icons.Default.CheckCircle),
     NORMAL      ("Grant manually", Icons.Default.TouchApp),
-    SHIZUKU     ("Shizuku 1-tap",  Icons.Default.Hub),
+    SHIZUKU     ("ACCU 1-tap",     Icons.Default.Hub),
     SETTINGS_APP("Open Settings",  Icons.Default.Settings),
     ADB_ONLY    ("ADB only",       Icons.Default.Terminal),
     ROOT_ONLY   ("Root required",  Icons.Default.AdminPanelSettings),
@@ -510,9 +524,48 @@ private fun checkPermStatus(context: Context, perm: AccuPerm): PermStatus {
     if (Build.VERSION.SDK_INT < perm.minSdk || Build.VERSION.SDK_INT > perm.maxSdk)
         return PermStatus.NOT_APPLICABLE
     return try {
-        if (context.checkSelfPermission(perm.rawPermission) == PackageManager.PERMISSION_GRANTED)
-            PermStatus.GRANTED
-        else PermStatus.NOT_REQUESTED
+        when (perm.id) {
+            "manage_ext_storage" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                    Environment.isExternalStorageManager()) PermStatus.GRANTED
+                else PermStatus.NOT_REQUESTED
+
+            "write_settings" -> if (Settings.System.canWrite(context)) PermStatus.GRANTED
+                else PermStatus.NOT_REQUESTED
+
+            "manage_overlay" -> if (Settings.canDrawOverlays(context)) PermStatus.GRANTED
+                else PermStatus.NOT_REQUESTED
+
+            "notification_policy" -> {
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                if (nm.isNotificationPolicyAccessGranted) PermStatus.GRANTED else PermStatus.NOT_REQUESTED
+            }
+
+            "exact_alarm" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                if (am.canScheduleExactAlarms()) PermStatus.GRANTED else PermStatus.NOT_REQUESTED
+            } else PermStatus.GRANTED
+
+            "pkg_usage_stats" -> {
+                val ops = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+                val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                    ops.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
+                else
+                    @Suppress("DEPRECATION")
+                    ops.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
+                if (mode == AppOpsManager.MODE_ALLOWED) PermStatus.GRANTED else PermStatus.NOT_REQUESTED
+            }
+
+            "accessibility_svc" -> {
+                val enabled = Settings.Secure.getString(
+                    context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+                ) ?: ""
+                if (enabled.contains(context.packageName, ignoreCase = true)) PermStatus.GRANTED
+                else PermStatus.NOT_REQUESTED
+            }
+
+            else -> if (context.checkSelfPermission(perm.rawPermission) == PackageManager.PERMISSION_GRANTED)
+                PermStatus.GRANTED else PermStatus.NOT_REQUESTED
+        }
     } catch (_: Exception) { PermStatus.NOT_REQUESTED }
 }
 
@@ -531,6 +584,7 @@ fun AccuPermissionsScreen(onBack: () -> Unit = {}) {
     val context = LocalContext.current
     val scope   = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
+    val vm: AccuPermissionsViewModel = hiltViewModel()
 
     // ── State ──────────────────────────────────────────────
     var perms by remember {
@@ -546,6 +600,29 @@ fun AccuPermissionsScreen(onBack: () -> Unit = {}) {
 
     fun refresh() {
         perms = ALL_ACCU_PERMISSIONS.map { it.copy(status = checkPermStatus(context, it)) }
+    }
+
+    // Refresh status whenever the screen resumes (user may have granted in Settings)
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        val lifecycle = (context as? androidx.lifecycle.LifecycleOwner)?.lifecycle
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) refresh()
+        }
+        lifecycle?.addObserver(observer)
+        onDispose { lifecycle?.removeObserver(observer) }
+    }
+
+    // Single launcher for NORMAL runtime permissions — result refreshes real status
+    var pendingNormalPermRaw by remember { mutableStateOf<String?>(null) }
+    val normalPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        refresh()
+        scope.launch {
+            if (isGranted) snackbar.showSnackbar("Permission granted ✓")
+            else snackbar.showSnackbar("Permission denied by user")
+        }
+        pendingNormalPermRaw = null
     }
 
     // ── Derived ────────────────────────────────────────────
@@ -580,7 +657,7 @@ fun AccuPermissionsScreen(onBack: () -> Unit = {}) {
             icon = {
                 Icon(Icons.Default.Hub, null, tint = MaterialTheme.colorScheme.primary)
             },
-            title = { Text("Grant All via Shizuku", fontWeight = FontWeight.Bold) },
+            title = { Text("Grant All via ACCU", fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (shizukuPending.isEmpty()) {
@@ -612,13 +689,20 @@ fun AccuPermissionsScreen(onBack: () -> Unit = {}) {
                     onClick = {
                         showGrantDialog = false
                         scope.launch {
-                            shizukuPending.forEachIndexed { _, p ->
+                            var successCount = 0
+                            shizukuPending.forEach { p ->
                                 grantingId = p.id
-                                delay(350L)
-                                perms = perms.map { if (it.id == p.id) it.copy(status = PermStatus.GRANTED) else it }
+                                val ok = vm.grantPermission(context.packageName, p.rawPermission)
+                                if (ok) successCount++
                             }
                             grantingId = null
-                            snackbar.showSnackbar("Granted ${shizukuPending.size} permission(s) via Shizuku ✓")
+                            refresh()
+                            snackbar.showSnackbar(
+                                if (successCount == shizukuPending.size)
+                                    "Granted $successCount permission(s) via ACCU ✓"
+                                else
+                                    "Granted $successCount / ${shizukuPending.size} — check ACCU connection"
+                            )
                         }
                     },
                     enabled = shizukuPending.isNotEmpty(),
