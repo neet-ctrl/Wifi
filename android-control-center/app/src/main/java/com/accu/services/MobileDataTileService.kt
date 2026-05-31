@@ -4,17 +4,21 @@ import android.net.ConnectivityManager
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.telephony.TelephonyManager
-import com.accu.utils.ShizukuUtils
+import com.accu.connection.AccuConnectionManager
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import timber.log.Timber
+import javax.inject.Inject
 
 /**
  * Quick Settings tile for Mobile Data toggle (BetterInternetTiles).
  */
+@AndroidEntryPoint
 class MobileDataTileService : TileService() {
 
+    @Inject lateinit var connectionManager: AccuConnectionManager
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val shizukuUtils = ShizukuUtils()
 
     override fun onStartListening() {
         super.onStartListening()
@@ -31,7 +35,7 @@ class MobileDataTileService : TileService() {
 
         scope.launch {
             withContext(Dispatchers.IO) {
-                shizukuUtils.execShizuku("svc data ${if (isEnabled) "disable" else "enable"}")
+                connectionManager.exec("svc data ${if (isEnabled) "disable" else "enable"}")
             }
             delay(500)
             updateTile()

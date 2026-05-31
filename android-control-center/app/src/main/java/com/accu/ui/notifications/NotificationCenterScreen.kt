@@ -662,7 +662,7 @@ private fun SnoozeDialog(onDismiss: () -> Unit, onSnooze: (Int) -> Unit) {
 private fun featureIcon(channelId: String) = when (channelId) {
     AccuChannels.CALL_RECORDING   -> Icons.Default.Call
     AccuChannels.AUDIO_DSP        -> Icons.Default.Equalizer
-    AccuChannels.SHIZUKU_SERVICE  -> Icons.Default.Hub
+    AccuChannels.ACCU_CONNECTION  -> Icons.Default.Hub
     AccuChannels.STORAGE_ALERTS   -> Icons.Default.Storage
     AccuChannels.CLEANUP_WORKER   -> Icons.Default.CleaningServices
     AccuChannels.PRIVACY_TRACKER  -> Icons.Default.Shield
@@ -678,7 +678,7 @@ private fun featureIcon(channelId: String) = when (channelId) {
 private fun featureAccent(channelId: String): Color = when (channelId) {
     AccuChannels.CALL_RECORDING   -> AccentGreen
     AccuChannels.AUDIO_DSP        -> AccentPurple
-    AccuChannels.SHIZUKU_SERVICE  -> AccentCyan
+    AccuChannels.ACCU_CONNECTION  -> AccentCyan
     AccuChannels.STORAGE_ALERTS   -> AccentRed
     AccuChannels.CLEANUP_WORKER   -> AccentOrange
     AccuChannels.PRIVACY_TRACKER  -> AccentOrange

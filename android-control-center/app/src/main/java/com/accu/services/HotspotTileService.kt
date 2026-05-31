@@ -3,16 +3,20 @@ package com.accu.services
 import android.net.wifi.WifiManager
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
-import com.accu.utils.ShizukuUtils
+import com.accu.connection.AccuConnectionManager
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
+import javax.inject.Inject
 
 /**
  * Quick Settings tile for Hotspot toggle (BetterInternetTiles).
  */
+@AndroidEntryPoint
 class HotspotTileService : TileService() {
 
+    @Inject lateinit var connectionManager: AccuConnectionManager
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val shizukuUtils = ShizukuUtils()
 
     override fun onStartListening() {
         super.onStartListening()
@@ -24,8 +28,8 @@ class HotspotTileService : TileService() {
         scope.launch {
             val isEnabled = withContext(Dispatchers.IO) { isHotspotEnabled() }
             withContext(Dispatchers.IO) {
-                if (isEnabled) shizukuUtils.execShizuku("cmd wifi stop-softap")
-                else shizukuUtils.execShizuku("cmd wifi start-softap")
+                if (isEnabled) connectionManager.exec("cmd wifi stop-softap")
+                else connectionManager.exec("cmd wifi start-softap")
             }
             delay(800)
             updateTile()

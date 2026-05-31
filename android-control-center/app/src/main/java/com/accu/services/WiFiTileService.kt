@@ -5,18 +5,22 @@ import android.net.wifi.WifiManager
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.accu.R
-import com.accu.utils.ShizukuUtils
+import com.accu.connection.AccuConnectionManager
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import timber.log.Timber
+import javax.inject.Inject
 
 /**
  * Quick Settings tile for Wi-Fi toggle (BetterInternetTiles).
  * Toggles Wi-Fi via ACCU without opening Settings.
  */
+@AndroidEntryPoint
 class WiFiTileService : TileService() {
 
+    @Inject lateinit var connectionManager: AccuConnectionManager
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val shizukuUtils = ShizukuUtils()
 
     override fun onStartListening() {
         super.onStartListening()
@@ -29,7 +33,7 @@ class WiFiTileService : TileService() {
         val currentlyEnabled = wifiManager?.isWifiEnabled ?: false
         scope.launch {
             withContext(Dispatchers.IO) {
-                shizukuUtils.execShizuku("svc wifi ${if (currentlyEnabled) "disable" else "enable"}")
+                connectionManager.exec("svc wifi ${if (currentlyEnabled) "disable" else "enable"}")
             }
             delay(500)
             updateTile()
