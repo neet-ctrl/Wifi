@@ -1,8 +1,5 @@
 package com.accu.ui.shizuku
 
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,7 +26,6 @@ data class ShizukuApp(
 
 @Composable
 fun ShizukuAppsScreen(onBack: () -> Unit = {}) {
-    val context = LocalContext.current
     var apps by remember {
         mutableStateOf(listOf(
             ShizukuApp("Android Control Center", "com.accu.controlcenter", "1.0.0", "full", true, "Now"),
@@ -56,7 +52,7 @@ fun ShizukuAppsScreen(onBack: () -> Unit = {}) {
         AlertDialog(
             onDismissRequest = { showRevokeAll = false },
             title = { Text("Revoke all permissions?") },
-            text = { Text("All apps will lose Shizuku access. They will need to re-request permission.") },
+            text = { Text("All apps will lose ACCU access. They will need to re-request permission.") },
             confirmButton = {
                 TextButton(onClick = { apps = apps.map { it.copy(isGranted = false) }; showRevokeAll = false }) {
                     Text("Revoke All", color = MaterialTheme.colorScheme.error)
@@ -87,17 +83,10 @@ fun ShizukuAppsScreen(onBack: () -> Unit = {}) {
                     Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(8.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Shizuku is running", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        Text("v13.5.4 · Started via ADB · UID: 2000", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text("ACCU Connection active", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text("Privileged access via root or wireless ADB", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     }
-                    TextButton(onClick = {
-                        try {
-                            val stopIntent = Intent().apply { component = ComponentName("rikka.shizuku", "rikka.shizuku.ShizukuService"); action = "moe.shizuku.manager.action.STOP_SERVICE" }
-                            context.sendBroadcast(stopIntent)
-                            val startIntent = context.packageManager.getLaunchIntentForPackage("rikka.shizuku")?.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                            if (startIntent != null) context.startActivity(startIntent)
-                        } catch (_: Exception) {}
-                    }) { Text("Restart") }
+                    TextButton(onClick = { /* Reconnect handled by AccuConnectionManager */ }) { Text("Reconnect") }
                 }
             }
 

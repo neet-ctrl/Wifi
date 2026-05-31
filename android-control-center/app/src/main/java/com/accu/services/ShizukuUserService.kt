@@ -3,69 +3,37 @@ package com.accu.services
 import android.content.ComponentName
 import android.content.ServiceConnection
 import android.os.IBinder
-import android.util.Log
-import rikka.shizuku.Shizuku
+import timber.log.Timber
 
 /**
- * Shizuku UserService — runs in the Shizuku privileged process.
- * Provides elevated IPC for operations that need system-level access:
- *   - toggling mobile data / Wi-Fi / hotspot
- *   - writing secure settings
- *   - component enable/disable
- *   - package operations
- *
- * Instantiated & destroyed by the Shizuku framework; communicate via AIDL binder.
+ * Legacy class kept for any code that referenced ShizukuUserService.
+ * ACCU no longer uses a separate privileged process — all privileged
+ * execution is routed through AccuConnectionManager (root or wireless ADB).
+ * This stub safely no-ops all bind/unbind calls.
  */
 class ShizukuUserService : IShizukuUserService.Stub() {
 
     companion object {
-        private const val TAG = "ShizukuUserService"
+        private const val TAG = "AccuUserService"
 
-        private var serviceInstance: IShizukuUserService? = null
         private val userServiceConnection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-                Log.d(TAG, "ShizukuUserService connected")
-                serviceInstance = IShizukuUserService.Stub.asInterface(binder)
+                Timber.d("$TAG: connected (no-op stub)")
             }
             override fun onServiceDisconnected(name: ComponentName) {
-                Log.d(TAG, "ShizukuUserService disconnected")
-                serviceInstance = null
+                Timber.d("$TAG: disconnected (no-op stub)")
             }
         }
 
-        private val userServiceArgs = Shizuku.UserServiceArgs(
-            ComponentName("com.accu.controlcenter", ShizukuUserService::class.java.name)
-        )
-            .daemon(false)
-            .processNameSuffix("user_service")
-            .debuggable(false)
-            .version(1)
+        /** No-op — ACCU uses AccuConnectionManager instead of Shizuku UserService. */
+        fun bind() { Timber.d("$TAG: bind() called — no-op, ACCU uses AccuConnectionManager") }
 
-        fun bind() {
-            try {
-                Shizuku.bindUserService(userServiceArgs, userServiceConnection)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to bind ShizukuUserService", e)
-            }
-        }
+        /** No-op. */
+        fun unbind() { Timber.d("$TAG: unbind() called — no-op") }
 
-        fun unbind() {
-            try {
-                Shizuku.unbindUserService(userServiceArgs, userServiceConnection, true)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to unbind ShizukuUserService", e)
-            }
-        }
-
-        fun getService(): IShizukuUserService? = serviceInstance
+        fun getService(): IShizukuUserService? = null
     }
 
-    override fun destroy() {
-        Log.d(TAG, "ShizukuUserService.destroy() called")
-    }
-
-    override fun exit() {
-        Log.d(TAG, "ShizukuUserService.exit() called")
-        System.exit(0)
-    }
+    override fun destroy() { Timber.d("$TAG: destroy()") }
+    override fun exit() { Timber.d("$TAG: exit()") }
 }

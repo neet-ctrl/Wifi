@@ -1,17 +1,17 @@
 package com.accu.service
 
 import android.content.Context
-import android.content.Intent
 import android.os.Binder
 import android.os.Process
 import com.accu.api.IAccuPermissionCallback
 import com.accu.api.IAccuProcessCallback
 import com.accu.api.IAccuService
-import com.accu.utils.ShizukuUtils
+import com.accu.connection.AccuConnectionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 
 /**
@@ -21,31 +21,24 @@ import timber.log.Timber
  * Every privileged call:
  *  1. Resolves the calling package via Binder.getCallingUid()
  *  2. Checks that the caller has ACCU permission + the required scope
- *  3. Executes via ShizukuUtils (elevated)
+ *  3. Executes via AccuConnectionManager (root → wireless ADB → shell)
  *  4. Records the call for analytics
  */
 class AccuServiceImpl(
     private val context: Context,
     private val permissionManager: AccuPermissionManager,
-    private val shizukuUtils: ShizukuUtils,
+    private val connectionManager: AccuConnectionManager,
     private val onPermissionRequest: (callerPackage: String, callerLabel: String, callback: IAccuPermissionCallback) -> Unit,
 ) : IAccuService.Stub() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // ── Internal helpers ──────────────────────────────────────────────────────
-
-    /** Resolve the calling package name from Binder UID. */
     private fun callerPackage(): String {
         val uid = Binder.getCallingUid()
         val packages = context.packageManager.getPackagesForUid(uid)
         return packages?.firstOrNull() ?: "uid:$uid"
     }
 
-    /**
-     * Guard: check the caller is granted and has the required scope.
-     * Returns the caller's package name if OK, throws SecurityException otherwise.
-     */
     private fun requireScope(scope: String): String {
         val pkg = callerPackage()
         if (!permissionManager.isGranted(pkg)) {
@@ -58,13 +51,11 @@ class AccuServiceImpl(
         return pkg
     }
 
+    /** Execute via the global privilege manager (root → wireless ADB → plain shell). */
     private fun runCmd(command: String): Array<String> {
         return try {
-            val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
-            val stdout = process.inputStream.bufferedReader().readText()
-            val stderr = process.errorStream.bufferedReader().readText()
-            val exit = process.waitFor()
-            arrayOf(stdout, stderr, exit.toString())
+            val result = runBlocking { connectionManager.exec(command) }
+            arrayOf(result.output, result.error, result.exitCode.toString())
         } catch (e: Exception) {
             arrayOf("", e.message ?: "error", "-1")
         }
@@ -76,9 +67,7 @@ class AccuServiceImpl(
     override fun getUid(): Int = Process.myUid()
     override fun getPid(): Int = Process.myPid()
     override fun getAccuVersion(): String = try {
-        context.packageManager
-            .getPackageInfo(context.packageName, 0)
-            .versionName ?: "unknown"
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "unknown"
     } catch (_: Exception) { "unknown" }
 
     override fun ping(): Boolean = true
@@ -91,16 +80,12 @@ class AccuServiceImpl(
             val info = context.packageManager.getApplicationInfo(pkg, 0)
             context.packageManager.getApplicationLabel(info).toString()
         } catch (_: Exception) { pkg }
-
         Timber.i("ACCU: Permission request from $pkg ($label)")
-        // Delegate to the service — it will show the dialog/notification
         onPermissionRequest(pkg, label, callback)
     }
 
     override fun checkPermission(): Int = permissionManager.checkPermission(callerPackage())
-
-    override fun hasScope(scope: String): Boolean =
-        permissionManager.hasScope(callerPackage(), scope)
+    override fun hasScope(scope: String): Boolean = permissionManager.hasScope(callerPackage(), scope)
 
     override fun revokeSelf() {
         val pkg = callerPackage()
@@ -120,21 +105,10 @@ class AccuServiceImpl(
         requireScope(SCOPE_SHELL)
         scope.launch {
             try {
-                val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
-                // Stream stdout
-                launch {
-                    process.inputStream.bufferedReader().forEachLine { line ->
-                        try { callback.onStdoutLine(line) } catch (_: Exception) {}
-                    }
-                }
-                // Stream stderr
-                launch {
-                    process.errorStream.bufferedReader().forEachLine { line ->
-                        try { callback.onStderrLine(line) } catch (_: Exception) {}
-                    }
-                }
-                val exit = process.waitFor()
-                try { callback.onExit(exit) } catch (_: Exception) {}
+                val result = connectionManager.exec(command)
+                try { callback.onStdoutLine(result.output) } catch (_: Exception) {}
+                if (result.error.isNotBlank()) try { callback.onStderrLine(result.error) } catch (_: Exception) {}
+                try { callback.onExit(result.exitCode) } catch (_: Exception) {}
             } catch (e: Exception) {
                 try { callback.onStderrLine(e.message ?: "error"); callback.onExit(-1) } catch (_: Exception) {}
             }
@@ -172,38 +146,32 @@ class AccuServiceImpl(
 
     override fun enablePackage(packageName: String): Boolean {
         requireScope(SCOPE_PACKAGE_MANAGE)
-        val result = runCmd("pm enable --user 0 $packageName")
-        return result[2] == "0"
+        return runCmd("pm enable --user 0 $packageName")[2] == "0"
     }
 
     override fun disablePackage(packageName: String): Boolean {
         requireScope(SCOPE_PACKAGE_MANAGE)
-        val result = runCmd("pm disable-user --user 0 $packageName")
-        return result[2] == "0"
+        return runCmd("pm disable-user --user 0 $packageName")[2] == "0"
     }
 
     override fun hidePackage(packageName: String): Boolean {
         requireScope(SCOPE_PACKAGE_MANAGE)
-        val result = runCmd("pm hide --user 0 $packageName")
-        return result[2] == "0"
+        return runCmd("pm hide --user 0 $packageName")[2] == "0"
     }
 
     override fun unhidePackage(packageName: String): Boolean {
         requireScope(SCOPE_PACKAGE_MANAGE)
-        val result = runCmd("pm unhide --user 0 $packageName")
-        return result[2] == "0"
+        return runCmd("pm unhide --user 0 $packageName")[2] == "0"
     }
 
     override fun suspendPackage(packageName: String): Boolean {
         requireScope(SCOPE_PACKAGE_MANAGE)
-        val result = runCmd("pm suspend --user 0 $packageName")
-        return result[2] == "0"
+        return runCmd("pm suspend --user 0 $packageName")[2] == "0"
     }
 
     override fun unsuspendPackage(packageName: String): Boolean {
         requireScope(SCOPE_PACKAGE_MANAGE)
-        val result = runCmd("pm unsuspend --user 0 $packageName")
-        return result[2] == "0"
+        return runCmd("pm unsuspend --user 0 $packageName")[2] == "0"
     }
 
     override fun clearPackageData(packageName: String): Boolean {
@@ -214,92 +182,78 @@ class AccuServiceImpl(
 
     override fun enableComponent(packageName: String, componentName: String): Boolean {
         requireScope(SCOPE_PACKAGE_MANAGE)
-        val result = runCmd("pm enable $packageName/$componentName")
-        return result[2] == "0"
+        return runCmd("pm enable $packageName/$componentName")[2] == "0"
     }
 
     override fun disableComponent(packageName: String, componentName: String): Boolean {
         requireScope(SCOPE_PACKAGE_MANAGE)
-        val result = runCmd("pm disable $packageName/$componentName")
-        return result[2] == "0"
+        return runCmd("pm disable $packageName/$componentName")[2] == "0"
     }
 
     // ── Runtime Permissions ────────────────────────────────────────────────────
 
     override fun grantPermission(packageName: String, permission: String): Boolean {
         requireScope(SCOPE_PERMISSIONS)
-        val result = runCmd("pm grant $packageName $permission")
-        return result[2] == "0"
+        return runCmd("pm grant $packageName $permission")[2] == "0"
     }
 
     override fun revokePermission(packageName: String, permission: String): Boolean {
         requireScope(SCOPE_PERMISSIONS)
-        val result = runCmd("pm revoke $packageName $permission")
-        return result[2] == "0"
+        return runCmd("pm revoke $packageName $permission")[2] == "0"
     }
 
     override fun setAppOp(packageName: String, op: String, mode: String): Boolean {
         requireScope(SCOPE_PERMISSIONS)
-        val result = runCmd("appops set $packageName $op $mode")
-        return result[2] == "0"
+        return runCmd("appops set $packageName $op $mode")[2] == "0"
     }
 
     override fun getAppOp(packageName: String, op: String): String {
         requireScope(SCOPE_PERMISSIONS)
-        val result = runCmd("appops get $packageName $op")
-        return result[0].trim().ifBlank { "error" }
+        return runCmd("appops get $packageName $op")[0].trim().ifBlank { "error" }
     }
 
     // ── Activity Manager ──────────────────────────────────────────────────────
 
     override fun forceStop(packageName: String): Boolean {
         requireScope(SCOPE_PACKAGE_MANAGE)
-        val result = runCmd("am force-stop $packageName")
-        return result[2] == "0"
+        return runCmd("am force-stop $packageName")[2] == "0"
     }
 
     override fun setApplicationLocale(packageName: String, locale: String): Boolean {
         requireScope(SCOPE_LOCALE)
         val localeArg = if (locale.isBlank()) "\"\"" else locale
-        val result = runCmd("am set-app-locale --user 0 $packageName --locale $localeArg")
-        return result[2] == "0"
+        return runCmd("am set-app-locale --user 0 $packageName --locale $localeArg")[2] == "0"
     }
 
     // ── System Settings ────────────────────────────────────────────────────────
 
     override fun writeSecureSetting(name: String, value: String): Boolean {
         requireScope(SCOPE_SETTINGS)
-        val result = runCmd("settings put secure $name $value")
-        return result[2] == "0"
+        return runCmd("settings put secure $name $value")[2] == "0"
     }
 
     override fun readSecureSetting(name: String): String {
         requireScope(SCOPE_SETTINGS)
-        val result = runCmd("settings get secure $name")
-        return result[0].trim()
+        return runCmd("settings get secure $name")[0].trim()
     }
 
     override fun writeGlobalSetting(name: String, value: String): Boolean {
         requireScope(SCOPE_SETTINGS)
-        val result = runCmd("settings put global $name $value")
-        return result[2] == "0"
+        return runCmd("settings put global $name $value")[2] == "0"
     }
 
     override fun readGlobalSetting(name: String): String {
         requireScope(SCOPE_SETTINGS)
-        val result = runCmd("settings get global $name")
-        return result[0].trim()
+        return runCmd("settings get global $name")[0].trim()
     }
 
     override fun writeSystemSetting(name: String, value: String): Boolean {
         requireScope(SCOPE_SETTINGS)
-        val result = runCmd("settings put system $name $value")
-        return result[2] == "0"
+        return runCmd("settings put system $name $value")[2] == "0"
     }
 
     override fun readSystemSetting(name: String): String {
         requireScope(SCOPE_SETTINGS)
-        val result = runCmd("settings get system $name")
-        return result[0].trim()
+        return runCmd("settings get system $name")[0].trim()
     }
 }

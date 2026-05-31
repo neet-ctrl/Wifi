@@ -7,12 +7,11 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.accu.MainActivity
 import com.accu.api.IAccuPermissionCallback
-import com.accu.utils.ShizukuUtils
+import com.accu.connection.AccuConnectionManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,17 +24,12 @@ import javax.inject.Inject
  * ║                       ACCU SYSTEM SERVICE                                ║
  * ║                                                                          ║
  * ║  A foreground service that exposes IAccuService to other apps.           ║
- * ║  Runs in ACCU's own process; uses Shizuku (or root) for privileged ops.  ║
+ * ║  Runs in ACCU's own process; executes privileged ops via                 ║
+ * ║  AccuConnectionManager (root or wireless ADB — no Shizuku needed).       ║
  * ║                                                                          ║
  * ║  Binding intent action: "com.accu.api.AccuSystemService"                 ║
  * ║  Package:               "com.accu.controlcenter"                         ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
- *
- * Lifecycle:
- *   1. ACCU starts this service at boot (or when user toggles it on).
- *   2. Third-party apps bind via ServiceConnection — they receive IAccuService.
- *   3. On first privileged call, requestPermission() shows a dialog.
- *   4. User grants → permission stored → all future calls succeed.
  */
 @AndroidEntryPoint
 class AccuSystemService : Service() {
@@ -49,12 +43,9 @@ class AccuSystemService : Service() {
         const val ACTION_GRANT          = "com.accu.api.ACTION_GRANT"
         const val ACTION_DENY           = "com.accu.api.ACTION_DENY"
 
-        /** SharedPreferences file name for service-level settings. */
         const val PREFS_SERVICE         = "accu_service_prefs"
-        /** Boolean pref: true = start AccuSystemService automatically at boot. */
         const val PREF_AUTOSTART        = "accu_service_autostart"
 
-        // Observable service state (shared with ViewModel)
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
 
@@ -70,11 +61,9 @@ class AccuSystemService : Service() {
     )
 
     @Inject lateinit var permissionManager: AccuPermissionManager
-    @Inject lateinit var shizukuUtils: ShizukuUtils
+    @Inject lateinit var connectionManager: AccuConnectionManager
 
     private lateinit var serviceImpl: AccuServiceImpl
-
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     override fun onCreate() {
         super.onCreate()
@@ -82,7 +71,7 @@ class AccuSystemService : Service() {
         serviceImpl = AccuServiceImpl(
             context           = applicationContext,
             permissionManager = permissionManager,
-            shizukuUtils      = shizukuUtils,
+            connectionManager = connectionManager,
             onPermissionRequest = ::handlePermissionRequest,
         )
         createNotificationChannel()
@@ -118,32 +107,18 @@ class AccuSystemService : Service() {
         Timber.i("AccuSystemService destroyed")
     }
 
-    // ── Permission request flow ───────────────────────────────────────────────
-
     private fun handlePermissionRequest(
         callerPackage: String,
         callerLabel: String,
         callback: IAccuPermissionCallback,
     ) {
-        // If already decided, return immediately
         when (permissionManager.checkPermission(callerPackage)) {
-            ACCU_PERMISSION_GRANTED -> {
-                callback.onPermissionResult(ACCU_PERMISSION_GRANTED)
-                return
-            }
-            ACCU_PERMISSION_DENIED -> {
-                callback.onPermissionResult(ACCU_PERMISSION_DENIED)
-                return
-            }
+            ACCU_PERMISSION_GRANTED -> { callback.onPermissionResult(ACCU_PERMISSION_GRANTED); return }
+            ACCU_PERMISSION_DENIED  -> { callback.onPermissionResult(ACCU_PERMISSION_DENIED);  return }
         }
-
-        // Queue the pending request
         val request = PendingPermRequest(callerPackage, callerLabel, callback)
         _pendingRequests.value = _pendingRequests.value + request
-
-        // Show permission notification
         showPermissionNotification(callerPackage, callerLabel)
-        // Also open ACCU's permission dialog activity
         launchPermissionActivity(callerPackage, callerLabel)
     }
 
@@ -165,7 +140,6 @@ class AccuSystemService : Service() {
         updateNotification()
     }
 
-    // Grant/deny called from the AccuPermissionRequestActivity
     fun grantFromActivity(packageName: String, scopes: Set<String>) {
         val all = _pendingRequests.value
         val req = all.find { it.packageName == packageName } ?: return
@@ -177,19 +151,13 @@ class AccuSystemService : Service() {
 
     fun denyFromActivity(packageName: String) = denyPending(packageName)
 
-    // ── Notification ──────────────────────────────────────────────────────────
-
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "ACCU System Service",
-            NotificationManager.IMPORTANCE_LOW,
-        ).apply {
-            description = "Keeps the ACCU privilege API running for connected apps"
-            setShowBadge(false)
-        }
-        getSystemService(NotificationManager::class.java)
-            .createNotificationChannel(channel)
+        val channel = NotificationChannel(CHANNEL_ID, "ACCU System Service", NotificationManager.IMPORTANCE_LOW)
+            .apply {
+                description = "Keeps the ACCU privilege API running for connected apps"
+                setShowBadge(false)
+            }
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
     private fun buildNotification(pendingCount: Int = 0): Notification {
@@ -220,7 +188,6 @@ class AccuSystemService : Service() {
 
     private fun showPermissionNotification(pkg: String, label: String) {
         val nm = getSystemService(NotificationManager::class.java)
-
         val grantIntent = PendingIntent.getService(
             this, pkg.hashCode(),
             Intent(this, AccuSystemService::class.java).apply {
@@ -238,7 +205,6 @@ class AccuSystemService : Service() {
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-
         val notif = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_lock)
             .setContentTitle("$label wants ACCU access")
@@ -249,7 +215,6 @@ class AccuSystemService : Service() {
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setAutoCancel(false)
             .build()
-
         nm.notify(pkg.hashCode(), notif)
         updateNotification()
     }

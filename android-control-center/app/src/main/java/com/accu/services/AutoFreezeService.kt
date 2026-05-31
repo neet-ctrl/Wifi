@@ -8,15 +8,20 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import com.accu.connection.AccuConnectionManager
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import rikka.shizuku.Shizuku
 import timber.log.Timber
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class AutoFreezeService : Service() {
+
+    @Inject lateinit var connectionManager: AccuConnectionManager
 
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.IO + job)
@@ -43,14 +48,17 @@ class AutoFreezeService : Service() {
             val frozenPackages = prefs.getStringSet("frozen_packages", emptySet()) ?: return@withContext
             if (frozenPackages.isEmpty()) return@withContext
 
-            if (Shizuku.pingBinder()) {
-                for (pkg in frozenPackages) {
-                    try {
-                        Runtime.getRuntime().exec(arrayOf("pm", "suspend", pkg))
-                        Timber.d("AutoFreeze: suspended $pkg")
-                    } catch (e: Exception) {
-                        Timber.e(e, "AutoFreeze: failed to suspend $pkg")
-                    }
+            if (!connectionManager.isPrivilegeAvailable()) {
+                Timber.w("AutoFreezeService: no privilege available, skipping freeze")
+                return@withContext
+            }
+
+            for (pkg in frozenPackages) {
+                try {
+                    connectionManager.exec("pm suspend $pkg")
+                    Timber.d("AutoFreeze: suspended $pkg")
+                } catch (e: Exception) {
+                    Timber.e(e, "AutoFreeze: failed to suspend $pkg")
                 }
             }
         } catch (e: Exception) {

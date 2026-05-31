@@ -1,5 +1,6 @@
 package com.accu.ui.shizuku
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,165 +15,247 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.accu.connection.AccuConnectionManager
 import com.accu.ui.components.ACCTopBar
 
+/**
+ * ACCU wireless ADB pairing screen.
+ *
+ * Matches Shizuku's exact UX flow but self-contained inside ACCU:
+ *   1. User enables Developer Options + Wireless Debugging (one-time)
+ *   2. ACCU auto-discovers the pairing port via mDNS — no IP/port entry needed
+ *   3. User enters only the 6-digit code shown on their screen
+ *   4. ACCU pairs and connects automatically
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdbPairingScreen(onBack: () -> Unit = {}) {
-    var pairingMethod by remember { mutableStateOf("code") } // "code" or "qr"
-    var step by remember { mutableIntStateOf(1) } // 1=enable dev, 2=enable wireless adb, 3=pair
+fun AdbPairingScreen(
+    onBack: () -> Unit = {},
+    viewModel: ShizukuViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    var step by remember { mutableIntStateOf(1) }
     var pairingCode by remember { mutableStateOf("") }
-    var ipPort by remember { mutableStateOf("") }
-    var isPairing by remember { mutableStateOf(false) }
-    var pairingResult by remember { mutableStateOf<Boolean?>(null) }
-    var discoveredDevices by remember {
-        mutableStateOf(listOf("192.168.1.42:41547"))
+
+    // Advance to step 3 automatically when ACCU detects the pairing service
+    LaunchedEffect(state.connectionState) {
+        if (state.connectionState == AccuConnectionManager.ConnectionState.AWAITING_CODE && step < 3) {
+            step = 3
+        }
+        if (state.connectionState == AccuConnectionManager.ConnectionState.CONNECTED_WIRELESS
+            || state.connectionState == AccuConnectionManager.ConnectionState.CONNECTED_ROOT) {
+            step = 4
+        }
     }
 
-    Scaffold(topBar = { ACCTopBar(title = "ADB / Wireless Pairing", onBack = onBack) }) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
+    Scaffold(topBar = { ACCTopBar(title = "ACCU Wireless Setup", onBack = onBack) }) { padding ->
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(bottom = 32.dp),
+        ) {
 
-            // Step 1: Enable Developer Options
+            // ── Step 1: Enable Developer Options ─────────────────────────────
             item {
                 StepCard(step = 1, currentStep = step, title = "Enable Developer Options") {
-                    Text("On your device, go to:", fontSize = 13.sp)
-                    Spacer(Modifier.height(4.dp))
-                    Text("Settings → About phone → Build number\n(Tap 7 times until developer mode activates)", fontSize = 13.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.height(8.dp))
-                    Button(onClick = { step = 2 }, modifier = Modifier.fillMaxWidth()) { Text("Done — Next step") }
+                    Text(
+                        "Go to: Settings → About phone → tap Build number 7 times",
+                        fontSize = 13.sp, fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Button(onClick = { step = 2 }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Done — Next")
+                    }
                 }
             }
 
-            // Step 2: Enable Wireless ADB
+            // ── Step 2: Enable Wireless Debugging + start auto-discovery ─────
             item {
                 StepCard(step = 2, currentStep = step, title = "Enable Wireless Debugging") {
-                    Text("Go to:", fontSize = 13.sp)
+                    Text(
+                        "Settings → Developer Options → Wireless debugging → Enable",
+                        fontSize = 13.sp, fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                     Spacer(Modifier.height(4.dp))
-                    Text("Settings → Developer Options → Wireless debugging\n→ Enable it", fontSize = 13.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Then tap → Pair device with pairing code",
+                        fontSize = 13.sp, fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+                    Spacer(Modifier.height(12.dp))
+
+                    // Discovery status banner
+                    AnimatedVisibility(state.connectionState == AccuConnectionManager.ConnectionState.DISCOVERING) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        ) {
+                            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "Scanning for Wireless Debugging service…",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                    }
+
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { step = 1 }, Modifier.weight(1f)) { Text("Back") }
-                        Button(onClick = { step = 3 }, Modifier.weight(1f)) { Text("Done — Next step") }
+                        Button(
+                            onClick = {
+                                step = 3
+                                viewModel.startDiscovery()
+                            },
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Start Discovery") }
                     }
                 }
             }
 
-            // Step 3: Pair
+            // ── Step 3: Enter 6-digit code (IP/port auto-detected) ───────────
             item {
-                StepCard(step = 3, currentStep = step, title = "Pair with Code or QR") {
-                    // Method tabs
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(selected = pairingMethod == "code", onClick = { pairingMethod = "code" }, label = { Text("Code Pairing") }, leadingIcon = { Icon(Icons.Default.Pin, null, Modifier.size(16.dp)) })
-                        FilterChip(selected = pairingMethod == "qr", onClick = { pairingMethod = "qr" }, label = { Text("QR Code") }, leadingIcon = { Icon(Icons.Default.QrCode, null, Modifier.size(16.dp)) })
-                    }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    if (pairingMethod == "code") {
-                        Text("In Wireless debugging, tap \"Pair device with pairing code\".\nEnter the 6-digit code below:", fontSize = 13.sp)
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = pairingCode,
-                            onValueChange = { if (it.length <= 6) pairingCode = it },
-                            label = { Text("Pairing code (6 digits)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                        )
-                        Spacer(Modifier.height(8.dp))
-
-                        // Auto-discovered devices
-                        if (discoveredDevices.isNotEmpty()) {
-                            Text("Discovered on network:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            discoveredDevices.forEach { device ->
-                                OutlinedCard(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.PhoneAndroid, null, tint = MaterialTheme.colorScheme.primary)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(device, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
-                                        TextButton(onClick = { ipPort = device }) { Text("Select") }
+                StepCard(step = 3, currentStep = step, title = "Enter Pairing Code") {
+                    when (state.connectionState) {
+                        AccuConnectionManager.ConnectionState.AWAITING_CODE -> {
+                            // Pairing service auto-detected!
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(Modifier.width(8.dp))
+                                    Column {
+                                        Text("Pairing service detected!", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                        Text("IP and port captured automatically", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
+                            Spacer(Modifier.height(12.dp))
                         }
-
-                        OutlinedTextField(
-                            value = ipPort,
-                            onValueChange = { ipPort = it },
-                            label = { Text("IP:port (from wireless debugging screen)") },
-                            placeholder = { Text("192.168.1.42:37777") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                        )
-                    } else {
-                        Text("In Wireless debugging, tap \"Pair device with QR code\".\nScan the QR code shown.", fontSize = 13.sp)
-                        Spacer(Modifier.height(12.dp))
-                        Box(
-                            Modifier.fillMaxWidth().height(200.dp).padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ElevatedCard(Modifier.size(180.dp)) {
-                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.QrCode2, null, modifier = Modifier.size(120.dp), tint = MaterialTheme.colorScheme.primary)
+                        AccuConnectionManager.ConnectionState.DISCOVERING -> {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Waiting for Wireless Debugging pairing tap…", fontSize = 12.sp)
                                 }
                             }
+                            Spacer(Modifier.height(12.dp))
                         }
-                        Text("Point the device camera at this QR code.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        else -> {}
+                    }
+
+                    Text(
+                        "Enter the 6-digit code shown in Developer Options → Wireless Debugging → Pair device with pairing code:",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = pairingCode,
+                        onValueChange = { if (it.length <= 6) pairingCode = it.filter { c -> c.isDigit() } },
+                        label = { Text("6-digit pairing code") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        placeholder = { Text("123456") },
+                        trailingIcon = {
+                            if (pairingCode.length == 6) Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                    )
+
+                    if (state.pairingStatus.isNotBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            state.pairingStatus,
+                            fontSize = 12.sp,
+                            color = if (state.pairingStatus.contains("✓")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        )
                     }
 
                     Spacer(Modifier.height(12.dp))
-
-                    if (pairingResult == true) {
-                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-                            Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Paired successfully! Shizuku can now use wireless ADB.", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                    } else if (pairingResult == false) {
-                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
-                            Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Error, null, tint = MaterialTheme.colorScheme.error)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Pairing failed. Check the code/IP and try again.", color = MaterialTheme.colorScheme.onErrorContainer)
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { step = 2 }, Modifier.weight(1f)) { Text("Back") }
+                        OutlinedButton(onClick = {
+                            viewModel.stopDiscovery()
+                            step = 2
+                        }, Modifier.weight(1f)) { Text("Back") }
                         Button(
-                            onClick = {
-                                isPairing = true
-                                pairingResult = pairingCode.length == 6 || pairingMethod == "qr"
-                                isPairing = false
-                            },
+                            onClick = { viewModel.completePairing(pairingCode) },
                             modifier = Modifier.weight(1f),
-                            enabled = (pairingMethod == "code" && pairingCode.length == 6 && ipPort.isNotBlank()) || pairingMethod == "qr"
+                            enabled = pairingCode.length == 6 && !state.isPairing,
                         ) {
-                            if (isPairing) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Icon(Icons.Default.Link, null, Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(if (isPairing) "Pairing…" else "Pair")
+                            if (state.isPairing) {
+                                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                                Spacer(Modifier.width(6.dp))
+                                Text("Pairing…")
+                            } else {
+                                Icon(Icons.Default.Link, null, Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Pair & Connect")
+                            }
                         }
                     }
                 }
             }
 
-            // Help section
+            // ── Step 4: Connected! ────────────────────────────────────────────
+            item {
+                AnimatedVisibility(
+                    visible = state.connectionState == AccuConnectionManager.ConnectionState.CONNECTED_WIRELESS
+                            || state.connectionState == AccuConnectionManager.ConnectionState.CONNECTED_ROOT,
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    ) {
+                        Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.CheckCircle, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.height(8.dp))
+                            Text("ACCU Connected!", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text(
+                                "All privileged features are now active.\nThis connection is remembered automatically.",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Done") }
+                        }
+                    }
+                }
+            }
+
+            // ── Help ─────────────────────────────────────────────────────────
             item {
                 Spacer(Modifier.height(8.dp))
                 ElevatedCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp)) {
+                    Column(Modifier.padding(14.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.HelpOutline, null, tint = MaterialTheme.colorScheme.secondary)
                             Spacer(Modifier.width(8.dp))
                             Text("Troubleshooting", fontWeight = FontWeight.SemiBold)
                         }
                         Spacer(Modifier.height(4.dp))
-                        Text("• Make sure device and phone are on the same Wi-Fi network\n• The IP:port changes every time Wireless Debugging is toggled\n• Android 11+ required for wireless ADB without USB\n• After pairing, Shizuku will use this connection automatically", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp)
+                        Text(
+                            "• Phone and device must be on the same Wi-Fi network\n" +
+                            "• The code changes each time you open Wireless Debugging\n" +
+                            "• Android 11+ required for wireless ADB without USB\n" +
+                            "• If discovery fails, try tapping 'Pair device with pairing code' again\n" +
+                            "• Once paired, ACCU remembers the connection — no repeat setup needed",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 18.sp,
+                        )
                     }
                 }
             }
@@ -185,12 +268,12 @@ private fun StepCard(step: Int, currentStep: Int, title: String, content: @Compo
     val isDone = step < currentStep
     val isCurrent = step == currentStep
     ElevatedCard(
-        Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        Modifier.fillMaxWidth().padding(vertical = 6.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = when {
-                isDone -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                isDone    -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                 isCurrent -> MaterialTheme.colorScheme.surface
-                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                else      -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
             }
         )
     ) {
@@ -203,11 +286,15 @@ private fun StepCard(step: Int, currentStep: Int, title: String, content: @Compo
                         Text("$step", color = if (isCurrent) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.surface)
                     }
                 }
-                Spacer(Modifier.width(8.dp))
-                Text(title, fontWeight = FontWeight.SemiBold, color = if (isCurrent) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    title,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isCurrent) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             if (isCurrent) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(14.dp))
                 content()
             }
         }

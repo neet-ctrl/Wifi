@@ -58,7 +58,7 @@ fun ShizukuCenterScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Shizuku Center", fontWeight = FontWeight.Bold) },
+                title = { Text("ACCU Connection", fontWeight = FontWeight.Bold) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "Back") } },
                 actions = {
                     IconButton(onClick = onNavigateToAdbPairing) { Icon(Icons.Outlined.Usb, "ADB Pairing") }
@@ -149,19 +149,17 @@ private fun StatusTab(state: ShizukuUiState, vm: ShizukuViewModel) {
                         Text(
                             when {
                                 state.isLoading -> "Checking…"
-                                state.isAvailable && state.isGranted -> "Shizuku Running"
-                                state.isAvailable -> "Needs Permission"
-                                state.isInstalled -> "Shizuku Stopped"
-                                else -> "Shizuku Not Found"
+                                state.isAvailable && state.isGranted -> "ACCU Connected"
+                                state.isAvailable -> "Connecting…"
+                                else -> "Not Connected"
                             },
                             style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold
                         )
                         Text(
                             when {
-                                state.isAvailable && state.isGranted -> "v${state.version} (patch ${state.patchVersion}) • uid=${state.uid} • pid=${state.serverPid}"
-                                state.isAvailable -> "Running but permission not granted"
-                                state.isInstalled -> "Shizuku is installed but not running"
-                                else -> "Install Shizuku from Play Store or F-Droid"
+                                state.isAvailable && state.isGranted -> "${state.serverStartMethod} • uid=${state.uid}"
+                                state.isAvailable -> "Establishing privilege connection…"
+                                else -> "Setup wireless ADB or use root"
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -183,15 +181,15 @@ private fun StatusTab(state: ShizukuUiState, vm: ShizukuViewModel) {
                 }
                 if (!state.isAvailable) {
                     OutlinedButton(onClick = vm::startWithAdb, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Outlined.Usb, null, Modifier.size(16.dp))
+                        Icon(Icons.Outlined.Wifi, null, Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Start via ADB")
+                        Text("Setup Wireless")
                     }
                     if (state.isRootAvailable) {
                         OutlinedButton(onClick = vm::startWithRoot, modifier = Modifier.weight(1f)) {
                             Icon(Icons.Outlined.AdminPanelSettings, null, Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Start via Root")
+                            Text("Use Root")
                         }
                     }
                 } else {

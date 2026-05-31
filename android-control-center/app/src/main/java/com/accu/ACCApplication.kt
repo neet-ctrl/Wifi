@@ -3,9 +3,9 @@ package com.accu
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.os.Build
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.accu.connection.AccuConnectionManager
 import com.accu.crash.CrashEngine
 import com.accu.crash.CrashNotificationManager
 import com.accu.crash.CrashRepository
@@ -22,6 +22,7 @@ class ACCApplication : Application(), Configuration.Provider {
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var crashRepository: CrashRepository
+    @Inject lateinit var connectionManager: AccuConnectionManager
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -43,21 +44,27 @@ class ACCApplication : Application(), Configuration.Provider {
         appScope.launch {
             crashRepository.migratePendingCrashes()
         }
+
+        // Check root/wireless ADB state on startup
+        appScope.launch(Dispatchers.IO) {
+            connectionManager.checkAndUpdateState()
+        }
     }
 
     private fun createNotificationChannels() {
         val nm = getSystemService(NotificationManager::class.java)
         val channels = listOf(
             NotificationChannel("call_recording", "Call Recorder", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Recording started, stopped, and file saved (ShizuCallRecorder)"
+                description = "Recording started, stopped, and file saved"
                 setShowBadge(true)
             },
             NotificationChannel("audio_dsp", "Audio DSP Engine", NotificationManager.IMPORTANCE_LOW).apply {
                 description = "JamesDSP processing service status and preset changes"
                 setShowBadge(false)
             },
-            NotificationChannel("shizuku_service", "Shizuku Service", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "Shizuku started, stopped, needs restart, or ADB disconnected"
+            // ACCU Connection replaces the old Shizuku service channel
+            NotificationChannel(AccuConnectionManager.CHANNEL_ID, AccuConnectionManager.CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "ACCU wireless ADB connection status, pairing codes, and privilege alerts"
                 setShowBadge(true)
             },
             NotificationChannel("storage_alerts", "Storage Alerts", NotificationManager.IMPORTANCE_HIGH).apply {
@@ -65,15 +72,15 @@ class ACCApplication : Application(), Configuration.Provider {
                 setShowBadge(true)
             },
             NotificationChannel("cleanup_worker", "Storage Cleanup", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Background cache and junk file cleanup completed (SD Maid SE)"
+                description = "Background cache and junk file cleanup completed"
                 setShowBadge(false)
             },
             NotificationChannel("privacy_tracker", "Tracker Blocker", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "New trackers blocked, batched max once per hour (Blocker)"
+                description = "New trackers blocked, batched max once per hour"
                 setShowBadge(true)
             },
             NotificationChannel("freeze_scheduler", "App Freeze Scheduler", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Apps auto-frozen or unfrozen by schedule (Hail)"
+                description = "Apps auto-frozen or unfrozen by schedule"
                 setShowBadge(false)
             },
             NotificationChannel("key_mapper", "Key Mapper", NotificationManager.IMPORTANCE_LOW).apply {
@@ -81,21 +88,20 @@ class ACCApplication : Application(), Configuration.Provider {
                 setShowBadge(false)
             },
             NotificationChannel("app_manager", "App Manager", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Install, uninstall, and batch operation results (Inure / Canta)"
+                description = "Install, uninstall, and batch operation results"
                 setShowBadge(true)
             },
             NotificationChannel("network_changes", "Network Changes", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "VPN disconnected, network type change (Better Internet Tiles)"
+                description = "VPN disconnected, network type change"
                 setShowBadge(true)
             },
             NotificationChannel("shell_complete", "Shell Command Done", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Long-running ADB/shell command (>5s) completed (aShellYou)"
+                description = "Long-running ADB/shell command (>5s) completed"
                 setShowBadge(false)
             },
             NotificationChannel("general", "General", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "General ACC alerts and status messages"
+                description = "General ACCU alerts and status messages"
             },
-            // ── Crash Reports ──────────────────────────────────────────────────────
             NotificationChannel(CrashNotificationManager.CHANNEL_ID, CrashNotificationManager.CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "Instant crash alerts with copy, share, and restart actions"
                 setShowBadge(true)

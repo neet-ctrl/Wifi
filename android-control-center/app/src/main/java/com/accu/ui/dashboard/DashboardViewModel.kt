@@ -217,7 +217,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     private fun buildModuleCards(): List<ModuleCard> = listOf(
-        ModuleCard("shizuku",    "Shizuku Center",    "Service & wireless ADB",        "shizuku",         "shizuku_center",    0xFF4A56E2),
+        ModuleCard("shizuku",    "ACCU Connection",   "Privilege & wireless ADB",      "wifi_protected_setup", "shizuku_center", 0xFF4A56E2),
         ModuleCard("shell",      "Shell Terminal",    "ADB commands & scripts",        "terminal",        "shell",             0xFF00D4FF),
         ModuleCard("debloat",    "Debloat",           "Remove bloatware",              "delete",          "debloat",           0xFFFF1744),
         ModuleCard("freeze",     "Freeze Apps",       "Suspend & hide packages",       "ac_unit",         "freeze_apps",       0xFF00BCD4),

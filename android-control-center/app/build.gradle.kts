@@ -190,10 +190,6 @@ dependencies {
     // Accompanist
     implementation(libs.accompanist.permissions)
 
-    // Shizuku
-    implementation(libs.shizuku.api)
-    implementation(libs.shizuku.provider)
-
     // Root (LibSU)
     implementation(libs.libsu.core)
     implementation(libs.libsu.service)

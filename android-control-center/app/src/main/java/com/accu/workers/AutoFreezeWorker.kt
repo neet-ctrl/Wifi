@@ -6,9 +6,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.accu.connection.AccuConnectionManager
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import rikka.shizuku.Shizuku
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit
 class AutoFreezeWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
+    private val connectionManager: AccuConnectionManager,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -24,14 +25,14 @@ class AutoFreezeWorker @AssistedInject constructor(
             val frozenPackages = prefs.getStringSet("frozen_packages", emptySet()) ?: return Result.success()
             if (frozenPackages.isEmpty()) return Result.success()
 
-            if (!Shizuku.pingBinder()) {
-                Timber.w("AutoFreezeWorker: Shizuku not available")
+            if (!connectionManager.isPrivilegeAvailable()) {
+                Timber.w("AutoFreezeWorker: ACCU privilege not available, will retry")
                 return Result.retry()
             }
 
             for (pkg in frozenPackages) {
                 try {
-                    Runtime.getRuntime().exec(arrayOf("pm", "suspend", pkg))
+                    connectionManager.exec("pm suspend $pkg")
                     Timber.d("AutoFreezeWorker: suspended $pkg")
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to suspend $pkg")

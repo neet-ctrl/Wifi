@@ -30,7 +30,6 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import rikka.shizuku.Shizuku
 import javax.inject.Inject
 
 data class InstallerState(

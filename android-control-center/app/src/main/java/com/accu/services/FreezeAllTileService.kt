@@ -1,16 +1,20 @@
 package com.accu.services
 
 import android.content.Context
-import android.graphics.drawable.Icon
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
-import com.accu.utils.ShizukuUtils
+import com.accu.connection.AccuConnectionManager
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class FreezeAllTileService : TileService() {
+
+    @Inject lateinit var connectionManager: AccuConnectionManager
 
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.IO + job)
@@ -26,9 +30,9 @@ class FreezeAllTileService : TileService() {
             val prefs = getSharedPreferences("accu_freeze_prefs", Context.MODE_PRIVATE)
             val frozen = prefs.getStringSet("frozen_packages", emptySet()) ?: emptySet()
             if (frozen.isEmpty()) return@launch
-            if (!rikka.shizuku.Shizuku.pingBinder()) return@launch
+            if (!connectionManager.isPrivilegeAvailable()) return@launch
             frozen.forEach { pkg ->
-                try { Runtime.getRuntime().exec(arrayOf("pm", "suspend", pkg)) } catch (_: Exception) {}
+                try { connectionManager.exec("pm suspend $pkg") } catch (_: Exception) {}
             }
         }
     }

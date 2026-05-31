@@ -1,15 +1,13 @@
 package com.accu.notifications
 
-import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.accu.MainActivity
+import com.accu.connection.AccuConnectionManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,7 +18,7 @@ import javax.inject.Singleton
 object AccuChannels {
     const val CALL_RECORDING    = "call_recording"
     const val AUDIO_DSP         = "audio_dsp"
-    const val SHIZUKU_SERVICE   = "shizuku_service"
+    const val ACCU_CONNECTION   = AccuConnectionManager.CHANNEL_ID  // replaces old shizuku_service
     const val STORAGE_ALERTS    = "storage_alerts"
     const val CLEANUP_WORKER    = "cleanup_worker"
     const val PRIVACY_TRACKER   = "privacy_tracker"
@@ -36,8 +34,8 @@ object AccuChannels {
     const val ID_CALL_REC_ACTIVE    = 1001
     const val ID_CALL_REC_SAVED     = 1002
     const val ID_DSP_ACTIVE         = 2001
-    const val ID_SHIZUKU_DOWN       = 3001
-    const val ID_SHIZUKU_READY      = 3002
+    const val ID_ACCU_DISCONNECTED  = 3001
+    const val ID_ACCU_CONNECTED     = 3002
     const val ID_STORAGE_WARN       = 4001
     const val ID_STORAGE_CRITICAL   = 4002
     const val ID_CLEANUP_DONE       = 4003
@@ -75,9 +73,9 @@ val ALL_NOTIFICATION_FEATURES = listOf(
         NotificationManager.IMPORTANCE_LOW, "RootlessJamesDSP",
     ),
     NotificationFeature(
-        AccuChannels.SHIZUKU_SERVICE, "Shizuku Service",
-        "Shizuku started, stopped, needs restart, or ADB disconnected",
-        NotificationManager.IMPORTANCE_HIGH, "Shizuku",
+        AccuChannels.ACCU_CONNECTION, "ACCU Connection",
+        "Wireless ADB pairing codes and connection status",
+        NotificationManager.IMPORTANCE_HIGH, "ACCU",
     ),
     NotificationFeature(
         AccuChannels.STORAGE_ALERTS, "Storage Alerts",
@@ -137,7 +135,6 @@ class AccuNotificationHelper @Inject constructor(
         postRaw(channelId, notifId, block)
     }
 
-    /** Bypasses the per-channel enabled check — used only by the Notification Center test button. */
     fun postTest(channelId: String, notifId: Int, block: NotificationCompat.Builder.() -> Unit) {
         postRaw(channelId, notifId, block)
     }
@@ -157,18 +154,18 @@ class AccuNotificationHelper @Inject constructor(
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
-    // ── Shizuku ──────────────────────────────────────────────────
-    fun notifyShizukuDown() = post(AccuChannels.SHIZUKU_SERVICE, AccuChannels.ID_SHIZUKU_DOWN) {
-        setContentTitle("Shizuku Service Stopped")
-        setContentText("Elevated access lost. Tap to restart Shizuku.")
+    // ── ACCU Connection (replaces Shizuku notifications) ──────────
+    fun notifyAccuDisconnected() = post(AccuChannels.ACCU_CONNECTION, AccuChannels.ID_ACCU_DISCONNECTED) {
+        setContentTitle("ACCU Disconnected")
+        setContentText("Privileged access lost. Tap to reconnect.")
         setPriority(NotificationCompat.PRIORITY_HIGH)
         setContentIntent(launchIntent())
         setAutoCancel(true)
     }
 
-    fun notifyShizukuReady() = post(AccuChannels.SHIZUKU_SERVICE, AccuChannels.ID_SHIZUKU_READY) {
-        setContentTitle("Shizuku Ready")
-        setContentText("Elevated access granted. All ACC features active.")
+    fun notifyAccuConnected(method: String) = post(AccuChannels.ACCU_CONNECTION, AccuChannels.ID_ACCU_CONNECTED) {
+        setContentTitle("ACCU Connected")
+        setContentText("Privileged access active via $method. All features enabled.")
         setAutoCancel(true)
     }
 
@@ -190,7 +187,7 @@ class AccuNotificationHelper @Inject constructor(
     // ── Storage ───────────────────────────────────────────────────
     fun notifyStorageLow(pct: Int) = post(AccuChannels.STORAGE_ALERTS, AccuChannels.ID_STORAGE_WARN) {
         setContentTitle("Storage Low — ${pct}% used")
-        setContentText("Free some space to keep ACC features working normally.")
+        setContentText("Free some space to keep ACCU features working normally.")
         setPriority(NotificationCompat.PRIORITY_HIGH)
         setContentIntent(launchIntent())
         setAutoCancel(true)
@@ -209,7 +206,6 @@ class AccuNotificationHelper @Inject constructor(
         setAutoCancel(true)
     }
 
-    // ── Privacy / Tracker Blocker ─────────────────────────────────
     fun notifyTrackersBlocked(count: Int, appName: String) = post(AccuChannels.PRIVACY_TRACKER, AccuChannels.ID_TRACKER_BLOCKED) {
         setContentTitle("$count tracker${if (count != 1) "s" else ""} blocked")
         setContentText("In $appName — tap for details.")
@@ -217,14 +213,12 @@ class AccuNotificationHelper @Inject constructor(
         setContentIntent(launchIntent())
     }
 
-    // ── App Freeze Scheduler ──────────────────────────────────────
     fun notifyAppFrozen(appName: String) = post(AccuChannels.FREEZE_SCHEDULER, AccuChannels.ID_FREEZE_AUTO) {
         setContentTitle("App frozen by schedule")
         setContentText("$appName frozen to save battery/data.")
         setAutoCancel(true)
     }
 
-    // ── App Manager ───────────────────────────────────────────────
     fun notifyAppInstalled(appName: String) = post(AccuChannels.APP_MANAGER, AccuChannels.ID_APP_INSTALLED) {
         setContentTitle("App installed")
         setContentText("$appName was installed successfully.")
@@ -237,7 +231,6 @@ class AccuNotificationHelper @Inject constructor(
         setAutoCancel(true)
     }
 
-    // ── Network ───────────────────────────────────────────────────
     fun notifyVpnDropped() = post(AccuChannels.NETWORK_CHANGES, AccuChannels.ID_NETWORK_VPN_DROP) {
         setContentTitle("VPN disconnected")
         setContentText("Your VPN connection dropped. Traffic is unprotected.")
@@ -245,7 +238,6 @@ class AccuNotificationHelper @Inject constructor(
         setAutoCancel(true)
     }
 
-    // ── Shell ─────────────────────────────────────────────────────
     fun notifyShellDone(command: String, exitCode: Int) = post(AccuChannels.SHELL_COMPLETE, AccuChannels.ID_SHELL_DONE) {
         setContentTitle(if (exitCode == 0) "Command succeeded" else "Command failed (exit $exitCode)")
         setContentText(command.take(80))

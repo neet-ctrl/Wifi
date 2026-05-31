@@ -47,7 +47,7 @@
         android:protectionLevel="normal"
         android:label="Bind to ACCU System Service" />
 
-    <!-- System / Shizuku Bridged -->
+    <!-- System / ACCU Privileged -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -63,14 +63,14 @@
     <!-- Key Mapper Input -->
     <uses-permission android:name="android.permission.BIND_INPUT_METHOD" tools:ignore="ProtectedPermissions" />
 
-    <!-- Language Selection (requires Shizuku) -->
+    <!-- Language Selection (requires ACCU privilege) -->
     <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" tools:ignore="ProtectedPermissions" />
 
-    <!-- Dark Mode / Secure Settings (requires Shizuku) -->
+    <!-- Dark Mode / Secure Settings (requires ACCU privilege) -->
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
 
-    <!-- Network control (requires Shizuku) -->
+    <!-- Network control (requires ACCU privilege) -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
 
     <application
@@ -86,15 +86,6 @@
         android:enableOnBackInvokedCallback="true"
         android:localeConfig="@xml/locales_config"
         tools:targetApi="33">
-
-        <!-- Shizuku Provider -->
-        <provider
-            android:name="rikka.shizuku.ShizukuProvider"
-            android:authorities="${applicationId}.shizuku"
-            android:enabled="true"
-            android:exported="true"
-            android:multiprocess="false"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
         <!-- Main Activity -->
         <activity

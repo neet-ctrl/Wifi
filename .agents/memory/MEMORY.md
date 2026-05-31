@@ -1,4 +1,5 @@
 - [ACCU Project Architecture](accu-arch.md) — 74 UI Kt files, 17 repos merged, 57 routes wired; key conventions for future sessions.
+- [Shizuku Removal — ACCU Self-Sufficient Privilege](shizuku-removal.md) — AccuConnectionManager owns all privilege; zero rikka.shizuku dependency; NsdManager auto-discovers pairing port.
 - [RecentAction LazyRow duplicate key crash](recentaction-key-crash.md) — RecentAction.id defaults to 0L; always assign explicit IDs in buildRecentActions().
 - [FullDemoApp architecture](fulldemoapp.md) — 14-screen ACCU SDK test app at exports/accu-sdk-src/samples/FullDemoApp/; workflow fires on any push touching that path.
 - [Global Search Architecture](global-search.md) — SearchIndex.kt is the single source of truth for all searchable screens; iconForName in DashboardScreen.kt maps icon names to Icons.Default.*.
