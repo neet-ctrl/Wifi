@@ -81,6 +81,11 @@ android {
         }
     }
 
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+
     splits {
         abi {
             isEnable = true

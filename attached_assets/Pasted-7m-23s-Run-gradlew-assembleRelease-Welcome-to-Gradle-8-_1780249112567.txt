@@ -1,0 +1,556 @@
+7m 23s
+Run ./gradlew assembleRelease \
+
+Welcome to Gradle 8.11.1!
+
+Here are the highlights of this release:
+ - Parallel load and store for Configuration Cache
+ - Java compilation errors at the end of the build output
+ - Consolidated report for warnings and deprecations
+
+For more details see https://docs.gradle.org/8.11.1/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Configuration on demand is an incubating feature.
+> Task :app:buildKotlinToolingMetadata
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:compileReleaseAidl FROM-CACHE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateReleaseBuildConfig
+> Task :app:generateReleaseResValues FROM-CACHE
+> Task :app:checkReleaseAarMetadata
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:generateReleaseResources
+> Task :app:packageReleaseResources
+> Task :app:parseReleaseLocalResources FROM-CACHE
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease FROM-CACHE
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:javaPreCompileRelease FROM-CACHE
+> Task :app:extractProguardFiles
+> Task :app:mergeReleaseJniLibFolders
+> Task :app:mergeReleaseNativeLibs
+> Task :app:mergeReleaseArtProfile
+> Task :app:processReleaseManifestForPackage
+
+> Task :app:stripReleaseDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so.
+
+> Task :app:mergeReleaseResources
+> Task :app:expandReleaseL8ArtProfileWildcards
+> Task :app:extractReleaseNativeSymbolTables
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:mergeReleaseStartupProfile
+> Task :app:mergeReleaseShaders
+> Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:mergeReleaseAssets
+> Task :app:compressReleaseAssets
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:collectReleaseDependencies
+> Task :app:sdkReleaseDependencyData
+> Task :app:validateSigningRelease
+> Task :app:writeReleaseAppMetadata
+> Task :app:writeReleaseSigningConfigVersions
+> Task :app:processReleaseResources
+> Task :app:convertLinkedResourcesToProtoRelease
+> Task :app:kspReleaseKotlin
+> Task :app:compileReleaseKotlin
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/di/DatabaseModule.kt:22:14 'fun fallbackToDestructiveMigration(): RoomDatabase.Builder<AppDatabase>' is deprecated. Replace by overloaded version with parameter to indicate if all tables should be dropped or not.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/receivers/CallStateReceiver.kt:26:61 'static field EXTRA_INCOMING_NUMBER: String' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/receivers/DeviceAdminReceiver.kt:17:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/receivers/DeviceAdminReceiver.kt:18:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/receivers/DeviceAdminReceiver.kt:19:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Please add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/services/AudioEffectService.kt:13:8 'class Virtualizer : AudioEffect' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/services/AudioEffectService.kt:62:30 'class Virtualizer : AudioEffect' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/services/AudioEffectService.kt:106:27 'constructor(p0: Int, p1: Int): Virtualizer' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/services/AudioEffectService.kt:143:22 'fun setStrength(p0: Short): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/services/BluetoothTileService.kt:26:25 'fun disable(): Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/services/BluetoothTileService.kt:28:25 'fun enable(): Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/services/WiFiTileService.kt:46:30 'val connectionInfo: WifiInfo!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/apiservice/AccuSdkDocsScreen.kt:771:43 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/apiservice/AccuServiceScreen.kt:62:81 'val Icons.Filled.MenuBook: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.MenuBook.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/apiservice/AccuServiceScreen.kt:405:36 'val Icons.Filled.MenuBook: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.MenuBook.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/AppBatchOperationsScreen.kt:59:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/AppDetailScreen.kt:453:78 'val Icons.Outlined.Message: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Message.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/AppDetailScreen.kt:454:78 'val Icons.Outlined.Send: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Send.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/AppExplorerScreen.kt:63:71 'val Icons.Filled.Help: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Help.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/AppExplorerScreen.kt:124:193 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/AppExplorerScreen.kt:214:61 'static field PROTECTION_MASK_BASE: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/AppExplorerScreen.kt:329:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/AppExplorerScreen.kt:331:89 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/AppExplorerScreen.kt:547:97 'val Icons.Filled.BrandingWatermark: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.BrandingWatermark.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/AppManagerScreen.kt:69:96 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/AppManagerScreen.kt:97:17 'fun SearchBar(query: String, onQueryChange: (String) -> Unit, onSearch: (String) -> Unit, active: Boolean, onActiveChange: (Boolean) -> Unit, modifier: Modifier = ..., enabled: Boolean = ..., placeholder: @Composable() ComposableFunction0<Unit>? = ..., leadingIcon: @Composable() ComposableFunction0<Unit>? = ..., trailingIcon: @Composable() ComposableFunction0<Unit>? = ..., shape: Shape = ..., colors: SearchBarColors = ..., tonalElevation: Dp = ..., shadowElevation: Dp = ..., windowInsets: WindowInsets = ..., interactionSource: MutableInteractionSource? = ..., content: @Composable() ComposableFunction1<ColumnScope, Unit>): Unit' is deprecated. Use overload which takes inputField as a parameter.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/BlockerComponentSearchScreen.kt:108:44 'val Icons.Filled.ManageSearch: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ManageSearch.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/BlockerComponentSearchScreen.kt:146:65 'val Icons.Filled.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.OpenInNew.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/CantaLogsScreen.kt:95:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/CantaLogsScreen.kt:171:60 'val Icons.Filled.Article: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Article.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/CantaLogsScreen.kt:188:44 'val Icons.Filled.Article: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Article.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/CantaPresetsScreen.kt:243:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/CantaPresetsScreen.kt:337:48 'val Icons.Filled.PlaylistAdd: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.PlaylistAdd.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/ComponentManagerScreen.kt:103:93 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/FreezeAppsScreen.kt:199:92 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/FreezeAppsScreen.kt:624:67 'val outlinedButtonBorder: BorderStroke' is deprecated. Please use the version that takes an `enabled` param to get the `BorderStroke` with the correct opacity.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureAnalyticsScreen.kt:67:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureApksScreen.kt:83:88 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureDisabledAppsScreen.kt:88:92 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureHomeScreen.kt:104:55 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureMusicScreen.kt:84:92 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureMusicScreen.kt:156:48 'val Icons.Filled.VolumeDown: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeDown.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureMusicScreen.kt:158:48 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureMusicScreen.kt:185:56 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureMusicScreen.kt:197:126 'val Icons.Filled.QueueMusic: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.QueueMusic.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureMusicScreen.kt:198:130 'val Icons.Filled.PlaylistAdd: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.PlaylistAdd.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureNotesScreen.kt:93:44 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureNotesScreen.kt:107:56 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/InureUsageStatsScreen.kt:85:92 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/PermissionManagerScreen.kt:96:13 'fun SearchBar(query: String, onQueryChange: (String) -> Unit, onSearch: (String) -> Unit, active: Boolean, onActiveChange: (Boolean) -> Unit, modifier: Modifier = ..., enabled: Boolean = ..., placeholder: @Composable() ComposableFunction0<Unit>? = ..., leadingIcon: @Composable() ComposableFunction0<Unit>? = ..., trailingIcon: @Composable() ComposableFunction0<Unit>? = ..., shape: Shape = ..., colors: SearchBarColors = ..., tonalElevation: Dp = ..., shadowElevation: Dp = ..., windowInsets: WindowInsets = ..., interactionSource: MutableInteractionSource? = ..., content: @Composable() ComposableFunction1<ColumnScope, Unit>): Unit' is deprecated. Use overload which takes inputField as a parameter.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/VirusTotalScreen.kt:26:83 'val Icons.Filled.Help: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Help.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/appmanager/VirusTotalScreen.kt:68:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/AppAudioBlocklistScreen.kt:50:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/AppAudioBlocklistScreen.kt:61:40 'val Icons.Filled.VolumeOff: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeOff.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/AudioCenterScreen.kt:88:65 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/AudioCenterScreen.kt:88:93 'val Icons.Filled.VolumeOff: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeOff.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/AudioCenterScreen.kt:144:42 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/AutoEQScreen.kt:65:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/DSPControlsScreen.kt:204:60 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/DSPControlsScreen.kt:219:140 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/DSPControlsScreen.kt:237:137 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/DSPControlsScreen.kt:253:139 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/DSPControlsScreen.kt:270:141 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/DSPControlsScreen.kt:312:140 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/GraphicEQScreen.kt:154:25 'fun quadraticBezierTo(x1: Float, y1: Float, x2: Float, y2: Float): Unit' is deprecated. Use quadraticTo() for consistency with cubicTo().
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/JamesDSPSettingsScreen.kt:44:143 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/JamesDSPSettingsScreen.kt:53:140 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/JamesDSPSettingsScreen.kt:62:163 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/JamesDSPSettingsScreen.kt:79:146 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/JamesDSPSettingsScreen.kt:120:174 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/LiveprogEditorScreen.kt:124:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/LiveprogEditorScreen.kt:127:44 'val Icons.Filled.Undo: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Undo.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/LiveprogEditorScreen.kt:130:44 'val Icons.Filled.Redo: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Redo.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/audio/ParametricEQScreen.kt:61:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/AutomationScreen.kt:99:91 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/AutomationScreen.kt:144:91 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ChooseActionScreen.kt:31:83 'val Icons.Filled.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.OpenInNew.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ChooseActionScreen.kt:32:89 'val Icons.Filled.Shortcut: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Shortcut.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ChooseActionScreen.kt:58:71 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ChooseActionScreen.kt:65:60 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ChooseActionScreen.kt:66:75 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ChooseActionScreen.kt:67:77 'val Icons.Filled.VolumeDown: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeDown.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ChooseActionScreen.kt:68:73 'val Icons.Filled.VolumeOff: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeOff.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ChooseActionScreen.kt:103:82 'val Icons.Filled.VolumeOff: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeOff.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ChooseActionScreen.kt:109:85 'val Icons.Filled.Send: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Send.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ChooseConstraintScreen.kt:57:50 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ChooseConstraintScreen.kt:58:95 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ChooseConstraintScreen.kt:59:100 'val Icons.Filled.VolumeOff: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeOff.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/ConfigKeyMapScreen.kt:238:44 'val Icons.Filled.Rule: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Rule.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/KeyMapListScreen.kt:46:116 'val Icons.Filled.VolumeDown: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeDown.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/KeyMapListScreen.kt:47:138 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/KeyMapListScreen.kt:120:93 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/KeyMapListScreen.kt:121:84 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/KeyMapperAdvancedScreen.kt:48:42 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/KeyMapperAdvancedScreen.kt:49:46 'val Icons.Filled.VolumeDown: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeDown.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/KeyMapperAdvancedScreen.kt:65:42 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/KeyMapperAdvancedScreen.kt:66:46 'val Icons.Filled.VolumeDown: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeDown.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/KeyMapperAdvancedScreen.kt:110:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/automation/KeyMapperAdvancedScreen.kt:200:36 'val Icons.Filled.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowForward.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/callrecorder/CallRecordingSettingsScreen.kt:66:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/callrecorder/ScrcpyIntegrationScreen.kt:51:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/components/StatusBadge.kt:57:92 'val Icons.Filled.Help: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Help.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/components/StatusBadge.kt:159:36 'fun largeTopAppBarColors(containerColor: Color = ..., scrolledContainerColor: Color = ..., navigationIconContentColor: Color = ..., titleContentColor: Color = ..., actionIconContentColor: Color = ...): TopAppBarColors' is deprecated. Use topAppBarColors instead.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/crash/CrashDetailScreen.kt:87:65 'val Icons.Filled.TextSnippet: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.TextSnippet.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/crash/CrashDetailScreen.kt:89:62 'val Icons.Filled.Article: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Article.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/crash/CrashDetailScreen.kt:192:48 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/crash/CrashReportActivity.kt:255:44 'val Icons.Filled.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.OpenInNew.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/customization/ColorBlendrStylesScreen.kt:183:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/customization/ColorBlendrStylesScreen.kt:704:25 Condition is always 'true'.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/customization/CustomizationScreen.kt:54:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/customization/CustomizationScreen.kt:60:44 'fun largeTopAppBarColors(containerColor: Color = ..., scrolledContainerColor: Color = ..., navigationIconContentColor: Color = ..., titleContentColor: Color = ..., actionIconContentColor: Color = ...): TopAppBarColors' is deprecated. Use topAppBarColors instead.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/customization/DarQFaqScreen.kt:75:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/customization/DarQSunriseSunsetScreen.kt:80:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/customization/SmartSpacerComplicationsScreen.kt:40:113 'val Icons.Filled.PhoneMissed: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.PhoneMissed.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/customization/SmartSpacerComplicationsScreen.kt:44:110 'val Icons.Filled.DirectionsWalk: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.DirectionsWalk.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/dashboard/DashboardScreen.kt:260:94 'fun Modifier.animateItemPlacement(animationSpec: FiniteAnimationSpec<IntOffset> = ...): Modifier' is deprecated. Use Modifier.animateItem() instead.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/dashboard/DashboardScreen.kt:772:31 'val Icons.Filled.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowForward.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/dashboard/DashboardScreen.kt:813:46 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/dashboard/DashboardScreen.kt:830:46 'val Icons.Filled.Help: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Help.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/dashboard/DashboardScreen.kt:834:46 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/features/AllFeaturesScreen.kt:67:90 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/features/AllFeaturesScreen.kt:900:31 'val Icons.Outlined.PhoneCallback: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.PhoneCallback.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/filemanager/FileManagerScreen.kt:196:156 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/filemanager/FileManagerScreen.kt:205:164 'val Icons.Filled.ViewList: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ViewList.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/filemanager/FileManagerScreen.kt:252:59 'val Icons.Filled.InsertDriveFile: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.InsertDriveFile.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/filemanager/MaterialFilesAdvancedScreen.kt:59:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/filemanager/TextEditorScreen.kt:134:106 'val Icons.Filled.WrapText: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.WrapText.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/filemanager/TextEditorScreen.kt:134:134 'val Icons.Filled.Notes: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Notes.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/installer/InstallFlagsScreen.kt:80:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/language/LanguageCenterScreen.kt:360:9 'fun SearchBar(query: String, onQueryChange: (String) -> Unit, onSearch: (String) -> Unit, active: Boolean, onActiveChange: (Boolean) -> Unit, modifier: Modifier = ..., enabled: Boolean = ..., placeholder: @Composable() ComposableFunction0<Unit>? = ..., leadingIcon: @Composable() ComposableFunction0<Unit>? = ..., trailingIcon: @Composable() ComposableFunction0<Unit>? = ..., shape: Shape = ..., colors: SearchBarColors = ..., tonalElevation: Dp = ..., shadowElevation: Dp = ..., windowInsets: WindowInsets = ..., interactionSource: MutableInteractionSource? = ..., content: @Composable() ComposableFunction1<ColumnScope, Unit>): Unit' is deprecated. Use overload which takes inputField as a parameter.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/language/LanguageDetailScreen.kt:97:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/network/BetterInternetTilesSettingsScreen.kt:96:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/network/NetworkViewModel.kt:59:40 'val connectionInfo: WifiInfo!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/notifications/NotificationCenterScreen.kt:196:32 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/notifications/NotificationCenterScreen.kt:384:48 'val Icons.Filled.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.OpenInNew.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/onboarding/OnboardingScreen.kt:136:44 'val Icons.Filled.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowForward.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/privacy/OnlineRulesScreen.kt:115:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/privacy/PrivacyScreen.kt:272:34 'val Icons.Filled.Rule: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Rule.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/settings/AccuPermissionsScreen.kt:431:29 'static field PROCESS_OUTGOING_CALLS: String' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/settings/AccuPermissionsScreen.kt:642:48 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/settings/AccuPermissionsScreen.kt:1275:56 'val Icons.Filled.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.OpenInNew.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/settings/SettingsScreen.kt:178:126 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/settings/SettingsScreen.kt:196:185 'val Icons.Filled.Article: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Article.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/AdbFastbootScreen.kt:51:138 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/AdbFastbootScreen.kt:52:138 'val Icons.Filled.VolumeDown: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeDown.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/AdbFastbootScreen.kt:54:138 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/AdbFastbootScreen.kt:71:138 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/AdbFileBrowserScreen.kt:53:27 'val Icons.Filled.InsertDriveFile: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.InsertDriveFile.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/AdbFileBrowserScreen.kt:268:80 'val Icons.Filled.InsertDriveFile: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.InsertDriveFile.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/AdbFileBrowserScreen.kt:328:90 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/AdbFileBrowserScreen.kt:334:96 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/AdbFileBrowserScreen.kt:351:124 'val Icons.Filled.ViewList: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ViewList.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/AdbLogcatScreen.kt:262:41 'val Icons.Outlined.Article: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Article.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/AdbProcessScreen.kt:179:97 'val Icons.Outlined.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/AdbTutorialScreen.kt:298:30 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/CommandExamplesScreen.kt:418:92 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/ScriptEditorScreen.kt:405:85 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/ShellQsTileDashboardScreen.kt:56:31 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/ShellQsTileDashboardScreen.kt:178:149 'val Icons.Filled.Article: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Article.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/ShellScreen.kt:158:48 'val Icons.Outlined.Article: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Article.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/ShellScreen.kt:301:47 'constructor(capitalization: KeyboardCapitalization = ..., autoCorrect: Boolean, keyboardType: KeyboardType = ..., imeAction: ImeAction = ..., platformImeOptions: PlatformImeOptions? = ..., showKeyboardOnFocus: Boolean? = ..., hintLocales: LocaleList? = ...): KeyboardOptions' is deprecated. Please use the new constructor that takes optional autoCorrectEnabled parameter.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/ShellScreen.kt:357:51 'val Icons.Filled.Send: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Send.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/ShellScreen.kt:823:53 'val Icons.Outlined.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.ArrowForward.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shell/WifiAdbMdnsScreen.kt:52:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shizuku/AdbPairingScreen.kt:170:48 'val Icons.Filled.HelpOutline: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.HelpOutline.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shizuku/FreezeSchedulerScreen.kt:229:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shizuku/HailWorkProfileScreen.kt:43:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shizuku/ShizukuCenterScreen.kt:54:24 'val Icons.Outlined.Article: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Article.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shizuku/ShizukuCenterScreen.kt:62:87 'val Icons.Outlined.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/shizuku/ShizukuCenterScreen.kt:945:41 'val Icons.Outlined.Article: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Article.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/storage/AppCleanerScreen.kt:77:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/storage/AppCleanerScreen.kt:81:88 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/storage/CorpseFinderScreen.kt:69:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/storage/DeduplicatorScreen.kt:84:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/storage/DeduplicatorScreen.kt:202:47 'val Icons.Filled.InsertDriveFile: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.InsertDriveFile.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/storage/LargeFileFinderScreen.kt:63:37 'val Icons.Filled.InsertDriveFile: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.InsertDriveFile.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/storage/LargeFileFinderScreen.kt:256:75 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/storage/LargeFileFinderScreen.kt:272:49 'val Icons.Outlined.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/storage/StorageAnalyzerScreen.kt:147:52 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/storage/SystemCleanerScreen.kt:40:80 'val Icons.Filled.Article: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Article.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/storage/SystemCleanerScreen.kt:72:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/theme/Theme.kt:96:20 'var statusBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/theme/Theme.kt:97:20 'var navigationBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/tutorial/LearningCenterScreen.kt:419:39 'val Icons.Outlined.PhoneCallback: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.PhoneCallback.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/tutorial/TutorialScreen.kt:61:49 'val Icons.Outlined.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.ArrowBack.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/tutorial/TutorialScreen.kt:95:89 'val Icons.Outlined.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.ArrowForward.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/tutorial/TutorialScreen.kt:192:41 'val Icons.Outlined.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.OpenInNew.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/tutorial/TutorialScreen.kt:393:31 'val Icons.Outlined.PhoneCallback: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.PhoneCallback.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/widgets/SmartSpacerScreen.kt:181:122 'val Icons.Outlined.DirectionsRun: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.DirectionsRun.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/widgets/SmartSpacerScreen.kt:254:118 'val Icons.Outlined.DirectionsRun: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.DirectionsRun.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/widgets/SmartSpacerTargetsScreen.kt:47:100 'val Icons.Filled.DirectionsWalk: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.DirectionsWalk.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/widgets/SmartSpacerTargetsScreen.kt:59:98 'val Icons.Filled.DirectionsRun: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.DirectionsRun.
+w: file:///home/runner/work/Szu/Szu/android-control-center/app/src/main/java/com/accu/ui/widgets/SmartSpacerTargetsScreen.kt:74:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+
+> Task :app:compileReleaseJavaWithJavac
+> Task :app:hiltAggregateDepsRelease FROM-CACHE
+
+warning: Kapt support in Moshi Kotlin Code Gen is deprecated and will be removed in 2.0. Please migrate to KSP. https://github.com/square/moshi#codegen
+> Task :app:hiltJavaCompileRelease
+1 warning
+
+> Task :app:generateReleaseLintVitalReportModel
+> Task :app:processReleaseJavaRes
+> Task :app:mergeReleaseJavaResource
+> Task :app:transformReleaseClassesWithAsm
+> Task :app:mergeReleaseGeneratedProguardFiles
+> Task :app:expandReleaseArtProfileWildcards
+> Task :app:lintVitalAnalyzeRelease
+> Task :app:minifyReleaseWithR8
+> Task :app:lintVitalReportRelease
+Error: /home/runner/work/Szu/Szu/android-control-center/app/src/main/AndroidManifest.xml:156: Error: ShizukuUserService must extend android.app.Service [Instantiatable]
+
+            android:name=".services.ShizukuUserService"
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "Instantiatable":
+   Activities, services, broadcast receivers etc. registered in the manifest
+   file (or for custom views, in a layout file) must be "instantiatable" by
+   the system, which means that the class must be public, it must have an
+   empty public constructor, and if it's an inner class, it must be a static
+   inner class.
+
+   If you use a custom AppComponentFactory to instantiate app components
+   yourself, consider disabling this Lint issue in order to avoid false
+   positives.
+
+Error: /home/runner/work/Szu/Szu/android-control-center/app/src/main/res/xml/backup_rules.xml:6: Error: Unexpected domain cache, expected one of file, database, sharedpref, external, root, device_file, device_database, device_sharedpref, device_root [FullBackupContent]
+    <exclude domain="cache" path="." />
+                     ~~~~~
+Error: /home/runner/work/Szu/Szu/android-control-center/app/src/main/res/xml/backup_rules.xml:6: Error: . is not in an included path [FullBackupContent]
+    <exclude domain="cache" path="." />
+                                  ~
+Error: /home/runner/work/Szu/Szu/android-control-center/app/src/main/res/xml/data_extraction_rules.xml:6: Error: Unexpected domain cache, expected one of file, database, sharedpref, external, root, device_file, device_database, device_sharedpref, device_root [FullBackupContent]
+        <exclude domain="cache" path="." />
+                         ~~~~~
+Error: /home/runner/work/Szu/Szu/android-control-center/app/src/main/res/xml/data_extraction_rules.xml:6: Error: . is not in an included path [FullBackupContent]
+        <exclude domain="cache" path="." />
+                                      ~
+Error: /home/runner/work/Szu/Szu/android-control-center/app/src/main/res/xml/data_extraction_rules.xml:13: Error: Unexpected domain cache, expected one of file, database, sharedpref, external, root, device_file, device_database, device_sharedpref, device_root [FullBackupContent]
+        <exclude domain="cache" path="." />
+                         ~~~~~
+Error: /home/runner/work/Szu/Szu/android-control-center/app/src/main/res/xml/data_extraction_rules.xml:13: Error: . is not in an included path [FullBackupContent]
+        <exclude domain="cache" path="." />
+                                      ~
+
+   Explanation for issues of type "FullBackupContent":
+   Ensures that <data-extraction-rules> and <full-backup-content> files, which
+   configure backup options, are valid.
+
+   https://android-developers.googleblog.com/2015/07/auto-backup-for-apps-made-simple.html
+
+7 errors, 0 warnings
+
+> Task :app:lintVitalRelease FAILED
+[Incubating] Problems report is available at: file:///home/runner/work/Szu/Szu/android-control-center/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+51 actionable tasks: 45 executed, 6 from cache
+* What went wrong:
+Execution failed for task ':app:lintVitalRelease'.
+> Lint found fatal errors while assembling a release target.
+  
+  Fix the issues identified by lint, or create a baseline to see only new errors.
+  To create a baseline, run `gradlew updateLintBaseline` after adding the following to the module's build.gradle file:
+  ```
+  android {
+      lint {
+          baseline = file("lint-baseline.xml")
+      }
+  }
+  ```
+  For more details, see https://developer.android.com/studio/write/lint#snapshot
+  
+  Lint found 7 errors, 0 warnings. First failure:
+  
+Error:   /home/runner/work/Szu/Szu/android-control-center/app/src/main/AndroidManifest.xml:156: Error: ShizukuUserService must extend android.app.Service [Instantiatable]
+              android:name=".services.ShizukuUserService"
+                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+     Explanation for issues of type "Instantiatable":
+     Activities, services, broadcast receivers etc. registered in the manifest
+     file (or for custom views, in a layout file) must be "instantiatable" by
+     the system, which means that the class must be public, it must have an
+     empty public constructor, and if it's an inner class, it must be a static
+     inner class.
+  
+     If you use a custom AppComponentFactory to instantiate app components
+     yourself, consider disabling this Lint issue in order to avoid false
+     positives.
+  
+  
+  The full lint text report is located at:
+    /home/runner/work/Szu/Szu/android-control-center/app/build/intermediates/lint_vital_intermediate_text_report/release/lintVitalReportRelease/lint-results-release.txt
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:lintVitalRelease'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:293)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+Caused by: java.lang.RuntimeException: Lint found fatal errors while assembling a release target.
+
+Fix the issues identified by lint, or create a baseline to see only new errors.
+To create a baseline, run `gradlew updateLintBaseline` after adding the following to the module's build.gradle file:
+```
+android {
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
+}
+```
+For more details, see https://developer.android.com/studio/write/lint#snapshot
+
+Lint found 7 errors, 0 warnings. First failure:
+
+Error: /home/runner/work/Szu/Szu/android-control-center/app/src/main/AndroidManifest.xml:156: Error: ShizukuUserService must extend android.app.Service [Instantiatable]
+            android:name=".services.ShizukuUserService"
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "Instantiatable":
+   Activities, services, broadcast receivers etc. registered in the manifest
+   file (or for custom views, in a layout file) must be "instantiatable" by
+   the system, which means that the class must be public, it must have an
+   empty public constructor, and if it's an inner class, it must be a static
+   inner class.
+
+   If you use a custom AppComponentFactory to instantiate app components
+   yourself, consider disabling this Lint issue in order to avoid false
+   positives.
+
+
+The full lint text report is located at:
+  /home/runner/work/Szu/Szu/android-control-center/app/build/intermediates/lint_vital_intermediate_text_report/release/lintVitalReportRelease/lint-results-release.txt
+	at com.android.build.gradle.internal.lint.AndroidLintWorkAction$Companion.maybeThrowException(AndroidLintWorkAction.kt:235)
+	at com.android.build.gradle.internal.lint.AndroidLintTextOutputTask.doTaskAction(AndroidLintTextOutputTask.kt:109)
+	at com.android.build.gradle.internal.tasks.NonIncrementalTask$taskAction$$inlined$recordTaskAction$1.invoke(BaseTask.kt:79)
+	at com.android.build.gradle.internal.tasks.Blocks.recordSpan(Blocks.java:51)
+	at com.android.build.gradle.internal.tasks.NonIncrementalTask.taskAction(NonIncrementalTask.kt:78)
+	at jdk.internal.reflect.GeneratedMethodAccessor55.invoke(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at org.gradle.internal.reflect.JavaMethod.invoke(JavaMethod.java:125)
+	at org.gradle.api.internal.project.taskfactory.StandardTaskAction.doExecute(StandardTaskAction.java:58)
+	at org.gradle.api.internal.project.taskfactory.StandardTaskAction.execute(StandardTaskAction.java:51)
+	at org.gradle.api.internal.project.taskfactory.StandardTaskAction.execute(StandardTaskAction.java:29)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:244)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:29)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:26)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:47)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:229)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:212)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:195)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:162)
+	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
+	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:67)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:37)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:40)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:29)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:75)
+	at org.gradle.internal.Either$Right.fold(Either.java:175)
+	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:65)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:36)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:107)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:56)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:64)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:43)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:125)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:56)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:36)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:289)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:48)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:35)
+	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:61)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:127)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+
+
+BUILD FAILED in 7m 22s
+Error: Process completed with exit code 1.
