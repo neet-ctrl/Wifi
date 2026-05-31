@@ -101,8 +101,17 @@ fun ColorEditorScreen(
             ColorBlendrTab.MONET_SLIDERS -> MonetSlidersTab(accentSaturation, bgSaturation, bgLightness, { accentSaturation = it }, { bgSaturation = it }, { bgLightness = it }, padding)
             ColorBlendrTab.STYLES        -> StylesTab(state, viewModel, padding)
             ColorBlendrTab.PER_APP       -> PerAppTab(padding)
-            ColorBlendrTab.ADVANCED      -> AdvancedTab(accurateShades, pitchBlack, tintText, overrideManually, updateOnScreenOff, separateLightDark, colorSpecVersion,
-                { accurateShades = it }, { pitchBlack = it }, { tintText = it }, { overrideManually = it }, { updateOnScreenOff = it }, { separateLightDark = it }, { colorSpecVersion = it }, padding)
+            ColorBlendrTab.ADVANCED      -> AdvancedTab(
+                accurateShades, pitchBlack, tintText, overrideManually, updateOnScreenOff, separateLightDark, colorSpecVersion,
+                { accurateShades = it }, { pitchBlack = it }, { tintText = it }, { overrideManually = it }, { updateOnScreenOff = it }, { separateLightDark = it }, { colorSpecVersion = it },
+                buildExportJson = {
+                    val r = (red * 255).toInt()
+                    val g = (green * 255).toInt()
+                    val b = (blue * 255).toInt()
+                    """{"version":1,"seed":{"r":$r,"g":$g,"b":$b},"monet":{"accentSaturation":$accentSaturation,"bgSaturation":$bgSaturation,"bgLightness":$bgLightness},"advanced":{"accurateShades":$accurateShades,"pitchBlack":$pitchBlack,"tintText":$tintText,"overrideManually":$overrideManually,"updateOnScreenOff":$updateOnScreenOff,"separateLightDark":$separateLightDark,"colorSpecVersion":"$colorSpecVersion"}}"""
+                },
+                padding,
+            )
         }
     }
 }
@@ -395,6 +404,7 @@ private fun AdvancedTab(
     onAccurateShades: (Boolean) -> Unit, onPitchBlack: (Boolean) -> Unit, onTintText: (Boolean) -> Unit,
     onOverrideManually: (Boolean) -> Unit, onUpdateOnScreenOff: (Boolean) -> Unit,
     onSeparateLightDark: (Boolean) -> Unit, onColorSpecVersion: (String) -> Unit,
+    buildExportJson: () -> String,
     padding: PaddingValues,
 ) {
     LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -448,7 +458,12 @@ private fun AdvancedTab(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         val context = LocalContext.current
                         FilledTonalButton(onClick = {
-                            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(android.content.Intent.EXTRA_SUBJECT, "ColorBlendr Config"); putExtra(android.content.Intent.EXTRA_TEXT, "ColorBlendr config export placeholder") }
+                            val json = buildExportJson()
+                            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = "application/json"
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, "ColorBlendr Config")
+                                putExtra(android.content.Intent.EXTRA_TEXT, json)
+                            }
                             context.startActivity(android.content.Intent.createChooser(shareIntent, "Export ColorBlendr Config"))
                         }, Modifier.weight(1f)) {
                             Icon(Icons.Default.IosShare, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Export .colorblendr")

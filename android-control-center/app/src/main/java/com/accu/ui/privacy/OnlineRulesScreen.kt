@@ -53,38 +53,38 @@ val SAMPLE_TRACKER_RULES = listOf(
     TrackerRule(
         "adjust", "Adjust", "Mobile attribution and analytics platform",
         TrackerCategory.ANALYTICS, 67,
-        listOf(),
-        listOf("com.adjust.sdk.AdjustReferrerReceiver")
+        listOf("com.adjust.sdk"),
+        listOf("com.adjust.sdk.AdjustReferrerReceiver", "com.adjust.sdk.AdjustPreinstallReferrerReceiver")
     ),
     TrackerRule(
         "appsflyer", "AppsFlyer", "Mobile attribution, analytics and engagement",
         TrackerCategory.ANALYTICS, 112,
-        listOf(),
-        listOf("com.appsflyer.MultipleInstallBroadcastReceiver", "com.appsflyer.SingleInstallBroadcastReceiver")
+        listOf("com.appsflyer"),
+        listOf("com.appsflyer.MultipleInstallBroadcastReceiver", "com.appsflyer.SingleInstallBroadcastReceiver", "com.appsflyer.AppsFlyerRequestListener")
     ),
     TrackerRule(
         "crashlytics", "Crashlytics / Firebase Crashlytics", "Crash reporting from Firebase",
         TrackerCategory.CRASH_REPORTING, 45,
-        listOf(),
-        listOf("com.crashlytics.android.CrashlyticsReceiver")
+        listOf("com.google.firebase.crashlytics", "com.crashlytics.android"),
+        listOf("com.crashlytics.android.CrashlyticsReceiver", "com.google.firebase.crashlytics.internal.common.CrashReportingCoordinator")
     ),
     TrackerRule(
         "admob", "Google AdMob", "Google's advertising framework",
         TrackerCategory.ADVERTISING, 189,
-        listOf(),
-        listOf("com.google.android.gms.ads.AdActivity", "com.google.android.gms.ads.MobileAdsInitProvider")
+        listOf("com.google.android.gms", "com.google.ads"),
+        listOf("com.google.android.gms.ads.AdActivity", "com.google.android.gms.ads.MobileAdsInitProvider", "com.google.android.gms.ads.AdRequestBrokerService")
     ),
     TrackerRule(
         "branch_io", "Branch.io", "Mobile deep linking and attribution",
         TrackerCategory.IDENTIFICATION, 34,
-        listOf(),
-        listOf("io.branch.referral.InstallListener")
+        listOf("io.branch.sdk.android", "io.branch.referral"),
+        listOf("io.branch.referral.InstallListener", "io.branch.referral.SplashActivity")
     ),
     TrackerRule(
         "segment", "Segment Analytics", "Customer data infrastructure",
         TrackerCategory.ANALYTICS, 28,
-        listOf(),
-        listOf()
+        listOf("com.segment.analytics", "com.segment.analytics.android"),
+        listOf("com.segment.analytics.android.integrations.firebase.FirebaseIntegration")
     ),
 )
 

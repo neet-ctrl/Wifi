@@ -1,7 +1,13 @@
 package com.accu.ui.customization
 
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.os.Environment
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -25,10 +31,10 @@ import com.accu.ui.components.ACCTopBar
 import com.accu.utils.ShizukuUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
 
 // ──────────────────────────────────────────────
@@ -119,8 +125,40 @@ class DarkModeViewModel @Inject constructor(
         val visible = _state.value.apps.filter { it.forceDark }
         viewModelScope.launch { visible.forEach { toggleForceDark(it.packageName) } }
     }
-    fun exportSettings() { _state.update { it.copy(snackbarMessage = "Settings exported to /sdcard/Download/darq_backup.json") } }
-    fun importSettings() { _state.update { it.copy(snackbarMessage = "Import not yet connected to file picker") } }
+    fun exportSettings() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val forcedApps = _state.value.apps.filter { it.forceDark }
+                val pkgList = forcedApps.joinToString(",") { "\"${it.packageName}\"" }
+                val json = """{"version":1,"forcedApps":[$pkgList],"globalDarkForced":${_state.value.globalDarkForced},"scheduleMode":"${_state.value.scheduleMode}","scheduleStart":"${_state.value.scheduleStart}","scheduleEnd":"${_state.value.scheduleEnd}"}"""
+                val outDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                outDir.mkdirs()
+                File(outDir, "darq_backup.json").writeText(json)
+                _state.update { it.copy(snackbarMessage = "Exported ${forcedApps.size} apps → Downloads/darq_backup.json") }
+            } catch (e: Exception) {
+                _state.update { it.copy(snackbarMessage = "Export failed: ${e.message}") }
+            }
+        }
+    }
+    fun applyImportedJson(json: String) {
+        viewModelScope.launch {
+            try {
+                val packageNames = Regex(""""([a-z][a-zA-Z0-9._]+)"""").findAll(json)
+                    .map { it.groupValues[1] }
+                    .filter { it.contains('.') }
+                    .toSet()
+                val updated = _state.value.apps.map { app ->
+                    if (app.packageName in packageNames && !app.forceDark) {
+                        shizukuUtils.execShizuku("settings put global force_dark_mode_${app.packageName} 1")
+                        app.copy(forceDark = true)
+                    } else app
+                }
+                _state.update { it.copy(apps = updated, snackbarMessage = "Imported ${packageNames.size} force-dark app(s)") }
+            } catch (e: Exception) {
+                _state.update { it.copy(snackbarMessage = "Import failed: ${e.message}") }
+            }
+        }
+    }
     fun onSearch(q: String) { _state.update { it.copy(searchQuery = q) } }
     fun clearSnackbar() { _state.update { it.copy(snackbarMessage = null) } }
     fun toggleAggressiveForceDark() {
@@ -154,6 +192,17 @@ fun DarkModeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showScheduleDialog by remember { mutableStateOf(false) }
     var showAdvancedInfo by remember { mutableStateOf(false) }
+
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                try {
+                    val json = context.contentResolver.openInputStream(uri)?.bufferedReader()?.readText() ?: return@let
+                    viewModel.applyImportedJson(json)
+                } catch (_: Exception) { /* malformed file */ }
+            }
+        }
+    }
 
     LaunchedEffect(state.snackbarMessage) { state.snackbarMessage?.let { snackbarHostState.showSnackbar(it); viewModel.clearSnackbar() } }
 
@@ -418,7 +467,10 @@ fun DarkModeScreen(
                     Text("Backup & Restore", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilledTonalButton(onClick = { viewModel.exportSettings(); showAdvancedInfo = false }, Modifier.weight(1f)) { Text("Export") }
-                        OutlinedButton(onClick = { viewModel.importSettings(); showAdvancedInfo = false }, Modifier.weight(1f)) { Text("Import") }
+                        OutlinedButton(onClick = {
+                            showAdvancedInfo = false
+                            importLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/json" })
+                        }, Modifier.weight(1f)) { Text("Import") }
                     }
                 }
             },

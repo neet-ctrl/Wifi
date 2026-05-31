@@ -1,5 +1,8 @@
 package com.accu.ui.filemanager
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -9,11 +12,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.accu.ui.components.ACCTopBar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,26 +30,41 @@ fun TextEditorScreen(
     onBack: () -> Unit = {},
 ) {
     val fileName = filePath.substringAfterLast("/")
-    var content by remember {
-        mutableStateOf(
-            """# TODO List
-            |
-            |## High Priority
-            |- [x] Set up Shizuku
-            |- [ ] Configure Key Mapper for volume buttons
-            |- [ ] Review battery optimization settings
-            |
-            |## Medium Priority
-            |- [ ] Test DarQ on Chrome and Instagram
-            |- [ ] Configure JamesDSP equalizer preset
-            |- [ ] Set up FTP server for file transfer
-            |
-            |## Notes
-            |Remember to check ColorBlendr per-app theming for Gmail.
-            |The SD Maid squeezer found 1.2 GB of compressible media.
-            """.trimMargin()
-        )
+    val scope = rememberCoroutineScope()
+    var content by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(true) }
+    var loadError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(filePath) {
+        withContext(Dispatchers.IO) {
+            try {
+                val file = File(filePath)
+                content = if (file.exists() && file.canRead()) {
+                    file.readText()
+                } else {
+                    "# ${file.name}\n\nStart typing…"
+                }
+                loadError = null
+            } catch (e: Exception) {
+                content = ""
+                loadError = e.message
+            } finally {
+                isLoading = false
+            }
+        }
     }
+
+    fun saveFile() {
+        scope.launch(Dispatchers.IO) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                file.writeText(content)
+            } catch (_: Exception) { /* permission denied — silently ignore */ }
+        }
+    }
+
+    val context = LocalContext.current
     var isModified by remember { mutableStateOf(false) }
     var showSaveDialog by remember { mutableStateOf(false) }
     var wrapLines by remember { mutableStateOf(true) }
@@ -50,17 +73,51 @@ fun TextEditorScreen(
     var showSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var replaceQuery by remember { mutableStateOf("") }
+    var showGoToLineDialog by remember { mutableStateOf(false) }
+    var goToLineInput by remember { mutableStateOf("") }
+    var cursorLine by remember { mutableStateOf(1) }
 
     val lineCount = content.lines().size
     val charCount = content.length
     val wordCount = content.split(Regex("\\s+")).count { it.isNotBlank() }
+
+    if (showGoToLineDialog) {
+        AlertDialog(
+            onDismissRequest = { showGoToLineDialog = false; goToLineInput = "" },
+            title = { Text("Go to Line") },
+            text = {
+                OutlinedTextField(
+                    value = goToLineInput,
+                    onValueChange = { if (it.all(Char::isDigit)) goToLineInput = it },
+                    label = { Text("Line number (1–$lineCount)") },
+                    singleLine = true,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val target = goToLineInput.toIntOrNull()?.coerceIn(1, lineCount) ?: return@TextButton
+                    cursorLine = target
+                    showGoToLineDialog = false
+                    goToLineInput = ""
+                }) { Text("Go") }
+            },
+            dismissButton = { TextButton(onClick = { showGoToLineDialog = false; goToLineInput = "" }) { Text("Cancel") } },
+        )
+    }
 
     if (showSaveDialog) {
         AlertDialog(
             onDismissRequest = { showSaveDialog = false },
             title = { Text("Save file?") },
             text = { Text("Save changes to $fileName?") },
-            confirmButton = { TextButton(onClick = { isModified = false; showSaveDialog = false; onBack() }) { Text("Save") } },
+            confirmButton = {
+                TextButton(onClick = {
+                    saveFile()
+                    isModified = false
+                    showSaveDialog = false
+                    onBack()
+                }) { Text("Save") }
+            },
             dismissButton = { TextButton(onClick = { showSaveDialog = false; onBack() }) { Text("Discard") } }
         )
     }
@@ -75,14 +132,31 @@ fun TextEditorScreen(
                 actions = {
                     IconButton(onClick = { showSearch = !showSearch }) { Icon(Icons.Default.Search, "Find") }
                     IconButton(onClick = { wrapLines = !wrapLines }) { Icon(if (wrapLines) Icons.Default.WrapText else Icons.Default.Notes, "Wrap") }
-                    IconButton(onClick = { isModified = false }) { Icon(Icons.Default.Save, "Save") }
+                    IconButton(onClick = { saveFile(); isModified = false }) { Icon(Icons.Default.Save, "Save") }
                     var showMoreMenu by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { showMoreMenu = true }) { Icon(Icons.Default.MoreVert, "More") }
                         DropdownMenu(showMoreMenu, { showMoreMenu = false }) {
-                            DropdownMenuItem(text = { Text("Select All") }, leadingIcon = { Icon(Icons.Default.SelectAll, null) }, onClick = { showMoreMenu = false })
-                            DropdownMenuItem(text = { Text("Go to Line…") }, leadingIcon = { Icon(Icons.Default.FormatListNumbered, null) }, onClick = { showMoreMenu = false })
-                            DropdownMenuItem(text = { Text("Encoding: UTF-8") }, leadingIcon = { Icon(Icons.Default.Language, null) }, onClick = { showMoreMenu = false })
+                            DropdownMenuItem(
+                                text = { Text("Select All") },
+                                leadingIcon = { Icon(Icons.Default.SelectAll, null) },
+                                onClick = {
+                                    showMoreMenu = false
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    clipboard.setPrimaryClip(ClipData.newPlainText(fileName, content))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Go to Line…") },
+                                leadingIcon = { Icon(Icons.Default.FormatListNumbered, null) },
+                                onClick = { showMoreMenu = false; showGoToLineDialog = true },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Encoding: UTF-8") },
+                                leadingIcon = { Icon(Icons.Default.Language, null) },
+                                onClick = { showMoreMenu = false },
+                                trailingIcon = { Icon(Icons.Default.Lock, null, Modifier.size(14.dp)) },
+                            )
                         }
                     }
                 }

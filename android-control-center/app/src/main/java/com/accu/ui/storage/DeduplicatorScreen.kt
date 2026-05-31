@@ -131,12 +131,26 @@ fun DeduplicatorScreen(onBack: () -> Unit) {
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 fontWeight = FontWeight.Bold,
             )
+            var selectedLocations by remember { mutableStateOf(setOf("Photos", "Videos")) }
+
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(listOf("Photos", "Videos", "Downloads", "Documents", "Music", "All Storage")) { location ->
-                    FilterChip(selected = location == "Photos" || location == "Videos", onClick = {}, label = { Text(location) })
+                    FilterChip(
+                        selected = location in selectedLocations,
+                        onClick = {
+                            selectedLocations = if (location == "All Storage") {
+                                setOf("Photos", "Videos", "Downloads", "Documents", "Music", "All Storage")
+                            } else if (location in selectedLocations) {
+                                (selectedLocations - location).also { if (it.isEmpty()) return@FilterChip }
+                            } else {
+                                selectedLocations + location
+                            }
+                        },
+                        label = { Text(location) },
+                    )
                 }
             }
 

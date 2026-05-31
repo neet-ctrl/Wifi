@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -20,6 +21,7 @@ import com.accu.ui.components.ACCTopBar
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DSPControlsScreen(onBack: () -> Unit = {}) {
+    val context = LocalContext.current
     var masterEnabled by remember { mutableStateOf(true) }
     var ddcProfileName by remember { mutableStateOf<String?>(null) }
     val ddcFilePicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -85,6 +87,53 @@ fun DSPControlsScreen(onBack: () -> Unit = {}) {
     var profileName by remember { mutableStateOf("") }
     val savedProfiles = remember { mutableStateListOf("Default", "Gaming", "Music", "Podcast") }
 
+    // Export helper — serialises the entire DSP state to a JSON string
+    fun buildExportJson(): String = """
+        {
+          "version": 1,
+          "profile": "$selectedProfile",
+          "masterEnabled": $masterEnabled,
+          "output": { "gain": $outputGain, "limitOutput": $limitOutput, "limiterThreshold": $limiterThreshold },
+          "bass": { "enabled": $bassEnabled, "mode": "$bassMode", "gain": $bassGain, "freq": $bassFreq, "trebleGain": $trebleGain },
+          "stereo": { "enabled": $stereoEnabled, "mode": "$stereoMode", "strength": $stereoStrength },
+          "surround": { "enabled": $surroundEnabled, "mode": "$surroundMode", "strength": $surroundStrength, "roomSize": $surroundRoomSize },
+          "reverb": { "enabled": $reverbEnabled, "preset": "$reverbPreset", "roomSize": $reverbRoomSize, "decay": $reverbDecay, "damping": $reverbDamping, "wet": $reverbWet, "dry": $reverbDry },
+          "compressor": { "enabled": $compressorEnabled, "threshold": $compressorThreshold, "ratio": $compressorRatio, "attack": $compressorAttack, "release": $compressorRelease, "makeup": $compressorMakeup },
+          "analog": { "enabled": $analogEnabled, "drive": $analogDrive },
+          "crossfeed": { "enabled": $crossfeedEnabled, "mode": "$crossfeedMode" },
+          "ddc": { "enabled": $ddcEnabled, "profile": "$ddcProfileName" }
+        }
+    """.trimIndent()
+
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                try {
+                    val json = context.contentResolver.openInputStream(uri)?.bufferedReader()?.readText() ?: return@let
+                    // Parse key values from the JSON string with simple regex extraction
+                    fun jsonBool(key: String): Boolean? = Regex(""""$key"\s*:\s*(true|false)""").find(json)?.groupValues?.get(1)?.toBooleanStrictOrNull()
+                    fun jsonFloat(key: String): Float? = Regex(""""$key"\s*:\s*([\d.\-]+)""").find(json)?.groupValues?.get(1)?.toFloatOrNull()
+                    fun jsonStr(key: String): String? = Regex(""""$key"\s*:\s*"([^"]+)"""").find(json)?.groupValues?.get(1)
+                    jsonBool("masterEnabled")?.let { masterEnabled = it }
+                    jsonFloat("gain")?.let { outputGain = it }
+                    jsonBool("limitOutput")?.let { limitOutput = it }
+                    jsonFloat("limiterThreshold")?.let { limiterThreshold = it }
+                    jsonBool("enabled")?.let { bassEnabled = it }
+                    jsonStr("mode")?.let { bassMode = it }
+                    jsonFloat("trebleGain")?.let { trebleGain = it }
+                    jsonBool("enabled")?.let { surroundEnabled = it }
+                    jsonBool("enabled")?.let { reverbEnabled = it }
+                    jsonStr("preset")?.let { reverbPreset = it }
+                    jsonBool("enabled")?.let { compressorEnabled = it }
+                    jsonBool("enabled")?.let { analogEnabled = it }
+                    jsonBool("enabled")?.let { crossfeedEnabled = it }
+                    jsonStr("mode")?.let { crossfeedMode = it }
+                    jsonStr("profile")?.let { selectedProfile = it }
+                } catch (_: Exception) { /* malformed file — ignore */ }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             ACCTopBar(
@@ -125,12 +174,22 @@ fun DSPControlsScreen(onBack: () -> Unit = {}) {
                             Spacer(Modifier.width(4.dp))
                             Text("Save Profile", fontSize = 12.sp)
                         }
-                        OutlinedButton(onClick = {}, Modifier.weight(1f)) {
+                        OutlinedButton(onClick = {
+                            val json = buildExportJson()
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/json"
+                                putExtra(Intent.EXTRA_SUBJECT, "DSP Profile — $selectedProfile")
+                                putExtra(Intent.EXTRA_TEXT, json)
+                            }
+                            context.startActivity(Intent.createChooser(shareIntent, "Export DSP Profile"))
+                        }, Modifier.weight(1f)) {
                             Icon(Icons.Default.IosShare, null, Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("Export", fontSize = 12.sp)
                         }
-                        OutlinedButton(onClick = {}, Modifier.weight(1f)) {
+                        OutlinedButton(onClick = {
+                            importLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*" })
+                        }, Modifier.weight(1f)) {
                             Icon(Icons.Default.FileOpen, null, Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("Import", fontSize = 12.sp)

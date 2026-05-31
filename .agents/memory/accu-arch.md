@@ -29,4 +29,13 @@ Better Internet Tiles, RootlessJamesDSP, ShizuCallRecorder
 - Device admin XML: `res/xml/device_admin.xml`
 - GitHub Actions: `.github/workflows/build.yml` (debug APK on push/PR)
 
+## Dead-code audit status (as of May 2026)
+All originally-identified dead buttons/stubs are now fixed:
+- DSPControlsScreen: Export/Import fully wired (JSON share-sheet + file picker + regex parser)
+- DeduplicatorScreen: FilterChip selectedLocations state hoisted above LazyColumn
+- ColorEditorScreen AdvancedTab: buildExportJson lambda passed from parent (has access to seed RGB + monet sliders)
+- TextEditorScreen: LaunchedEffect reads file from disk; saveFile() writes; "Select All" → clipboard; "Go to Line…" → dialog
+- OnlineRulesScreen: All 6 trackers (Adjust/AppsFlyer/Crashlytics/AdMob/Branch.io/Segment) have real package names
+- DarkModeScreen: exportSettings() writes JSON to Downloads; import via ActivityResultLauncher + applyImportedJson()
+
 **Why:** These conventions prevent the most common compile errors in this large multi-screen project.
