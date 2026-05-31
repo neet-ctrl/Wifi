@@ -47,6 +47,12 @@ data class ShizukuUiState(
     val connectionState: AccuConnectionManager.ConnectionState = AccuConnectionManager.ConnectionState.DISCONNECTED,
     val discoveredPairingIp: String = "",
     val discoveredPairingPort: Int = 0,
+    /** ro.product.model of the connected target device */
+    val deviceModel: String = "",
+    /** ro.build.version.release (e.g. "14") */
+    val androidVersion: String = "",
+    /** ro.build.version.sdk (e.g. "34") */
+    val sdkLevel: String = "",
 )
 
 data class ShizukuLogEntry(
@@ -151,6 +157,14 @@ class ShizukuViewModel @Inject constructor(
 
             val apps = if (isConnected) loadAuthorizedApps() else _state.value.authorizedApps
 
+            // Fetch target device info — routes through exec() so it targets the connected device
+            val deviceModel = if (isConnected)
+                connectionManager.exec("getprop ro.product.model").output.trim() else ""
+            val androidVersion = if (isConnected)
+                connectionManager.exec("getprop ro.build.version.release").output.trim() else ""
+            val sdkLevel = if (isConnected)
+                connectionManager.exec("getprop ro.build.version.sdk").output.trim() else ""
+
             _state.update {
                 it.copy(
                     connectionState = connState,
@@ -169,6 +183,9 @@ class ShizukuViewModel @Inject constructor(
                         else -> "Not connected"
                     },
                     authorizedApps = apps,
+                    deviceModel = deviceModel,
+                    androidVersion = androidVersion,
+                    sdkLevel = sdkLevel,
                     isLoading = false,
                 )
             }

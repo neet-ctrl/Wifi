@@ -116,10 +116,13 @@ import com.accu.ui.shell.AdbConnectionMode
 // ACCU Connection
 import com.accu.ui.shizuku.AdbPairingScreen
 import com.accu.ui.shizuku.AccuAppsScreen
+import com.accu.ui.connection.ConnectionGateScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.accu.ui.dashboard.NavHistoryViewModel
+import com.accu.connection.AccuConnectionManager
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 // ACCU System Service (IPC privilege hub)
 import com.accu.ui.apiservice.AccuServiceScreen
 import com.accu.ui.apiservice.AccuSdkDocsScreen
@@ -142,11 +145,27 @@ fun AppNavigation(initialRoute: String? = null) {
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStack?.destination
     val navHistoryViewModel: NavHistoryViewModel = hiltViewModel()
+    val connectionViewModel: com.accu.ui.shizuku.ShizukuViewModel = hiltViewModel()
+    val connectionState by connectionViewModel.state.collectAsStateWithLifecycle()
+
+    val isOnGate = currentDestination?.route == Screen.ConnectionGate.route
+    val isOnPairing = currentDestination?.route == Screen.AdbPairing.route
 
     // Navigate to the requested route on first composition (e.g. when launched from a notification)
     androidx.compose.runtime.LaunchedEffect(initialRoute) {
         if (!initialRoute.isNullOrBlank()) {
             navController.navigate(initialRoute) {
+                launchSingleTop = true
+            }
+        }
+    }
+
+    // If connection drops while user is inside the app, send them back to the gate
+    androidx.compose.runtime.LaunchedEffect(connectionState.connectionState) {
+        val dropped = connectionState.connectionState == AccuConnectionManager.ConnectionState.DISCONNECTED
+        if (dropped && !isOnGate && !isOnPairing) {
+            navController.navigate(Screen.ConnectionGate.route) {
+                popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                 launchSingleTop = true
             }
         }
@@ -164,27 +183,30 @@ fun AppNavigation(initialRoute: String? = null) {
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
-            TOP_LEVEL_DESTINATIONS.forEach { dest ->
-                val selected = currentDestination?.hierarchy?.any { it.route == dest.screen.route } == true
-                item(
-                    icon = { Icon(dest.icon, contentDescription = dest.label) },
-                    label = { Text(dest.label) },
-                    selected = selected,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        navController.navigate(dest.screen.route) {
-                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                )
+            // Hide navigation bar on the gate and pairing screens
+            if (!isOnGate && !isOnPairing) {
+                TOP_LEVEL_DESTINATIONS.forEach { dest ->
+                    val selected = currentDestination?.hierarchy?.any { it.route == dest.screen.route } == true
+                    item(
+                        icon = { Icon(dest.icon, contentDescription = dest.label) },
+                        label = { Text(dest.label) },
+                        selected = selected,
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            navController.navigate(dest.screen.route) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    )
+                }
             }
         },
     ) {
         NavHost(
             navController = navController,
-            startDestination = Screen.Dashboard.route,
+            startDestination = Screen.ConnectionGate.route,
             enterTransition = {
                 slideInHorizontally(animationSpec = tween(300)) { it / 6 } +
                     fadeIn(animationSpec = tween(300))
@@ -203,6 +225,20 @@ fun AppNavigation(initialRoute: String? = null) {
             },
             modifier = Modifier.fillMaxSize()
         ) {
+            // ── Connection Gate — always shown on app open ─────────────────────
+            composable(Screen.ConnectionGate.route) {
+                ConnectionGateScreen(
+                    onConnected = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.ConnectionGate.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateToAdbPairing = {
+                        navController.navigate(Screen.AdbPairing.route)
+                    },
+                )
+            }
             composable(Screen.Onboarding.route) {
                 OnboardingScreen(onFinish = {
                     navController.navigate(Screen.Dashboard.route) {

@@ -216,6 +216,9 @@ sealed class Screen(val route: String) {
     data object AdbFastboot        : Screen("adb_fastboot")
     data object AdbScreenCapture   : Screen("adb_screen_capture")
     data object AdbTutorial        : Screen("adb_tutorial")
+
+    // ── Connection gate (always shown on app open until connected) ────────────
+    data object ConnectionGate     : Screen("connection_gate")
 }
 
 data class TopLevelDestination(
