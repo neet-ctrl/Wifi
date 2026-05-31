@@ -210,33 +210,37 @@ This guide will walk you through setup and the key features so you get the most 
         tips = listOf(
             "Tap the ⓘ icon anywhere in the app for instant help on that feature",
             "The All Features screen lists every feature from all 17 source apps with usage instructions",
-            "Most features work without root — you just need Shizuku"
+            "Most features work without root — ACCU's built-in ADB layer handles it"
         ),
         icon = Icons.Outlined.Android,
         accentColor = Color(0xFF6750A4)
     ),
     TutorialStep(
-        title = "Setting Up Shizuku",
-        subtitle = "The key to most ACC features — no root needed",
-        body = """Shizuku is a service that gives apps elevated system access through your own ADB authorization.
+        title = "Setting Up ACCU Connection",
+        subtitle = "Self-contained elevated access — no third-party app needed",
+        body = """ACCU has its own built-in privilege layer that works without any external app.
 
-HOW TO START SHIZUKU:
+HOW TO CONNECT:
 
-Option 1 — Wireless Debugging (Android 11+):
+Option 1 — Wireless ADB (Android 11+, no PC needed):
 1. Enable Developer Options (Settings → About Phone → tap Build Number 7 times)
 2. Go to Settings → Developer Options → Wireless Debugging → Enable
 3. Tap "Pair device with pairing code"
-4. Open the Shizuku app → "Pairing" → enter the code shown
+4. Open ACCU → ACCU Center → Pair → enter the code shown
+   (ACCU auto-discovers the pairing port via mDNS — no manual IP entry needed)
 
-Option 2 — ADB via PC:
+Option 2 — Root (Magisk / KernelSU):
+• ACCU automatically uses root if available — no setup required
+
+Option 3 — ADB via PC (one-time setup):
 1. Enable USB Debugging in Developer Options
-2. Run on PC: adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh
+2. Run: adb tcpip 5555 && adb shell pm grant ${'\$'}(adb shell cat /data/local/tmp/accu_pkg) android.permission.WRITE_SECURE_SETTINGS
 
-Once Shizuku is running, open ACC → Shizuku Center → Grant Permission.""",
+Once connected, open ACCU → ACCU Center → verify "Connected" status.""",
         tips = listOf(
-            "Shizuku persists until reboot. Enable 'Auto-start' in Shizuku app settings",
-            "On Android 11+, Wireless Debugging mode requires re-pairing after reboot but NOT re-authorization",
-            "Shizuku is completely safe — you explicitly grant permission to each app that requests it"
+            "ACCU auto-reconnects on reboot if Wireless Debugging is already enabled",
+            "On Android 11+, Wireless Debugging requires re-pairing after reboot but the connection auto-resumes",
+            "Root mode is fully automatic — install Magisk/KernelSU and ACCU handles the rest"
         ),
         icon = Icons.Outlined.Security,
         accentColor = Color(0xFF0288D1),
@@ -247,7 +251,7 @@ Once Shizuku is running, open ACC → Shizuku Center → Grant Permission.""",
         subtitle = "Execute any ADB command directly from your phone",
         body = """The Shell tab gives you full ADB shell access in three modes:
 
-LOCAL MODE (Shizuku required):
+LOCAL MODE (ACCU connection required):
 • Run ADB commands on your own device without a PC
 • Fastest mode — no network latency
 
@@ -290,7 +294,7 @@ COMPONENTS (Blocker):
 Block individual activities, services, receivers, and providers within any app to stop unwanted background behavior.
 
 PERMISSIONS:
-Grant or revoke any runtime permission — even protected ones — using Shizuku.
+Grant or revoke any runtime permission — even protected ones — using ACCU.
 
 APP DETAIL (Inure):
 Deep inspection of any app: APK manifest, signing certificate, native libraries, storage breakdown.""",
@@ -354,7 +358,7 @@ HOW TO ADD TILES:
 3. Scroll down to find "ACC Wi-Fi", "ACC Mobile Data", etc.
 4. Drag them to your active tiles area
 
-All tiles require Shizuku to bypass Android's restriction on direct radio control.""",
+All tiles require ACCU to bypass Android's restriction on direct radio control.""",
         tips = listOf(
             "Long-press any ACC tile to open ACC directly to that feature's settings",
             "Enable 'Require Unlock' in tile settings to prevent accidental toggles",
@@ -370,10 +374,10 @@ All tiles require Shizuku to bypass Android's restriction on direct radio contro
         body = """The Call Recorder uses ShizuCallRecorder's scrcpy-based approach for rootless recording:
 
 HOW IT WORKS:
-ACC bundles the scrcpy server binary, which captures audio output during calls. This works without root by using the Android audio projection API via Shizuku.
+ACC bundles the scrcpy server binary, which captures audio output during calls. This works without root by using the Android audio projection API via ACCU.
 
 SETUP:
-1. Ensure Shizuku is running
+1. Ensure ACCU connection is active (ACCU Center → Connected)
 2. Go to Call Recorder → grant RECORD_AUDIO and phone state permissions
 3. Enable Auto-record or use manual recording
 
@@ -398,7 +402,7 @@ Browse, play, and delete recordings from the list. Each recording shows directio
         title = "Language & Theming",
         subtitle = "Make your device truly yours",
         body = """LANGUAGE SELECTOR:
-Set different languages per app — your browser in English, a game in Japanese, messaging in your native language. Uses Shizuku to set locales that persist across reboots.
+Set different languages per app — your browser in English, a game in Japanese, messaging in your native language. Uses ACCU to set locales that persist across reboots.
 
 COLOR BLENDR:
 Take full control of your Material You palette:
@@ -423,7 +427,7 @@ Force dark mode on any app that doesn't support it natively. Schedule by time of
         subtitle = "Explore all 17 apps' worth of features",
         body = """ACC Ultimate is fully set up. Here's a quick reference:
 
-DASHBOARD: System overview — Shizuku status, battery, network, recent actions
+DASHBOARD: System overview — ACCU connection status, battery, network, recent actions
 APPS tab: App Manager, Debloat, Freeze, Components, Permissions, Installer
 TOOLS tab: Shell, File Manager, Storage, Key Mapper, Automation
 PRIVACY tab: Privacy dashboard, sensor controls, App Ops
@@ -434,7 +438,7 @@ GETTING HELP:
 • Visit All Features (Settings → All Features) for a complete reference of every feature
 • The Learning Center (Settings → Learning Center) has deep-dives per feature area
 
-Remember: Most features need Shizuku. When something doesn't work, check the Shizuku status card on the Dashboard first.""",
+Remember: Most features need ACCU connection. When something doesn't work, check the ACCU status card on the Dashboard first.""",
         tips = listOf(
             "Star your most-used features on the Dashboard for one-tap access",
             "The Shell's command examples library is searchable — great for learning ADB",

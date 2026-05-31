@@ -44,11 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.accu.connection.AccuConnectionManager
 import com.accu.ui.components.ACCTopBar
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -115,8 +113,8 @@ private val ALL_ACCU_PERMISSIONS = listOf(
 
     // ── CORE ────────────────────────────────────────────────
     AccuPerm("internet", "Internet Access", Manifest.permission.INTERNET,
-        "Required for Shizuku wireless-ADB connection, online rule downloads, VirusTotal scanning, and update checks.",
-        "Shizuku · Online Rules · VirusTotal · Updates",
+        "Required for ACCU wireless-ADB connection, online rule downloads, VirusTotal scanning, and update checks.",
+        "ACCU Center · Online Rules · VirusTotal · Updates",
         AccuPermCategory.CORE, PermImportance.CRITICAL, GrantMethod.AUTOMATIC, canRevoke = false),
 
     AccuPerm("foreground_svc", "Foreground Service", Manifest.permission.FOREGROUND_SERVICE,
@@ -238,7 +236,7 @@ private val ALL_ACCU_PERMISSIONS = listOf(
 
     AccuPerm("suspend_apps", "Suspend / Hide Apps",
         "android.permission.SUSPEND_APPS",
-        "Suspends apps so they cannot be launched — the core of Hail freeze functionality via Shizuku.",
+        "Suspends apps so they cannot be launched — the core of Hail freeze functionality via ACCU.",
         "Hail / Freeze Apps · Debloat",
         AccuPermCategory.APP_MGMT, PermImportance.CRITICAL, GrantMethod.SHIZUKU),
 
@@ -256,7 +254,7 @@ private val ALL_ACCU_PERMISSIONS = listOf(
 
     AccuPerm("manage_app_ops", "Manage App Ops Modes",
         "android.permission.MANAGE_APP_OPS_MODES",
-        "Grants and revokes individual app-ops flags (camera, mic, location) for any app via Shizuku.",
+        "Grants and revokes individual app-ops flags (camera, mic, location) for any app via ACCU.",
         "Privacy Center · App Ops Manager",
         AccuPermCategory.APP_MGMT, PermImportance.CRITICAL, GrantMethod.SHIZUKU),
 
@@ -338,7 +336,7 @@ private val ALL_ACCU_PERMISSIONS = listOf(
 
     AccuPerm("capture_audio_output", "Capture Audio Output",
         "android.permission.CAPTURE_AUDIO_OUTPUT",
-        "Captures the device speaker output for call recording both sides. Requires Shizuku.",
+        "Captures the device speaker output for call recording both sides. Requires ACCU.",
         "Call Recorder (full duplex)",
         AccuPermCategory.MEDIA, PermImportance.CRITICAL, GrantMethod.SHIZUKU),
 
@@ -379,8 +377,8 @@ private val ALL_ACCU_PERMISSIONS = listOf(
     // ── NETWORK ─────────────────────────────────────────────
     AccuPerm("access_net_state", "Access Network State",
         Manifest.permission.ACCESS_NETWORK_STATE,
-        "Reads current connectivity (Wi-Fi / mobile data) for status tiles and Shizuku connection checks.",
-        "Better Internet Tiles · Dashboard · Shizuku",
+        "Reads current connectivity (Wi-Fi / mobile data) for status tiles and ACCU connection checks.",
+        "Better Internet Tiles · Dashboard · ACCU Center",
         AccuPermCategory.NETWORK, PermImportance.IMPORTANT, GrantMethod.AUTOMATIC, canRevoke = false),
 
     AccuPerm("access_wifi_state", "Access Wi-Fi State",
@@ -461,16 +459,16 @@ private val ALL_ACCU_PERMISSIONS = listOf(
 
     AccuPerm("read_priv_phone_state", "Privileged Phone State",
         "android.permission.READ_PRIVILEGED_PHONE_STATE",
-        "Reads IMEI, SIM state, and carrier info for advanced diagnostics in the Shell and Shizuku Center.",
-        "Shell · Diagnostics · Shizuku Center",
+        "Reads IMEI, SIM state, and carrier info for advanced diagnostics in the Shell and ACCU Center.",
+        "Shell · Diagnostics · ACCU Center",
         AccuPermCategory.PRIVACY, PermImportance.OPTIONAL, GrantMethod.SHIZUKU),
 
     // ── ADVANCED ────────────────────────────────────────────
-    AccuPerm("shizuku_api", "Shizuku API",
-        "moe.shizuku.manager.permission.API_V23",
-        "Core Shizuku binding permission. Without this, ALL elevated Shizuku features are unavailable.",
-        "All Shizuku features",
-        AccuPermCategory.ADVANCED, PermImportance.CRITICAL, GrantMethod.SHIZUKU),
+    AccuPerm("accu_binding", "ACCU Service Binding",
+        "com.accu.api.permission.BIND_ACCU_SERVICE",
+        "Core ACCU binding permission. Without this, third-party apps cannot bind to AccuSystemService.",
+        "ACCU Service Hub · All privileged features",
+        AccuPermCategory.ADVANCED, PermImportance.CRITICAL, GrantMethod.AUTOMATIC, canRevoke = false),
 
     AccuPerm("device_owner", "Device Owner / MDM",
         "android.permission.MANAGE_DEVICE_POLICY_PACKAGES",
@@ -511,8 +509,8 @@ private val ALL_ACCU_PERMISSIONS = listOf(
         AccuPermCategory.ADVANCED, PermImportance.OPTIONAL, GrantMethod.SHIZUKU),
 
     AccuPerm("camera", "Camera", Manifest.permission.CAMERA,
-        "Used for QR-code scanning during Shizuku wireless-ADB pairing setup.",
-        "Shizuku Setup · QR Pairing",
+        "Used for QR-code scanning during ACCU wireless-ADB pairing setup.",
+        "ACCU Setup · QR Pairing",
         AccuPermCategory.ADVANCED, PermImportance.OPTIONAL, GrantMethod.NORMAL),
 )
 
@@ -662,7 +660,7 @@ fun AccuPermissionsScreen(onBack: () -> Unit = {}) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (shizukuPending.isEmpty()) {
                         Text(
-                            "All Shizuku-grantable permissions are already granted!",
+                            "All ACCU-grantable permissions are already granted!",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -749,7 +747,7 @@ fun AccuPermissionsScreen(onBack: () -> Unit = {}) {
                         Icon(Icons.Default.Refresh, "Refresh status")
                     }
                     IconButton(onClick = { showGrantDialog = true }) {
-                        Icon(Icons.Default.Hub, "Grant all via Shizuku")
+                        Icon(Icons.Default.Hub, "Grant all via ACCU")
                     }
                 },
             )
@@ -854,21 +852,21 @@ fun AccuPermissionsScreen(onBack: () -> Unit = {}) {
                                 GrantMethod.SHIZUKU -> {
                                     scope.launch {
                                         grantingId = perm.id
-                                        delay(500L)
-                                        perms     = perms.map { if (it.id == perm.id) it.copy(status = PermStatus.GRANTED) else it }
+                                        val ok = vm.grantPermission(context.packageName, perm.rawPermission)
                                         grantingId = null
-                                        snackbar.showSnackbar("${perm.friendlyName} granted via Shizuku ✓")
+                                        refresh()
+                                        snackbar.showSnackbar(
+                                            if (ok) "${perm.friendlyName} granted via ACCU ✓"
+                                            else "${perm.friendlyName}: grant failed — check ACCU connection"
+                                        )
                                     }
                                 }
                                 GrantMethod.NORMAL -> {
-                                    scope.launch {
-                                        delay(200L)
-                                        perms = perms.map { if (it.id == perm.id) it.copy(status = PermStatus.GRANTED) else it }
-                                        snackbar.showSnackbar("${perm.friendlyName}: system dialog opened")
-                                    }
+                                    pendingNormalPermRaw = perm.rawPermission
+                                    normalPermLauncher.launch(perm.rawPermission)
                                 }
                                 GrantMethod.ADB_ONLY -> {
-                                    val cmd = "adb shell pm grant com.accu ${perm.rawPermission}"
+                                    val cmd = "adb shell pm grant ${context.packageName} ${perm.rawPermission}"
                                     copyToClipboard(context, cmd)
                                     scope.launch { snackbar.showSnackbar("ADB command copied to clipboard") }
                                 }
@@ -879,13 +877,19 @@ fun AccuPermissionsScreen(onBack: () -> Unit = {}) {
                         },
                         onRevoke = {
                             scope.launch {
-                                delay(200L)
-                                perms = perms.map { if (it.id == perm.id) it.copy(status = PermStatus.NOT_REQUESTED) else it }
-                                snackbar.showSnackbar("${perm.friendlyName} revoked")
+                                val ok = vm.revokePermission(context.packageName, perm.rawPermission)
+                                refresh()
+                                if (ok) {
+                                    snackbar.showSnackbar("${perm.friendlyName} revoked ✓")
+                                } else {
+                                    val fallback = "adb shell pm revoke ${context.packageName} ${perm.rawPermission}"
+                                    copyToClipboard(context, fallback)
+                                    snackbar.showSnackbar("Revoke failed — ADB command copied to clipboard")
+                                }
                             }
                         },
                         onCopyAdb = {
-                            val cmd = "adb shell pm grant com.accu ${perm.rawPermission}"
+                            val cmd = "adb shell pm grant ${context.packageName} ${perm.rawPermission}"
                             copyToClipboard(context, cmd)
                             scope.launch { snackbar.showSnackbar("Copied: $cmd") }
                         },
@@ -1025,7 +1029,7 @@ private fun PermHealthCard(
                             StatPill("$critGranted/$totalCritical Critical",
                                 if (critGranted == totalCritical) Color(0xFF43A047) else Color(0xFFE53935))
                             if (shizukuPending > 0)
-                                StatPill("$shizukuPending Shizuku", MaterialTheme.colorScheme.primary)
+                                StatPill("$shizukuPending via ACCU", MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -1079,14 +1083,14 @@ private fun PermHealthCard(
                     ) {
                         Icon(Icons.Default.Hub, null, Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Grant All Missing via Shizuku (1 tap)")
+                        Text("Grant All Missing via ACCU (1 tap)")
                     }
                 } else {
                     OutlinedButton(onClick = onGrantAll, Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.CheckCircle, null, Modifier.size(16.dp),
                             tint = Color(0xFF43A047))
                         Spacer(Modifier.width(8.dp))
-                        Text("All Shizuku Permissions Granted")
+                        Text("All ACCU Permissions Granted")
                     }
                 }
             }
@@ -1336,7 +1340,7 @@ private fun PermissionCard(
                                         Icon(Icons.Default.Hub, null, Modifier.size(14.dp))
                                     }
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Shizuku", style = MaterialTheme.typography.labelMedium)
+                                    Text("ACCU 1-tap", style = MaterialTheme.typography.labelMedium)
                                 }
                             }
                             GrantMethod.NORMAL -> {
@@ -1452,10 +1456,10 @@ private fun PermissionCard(
                         }
                     }
 
-                    // ADB / Shizuku command
+                    // ADB / ACCU command
                     if (perm.grantMethod == GrantMethod.ADB_ONLY ||
                         perm.grantMethod == GrantMethod.SHIZUKU) {
-                        val cmd = "adb shell pm grant com.accu ${perm.rawPermission}"
+                        val cmd = "adb shell pm grant ${LocalContext.current.packageName} ${perm.rawPermission}"
                         DetailHeader(Icons.Default.Terminal, MaterialTheme.colorScheme.tertiary, "ADB command")
                         Row(
                             Modifier.fillMaxWidth(),
@@ -1522,5 +1526,36 @@ private fun DetailHeader(icon: ImageVector, tint: Color, label: String) {
         Icon(icon, null, Modifier.size(13.dp), tint = tint)
         Text(label, style = MaterialTheme.typography.labelSmall,
             color = tint, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  VIEW MODEL
+// ═══════════════════════════════════════════════════════════
+
+@HiltViewModel
+class AccuPermissionsViewModel @Inject constructor(
+    private val connectionManager: AccuConnectionManager,
+) : ViewModel() {
+
+    /**
+     * Runs `pm grant <packageName> <permission>` via AccuConnectionManager (root/ADB).
+     * Returns true if the command exited cleanly (exit code 0 or no error text).
+     */
+    suspend fun grantPermission(packageName: String, rawPermission: String): Boolean =
+        runCommand("pm grant $packageName $rawPermission")
+
+    /**
+     * Runs `pm revoke <packageName> <permission>` via AccuConnectionManager.
+     * Returns true on success.
+     */
+    suspend fun revokePermission(packageName: String, rawPermission: String): Boolean =
+        runCommand("pm revoke $packageName $rawPermission")
+
+    private suspend fun runCommand(command: String): Boolean = try {
+        val result = connectionManager.exec(command)
+        result.isSuccess
+    } catch (_: Exception) {
+        false
     }
 }
