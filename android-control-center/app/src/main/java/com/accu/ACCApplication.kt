@@ -30,25 +30,53 @@ class ACCApplication : Application(), Configuration.Provider {
     private fun createNotificationChannels() {
         val nm = getSystemService(NotificationManager::class.java)
         val channels = listOf(
+            NotificationChannel("call_recording", "Call Recorder", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "Recording started, stopped, and file saved (ShizuCallRecorder)"
+                setShowBadge(true)
+            },
             NotificationChannel("audio_dsp", "Audio DSP Engine", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "RootlessJamesDSP audio processing service"
+                description = "JamesDSP processing service status and preset changes"
+                setShowBadge(false)
             },
-            NotificationChannel("call_recording", "Call Recording", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Active call recording notification"
+            NotificationChannel("shizuku_service", "Shizuku Service", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Shizuku started, stopped, needs restart, or ADB disconnected"
+                setShowBadge(true)
             },
-            NotificationChannel("shizuku_service", "Shizuku Service", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Shizuku elevated service status"
+            NotificationChannel("storage_alerts", "Storage Alerts", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Low storage warning (<15%) and critical alert (<5%)"
+                setShowBadge(true)
             },
             NotificationChannel("cleanup_worker", "Storage Cleanup", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Background storage cleanup tasks"
+                description = "Background cache and junk file cleanup completed (SD Maid SE)"
+                setShowBadge(false)
             },
-            NotificationChannel("app_manager", "App Manager", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "App freeze/hide/uninstall operations"
+            NotificationChannel("privacy_tracker", "Tracker Blocker", NotificationManager.IMPORTANCE_LOW).apply {
+                description = "New trackers blocked, batched max once per hour (Blocker)"
+                setShowBadge(true)
+            },
+            NotificationChannel("freeze_scheduler", "App Freeze Scheduler", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "Apps auto-frozen or unfrozen by schedule (Hail)"
+                setShowBadge(false)
             },
             NotificationChannel("key_mapper", "Key Mapper", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Key mapping service running"
+                description = "Key mapping service active and trigger fired"
+                setShowBadge(false)
             },
-            NotificationChannel("general", "General", NotificationManager.IMPORTANCE_DEFAULT),
+            NotificationChannel("app_manager", "App Manager", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "Install, uninstall, and batch operation results (Inure / Canta)"
+                setShowBadge(true)
+            },
+            NotificationChannel("network_changes", "Network Changes", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "VPN disconnected, network type change (Better Internet Tiles)"
+                setShowBadge(true)
+            },
+            NotificationChannel("shell_complete", "Shell Command Done", NotificationManager.IMPORTANCE_LOW).apply {
+                description = "Long-running ADB/shell command (>5s) completed (aShellYou)"
+                setShowBadge(false)
+            },
+            NotificationChannel("general", "General", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "General ACC alerts and status messages"
+            },
         )
         nm.createNotificationChannels(channels)
     }

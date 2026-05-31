@@ -30,6 +30,7 @@ fun SettingsScreen(
     onNavigateToAllFeatures: () -> Unit = { navController.navigate("all_features") },
     onNavigateToTutorial: () -> Unit = { navController.navigate("tutorial") },
     onNavigateToPermissions: () -> Unit = { navController.navigate("permission_center") },
+    onNavigateToNotifications: () -> Unit = { navController.navigate("notification_center") },
 ) {
     var dynamicColor by remember { mutableStateOf(true) }
     var developerMode by remember { mutableStateOf(false) }
@@ -97,6 +98,8 @@ fun SettingsScreen(
             item {
                 Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
                     FeatureRow("Permission Center", "All 57 app permissions — grant via Shizuku or manually", leadingIcon = { Icon(Icons.Default.AdminPanelSettings, null) }, trailingContent = { Icon(Icons.Default.ChevronRight, null) }, onClick = onNavigateToPermissions)
+                    HorizontalDivider()
+                    FeatureRow("Notification Center", "Control alerts per feature — 11 channels with snooze & test", leadingIcon = { Icon(Icons.Default.NotificationsActive, null) }, trailingContent = { Icon(Icons.Default.ChevronRight, null) }, onClick = onNavigateToNotifications)
                     HorizontalDivider()
                     FeatureRow("Shizuku Center", "Manage elevated access", leadingIcon = { Icon(Icons.Default.Hub, null) }, trailingContent = { Icon(Icons.Default.ChevronRight, null) }, onClick = onNavigateToShizuku)
                     HorizontalDivider()

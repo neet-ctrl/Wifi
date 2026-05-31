@@ -56,6 +56,7 @@ import com.accu.ui.onboarding.OnboardingScreen
 import com.accu.ui.privacy.PrivacyScreen
 import com.accu.ui.privacy.OnlineRulesScreen
 import com.accu.ui.settings.AccuPermissionsScreen
+import com.accu.ui.notifications.NotificationCenterScreen
 import com.accu.ui.settings.SettingsScreen
 import com.accu.ui.shell.ShellScreen
 import com.accu.ui.shizuku.ShizukuCenterScreen
@@ -710,6 +711,11 @@ fun AppNavigation() {
             // Advanced Permission Center
             composable(Screen.PermissionCenter.route) {
                 AccuPermissionsScreen(onBack = { navController.popBackStack() })
+            }
+
+            // Notification Center
+            composable(Screen.NotificationCenter.route) {
+                NotificationCenterScreen(onBack = { navController.popBackStack() })
             }
         }
     }
