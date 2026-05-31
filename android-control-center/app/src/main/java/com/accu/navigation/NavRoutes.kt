@@ -192,6 +192,12 @@ sealed class Screen(val route: String) {
 
     // Notification Center
     data object NotificationCenter : Screen("notification_center")
+
+    // ── ACCU System Service (IPC privilege hub) ───────────────────────────────
+    /** Main service hub: shows connected apps, pending requests, quick docs */
+    data object AccuServiceHub     : Screen("accu_service_hub")
+    /** Full SDK documentation for third-party developers */
+    data object AccuSdkDocs        : Screen("accu_sdk_docs")
 }
 
 data class TopLevelDestination(

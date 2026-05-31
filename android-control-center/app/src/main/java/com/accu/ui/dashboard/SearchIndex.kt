@@ -98,6 +98,10 @@ object SearchIndex {
         SearchResult("Key Mapper Settings",  "Global Key Mapper configuration",                         "keymapper_settings",       "settings",            "Automation",    listOf("keymapper","settings","config","global","options")),
         SearchResult("Key Map Log",          "Log of recent key mapping trigger events",                "key_map_log",              "history",             "Automation",    listOf("keymapper","log","events","trigger","history","debug")),
 
+        // ── ACCU System Service ───────────────────────────────────────────────
+        SearchResult("ACCU Service Hub",     "IPC privilege broker — let other apps use ACCU's power", "accu_service_hub",         "api",                 "System",        listOf("ipc","api","service","binder","aidl","privilege","shizuku","shell","developer","sdk","third-party","connect")),
+        SearchResult("ACCU SDK Docs",        "Full developer SDK documentation for connecting apps",    "accu_sdk_docs",            "menu_book",           "System",        listOf("sdk","docs","api","developer","guide","integration","aidl","connect","bind")),
+
         // ── System & Settings ─────────────────────────────────────────────────
         SearchResult("Settings",             "ACC global app settings & preferences",                   "settings",                 "settings",            "System",        listOf("settings","config","preferences","options","acc","app")),
         SearchResult("Notification Center",  "Per-channel notification control with snooze",            "notification_center",      "notifications",       "System",        listOf("notifications","channels","snooze","alerts","mute","bell")),
@@ -108,6 +112,6 @@ object SearchIndex {
 
     val quickLaunch: List<SearchResult> = entries.filter { it.route in setOf(
         "shizuku_center", "shell", "app_manager", "privacy", "audio_center",
-        "storage", "notification_center", "settings",
+        "storage", "notification_center", "settings", "accu_service_hub",
     ) }
 }

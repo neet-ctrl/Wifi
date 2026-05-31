@@ -43,6 +43,7 @@ fun ShizukuCenterScreen(
     onBack: () -> Unit = {},
     onNavigateToAdbPairing: () -> Unit = {},
     onNavigateToShizukuApps: () -> Unit = {},
+    onNavigateToAccuServiceHub: () -> Unit = {},
     viewModel: ShizukuViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -62,6 +63,7 @@ fun ShizukuCenterScreen(
                 actions = {
                     IconButton(onClick = onNavigateToAdbPairing) { Icon(Icons.Outlined.Usb, "ADB Pairing") }
                     IconButton(onClick = onNavigateToShizukuApps) { Icon(Icons.Outlined.Apps, "Shizuku Apps") }
+                    IconButton(onClick = onNavigateToAccuServiceHub) { Icon(Icons.Outlined.Api, "ACCU Service Hub") }
                     if (state.isAvailable && state.isGranted) {
                         IconButton(onClick = viewModel::runDiagnostics) {
                             if (state.diagnosticsRunning) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)

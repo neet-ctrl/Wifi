@@ -38,6 +38,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+
+    <!-- ACCU Service Hub — client apps must declare this to bind -->
+    <permission
+        android:name="com.accu.api.permission.BIND_ACCU_SERVICE"
+        android:protectionLevel="normal"
+        android:label="Bind to ACCU System Service" />
 
     <!-- System / Shizuku Bridged -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -147,6 +154,30 @@
         <service
             android:name=".services.ShizukuUserService"
             android:exported="false" />
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!--  ACCU SYSTEM SERVICE — Third-party apps bind to this service  -->
+        <!--  Action:  com.accu.api.AccuSystemService                      -->
+        <!--  Package: com.accu.controlcenter                              -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <service
+            android:name=".service.AccuSystemService"
+            android:exported="true"
+            android:foregroundServiceType="specialUse"
+            android:foregroundServiceSpecialUse="connectedDevice"
+            android:permission="com.accu.api.permission.BIND_ACCU_SERVICE">
+            <intent-filter>
+                <action android:name="com.accu.api.AccuSystemService" />
+            </intent-filter>
+        </service>
+
+        <!-- Permission Grant Dialog Activity (shown to user when an app requests ACCU access) -->
+        <activity
+            android:name=".service.AccuPermissionRequestActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ACC"
+            android:windowSoftInputMode="adjustResize"
+            android:launchMode="singleTop" />
 
         <!-- Wi-Fi Quick Tile (Better Internet Tiles) -->
         <service

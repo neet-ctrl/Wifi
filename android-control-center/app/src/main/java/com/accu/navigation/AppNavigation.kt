@@ -118,6 +118,9 @@ import com.accu.ui.shizuku.AdbPairingScreen
 import com.accu.ui.shizuku.ShizukuAppsScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.accu.ui.dashboard.NavHistoryViewModel
+// ACCU System Service (IPC privilege hub)
+import com.accu.ui.apiservice.AccuServiceScreen
+import com.accu.ui.apiservice.AccuSdkDocsScreen
 
 @Composable
 fun AppNavigation() {
@@ -189,6 +192,7 @@ fun AppNavigation() {
                     onBack = { navController.popBackStack() },
                     onNavigateToAdbPairing = { navController.navigate(Screen.AdbPairing.route) },
                     onNavigateToShizukuApps = { navController.navigate(Screen.ShizukuApps.route) },
+                    onNavigateToAccuServiceHub = { navController.navigate(Screen.AccuServiceHub.route) },
                 )
             }
             composable(Screen.Shell.route) {
@@ -722,6 +726,19 @@ fun AppNavigation() {
             // Advanced Permission Center
             composable(Screen.PermissionCenter.route) {
                 AccuPermissionsScreen(onBack = { navController.popBackStack() })
+            }
+
+            // ── ACCU System Service Hub ──────────────────────────────────────────
+            composable(Screen.AccuServiceHub.route) {
+                AccuServiceScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateToDocs = { navController.navigate(Screen.AccuSdkDocs.route) },
+                )
+            }
+
+            // ACCU SDK Documentation (full developer guide)
+            composable(Screen.AccuSdkDocs.route) {
+                AccuSdkDocsScreen(onBack = { navController.popBackStack() })
             }
 
             // Notification Center
