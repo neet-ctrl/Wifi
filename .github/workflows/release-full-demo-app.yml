@@ -7,7 +7,7 @@ name: "📦 Release APK — FullDemoApp"
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
 
@@ -40,8 +40,6 @@ jobs:
 
       - name: "📱 Setup Android SDK"
         uses: android-actions/setup-android@v3
-        with:
-          packages: "platforms;android-35 build-tools;35.0.1"
 
       - name: "🔧 Download Gradle Wrapper JAR"
         run: |
