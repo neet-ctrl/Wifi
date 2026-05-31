@@ -123,54 +123,48 @@ class WifiAdbMdnsViewModel @Inject constructor(
             return
         }
         viewModelScope.launch(Dispatchers.IO) {
-            _state.update { it.copy(isPairing = true, pairingStatus = "Checking privilege…", lastError = null) }
+            _state.update { it.copy(isPairing = true, pairingStatus = "Checking for adb binary…", lastError = null) }
 
-            // Path 1: root already active
-            if (shizukuUtils.isRootAvailable()) {
-                _state.update { it.copy(
-                    isPairing = false,
-                    pairingStatus = "Root access active — all features enabled ✓",
-                    snackbarMessage = "Root connected — no ADB pairing required",
-                )}
-                connectionManager.checkAndUpdateState()
-                return@launch
-            }
-
-            // Path 2: system adb binary (some ROMs/rooted devices ship it)
+            // System adb binary (some ROMs ship it; most Android devices do NOT have it)
             val adb = connectionManager.findAdbBinary()
             if (adb != null) {
-                _state.update { it.copy(pairingStatus = "Pairing with ${s.pairingHost}:$port via $adb…") }
+                _state.update { it.copy(pairingStatus = "Pairing with ${s.pairingHost}:$port…") }
                 val pairResult = connectionManager.execPlainShell("$adb pair ${s.pairingHost}:$port ${s.pairingCode}")
-                val pairOk = pairResult.output.contains("Successfully", ignoreCase = true) || pairResult.exitCode == 0
+                // Only trust explicit success text — exitCode is unreliable on many ROM adb builds
+                val pairOk = pairResult.output.contains("Successfully paired", ignoreCase = true)
                 if (pairOk) {
-                    val connectResult = connectionManager.execPlainShell("$adb connect ${s.pairingHost}:5555")
-                    val connectOk = connectResult.combinedOutput.contains("connected", ignoreCase = true)
+                    _state.update { it.copy(pairingStatus = "Paired! Connecting to ${s.pairingHost}:5555…") }
+                    connectionManager.execPlainShell("$adb connect ${s.pairingHost}:5555")
+                    // VERIFY the connection is ACTUALLY live — don't trust "adb connect" output alone
+                    // ("already connected" can appear from stale ADB cache even when device is offline)
+                    val verify = connectionManager.execPlainShell("$adb -s ${s.pairingHost}:5555 shell echo ACCU_OK 2>&1")
+                    val verified = verify.output.trim() == "ACCU_OK"
                     _state.update { it.copy(
                         isPairing = false,
-                        pairingStatus = if (connectOk) "Paired and connected to ${s.pairingHost}:5555 ✓"
-                                        else "Paired — run on PC: $adb connect ${s.pairingHost}:5555",
-                        snackbarMessage = if (connectOk) "Connected to ${s.pairingHost}" else "Paired but connect failed",
-                        lastError = if (!connectOk) connectResult.combinedOutput else null,
+                        pairingStatus = if (verified) "Connected and verified ✓  ${s.pairingHost}:5555"
+                                        else "Paired but verification failed — device may be offline",
+                        snackbarMessage = if (verified) "Connected to ${s.pairingHost}" else "Verification failed — device unreachable",
+                        lastError = if (!verified) verify.combinedOutput.take(200).ifBlank { "echo test returned: ${verify.output}" } else null,
                     )}
-                    if (connectOk) connectionManager.checkAndUpdateState()
+                    if (verified) connectionManager.checkAndUpdateState()
                 } else {
                     _state.update { it.copy(
                         isPairing = false,
-                        pairingStatus = "Pairing failed",
-                        snackbarMessage = "Pairing failed — check code",
-                        lastError = pairResult.combinedOutput.take(200).ifBlank { "Pairing rejected — check code" },
+                        pairingStatus = "Pairing failed — wrong code or expired",
+                        snackbarMessage = "Pairing failed — check the 6-digit code",
+                        lastError = pairResult.combinedOutput.take(300).ifBlank { "Pairing rejected — code may be expired or wrong" },
                     )}
                 }
                 return@launch
             }
 
-            // Path 3: no adb binary on device — show PC command (don't show error)
+            // No adb binary on this device — must be done from PC
             val pcPair    = "adb pair ${s.pairingHost}:$port ${s.pairingCode}"
             val pcConnect = "adb connect ${s.pairingHost}:5555"
             _state.update { it.copy(
                 isPairing = false,
-                pairingStatus = "Run on your PC:\n$pcPair\nThen: $pcConnect",
-                snackbarMessage = "PC command copied — run on PC to complete pairing",
+                pairingStatus = "No adb binary on this device.\nRun on your PC:\n  $pcPair\nThen:\n  $pcConnect",
+                snackbarMessage = "Run the adb commands on your PC",
             )}
         }
     }
@@ -199,33 +193,28 @@ class WifiAdbMdnsViewModel @Inject constructor(
     fun connectMdnsDevice(device: MdnsDevice) {
         _state.update { s -> s.copy(mdnsDevices = s.mdnsDevices.map { if (it.id == device.id) it.copy(isConnecting = true) else it }) }
         viewModelScope.launch(Dispatchers.IO) {
-            // Root → already privileged
-            if (shizukuUtils.isRootAvailable()) {
-                _state.update { s -> s.copy(
-                    mdnsDevices = s.mdnsDevices.map { if (it.id == device.id) it.copy(isConnecting = false, isConnected = true) else it },
-                    snackbarMessage = "Root access active — device connected ✓",
-                )}
-                connectionManager.checkAndUpdateState()
-                return@launch
-            }
-            // System adb binary
+            // System adb binary required to connect to this specific remote device.
+            // Root gives LOCAL privilege on THIS device — it does NOT mean this mDNS
+            // device is connected. We must run `adb connect` and verify with echo.
             val adb = connectionManager.findAdbBinary()
             if (adb != null) {
-                val result = connectionManager.execPlainShell("$adb connect ${device.ip}:${device.port}")
-                val ok = result.combinedOutput.contains("connected", ignoreCase = true)
+                connectionManager.execPlainShell("$adb connect ${device.ip}:${device.port}")
+                // Verify the connection is actually live, not stale ADB cache
+                val verify = connectionManager.execPlainShell("$adb -s ${device.ip}:${device.port} shell echo ACCU_OK 2>&1")
+                val ok = verify.output.trim() == "ACCU_OK"
                 _state.update { s -> s.copy(
                     mdnsDevices = s.mdnsDevices.map { if (it.id == device.id) it.copy(isConnecting = false, isConnected = ok) else it },
-                    snackbarMessage = if (ok) "Connected to ${device.hostname}" else "Failed: ${result.combinedOutput.take(80)}",
-                    lastError = if (!ok) result.combinedOutput else null,
+                    snackbarMessage = if (ok) "Connected and verified ✓  ${device.hostname}" else "Connection failed — device unreachable",
+                    lastError = if (!ok) verify.combinedOutput.take(200) else null,
                 )}
                 if (ok) connectionManager.checkAndUpdateState()
             } else {
-                // No adb on device — show PC command
+                // No adb binary on this device — must be done from PC
                 val pcCmd = "adb connect ${device.ip}:${device.port}"
                 _state.update { s -> s.copy(
                     mdnsDevices = s.mdnsDevices.map { if (it.id == device.id) it.copy(isConnecting = false) else it },
-                    snackbarMessage = "Run on PC: $pcCmd",
-                    pairingStatus = "Run on your PC:\n$pcCmd",
+                    snackbarMessage = "No adb on device — run on PC: $pcCmd",
+                    pairingStatus = "No adb binary on this device.\nRun on your PC:\n  $pcCmd",
                 )}
             }
         }

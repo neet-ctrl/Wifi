@@ -306,23 +306,35 @@ class AccuConnectionManager @Inject constructor(
         _state.value = ConnectionState.DISCONNECTED
     }
 
-    /** Reconnect to last known session. Returns true if privilege is active. */
+    /**
+     * Reconnect to last known session. Returns true if privilege is actually verified.
+     *
+     * IMPORTANT: `adb connect` can return "already connected" from ADB's stale cache
+     * even when the device is offline. We ALWAYS verify with an actual `echo ok` shell
+     * command after connecting — never trust the connect output alone.
+     */
     suspend fun reconnect(): Boolean = withContext(Dispatchers.IO) {
-        // Root is always the primary path
         return@withContext try {
             if (Shell.getShell().isRoot) {
                 _state.value = ConnectionState.CONNECTED_ROOT
-                Timber.i("$TAG reconnect: root available")
+                Timber.i("$TAG reconnect: root verified")
                 true
             } else {
                 val ip  = getLastConnectedIp()
                 val adb = findAdbBinary()
                 if (ip.isNotBlank() && adb != null) {
-                    val port   = getLastConnectedPort()
-                    val result = execPlainShell("$adb connect $ip:$port")
-                    val ok     = result.combinedOutput.contains("connected", ignoreCase = true)
-                    if (ok) _state.value = ConnectionState.CONNECTED_WIRELESS
-                    ok
+                    val port = getLastConnectedPort()
+                    execPlainShell("$adb connect $ip:$port")
+                    // Verify the connection is actually live — never trust connect output alone
+                    val verify = execPlainShell("$adb -s $ip:$port shell echo ACCU_OK 2>&1")
+                    val verified = verify.output.trim() == "ACCU_OK"
+                    if (verified) {
+                        _state.value = ConnectionState.CONNECTED_WIRELESS
+                        Timber.i("$TAG reconnect: wireless ADB verified at $ip:$port")
+                    } else {
+                        Timber.w("$TAG reconnect: verification failed for $ip:$port — ${verify.combinedOutput.take(80)}")
+                    }
+                    verified
                 } else {
                     false
                 }
@@ -495,18 +507,25 @@ class AccuConnectionManager @Inject constructor(
         _state.value = ConnectionState.CONNECTING
 
         val pairResult = execPlainShell("$adb pair $host:$port $code")
-        val pairOk = pairResult.output.contains("Successfully", ignoreCase = true) || pairResult.exitCode == 0
+        // Only trust explicit "Successfully paired" — exitCode alone is unreliable across ROM adb builds
+        val pairOk = pairResult.output.contains("Successfully paired", ignoreCase = true)
 
         if (pairOk) {
             val connectPort = if (sessionPort > 0) sessionPort else 5555
-            val connectResult = execPlainShell("$adb connect $host:$connectPort")
-            val connectOk = connectResult.combinedOutput.contains("connected", ignoreCase = true)
-            if (connectOk) {
+            execPlainShell("$adb connect $host:$connectPort")
+            // Verify the connection is ACTUALLY live — never trust "adb connect" output alone
+            // (it can say "already connected" from stale cache when device is offline)
+            val verify = execPlainShell("$adb -s $host:$connectPort shell echo ACCU_OK 2>&1")
+            val verified = verify.output.trim() == "ACCU_OK"
+            if (verified) {
                 _state.value = ConnectionState.CONNECTED_WIRELESS
                 prefs.edit().putString(KEY_LAST_IP, host).putInt(KEY_LAST_PORT, connectPort).apply()
                 showConnectedNotification(host, connectPort)
                 stopPairingDiscovery()
+                Timber.i("$TAG completePairing: verified live connection to $host:$connectPort")
                 return@withContext true
+            } else {
+                Timber.w("$TAG completePairing: paired but echo verification failed — ${verify.combinedOutput.take(80)}")
             }
         }
 

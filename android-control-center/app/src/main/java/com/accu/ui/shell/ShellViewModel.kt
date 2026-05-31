@@ -93,28 +93,29 @@ class ShellViewModel @Inject constructor(
     fun connectWifi(host: String, port: Int) {
         viewModelScope.launch {
             addLine(OutputLine(lineIdCounter.incrementAndGet(), "Connecting to $host:$port…", isCommand = true))
-            // Check for root first — root is the primary privilege path
-            if (shizukuUtils.isRootAvailable()) {
-                _uiState.update { it.copy(isWifiConnected = true, connectedHost = "$host:$port") }
-                addLine(OutputLine(lineIdCounter.incrementAndGet(), "Root access active — commands run with uid=0 via LibSU"))
-                return@launch
-            }
-            // Try system adb binary if available (some ROMs ship it)
+            // Root gives LOCAL privilege — it does NOT mean $host:$port is connected.
+            // Always try actual adb connect + echo verification.
             val adb = connectionManager.findAdbBinary()
             if (adb != null) {
-                val result = withContext(Dispatchers.IO) {
-                    connectionManager.execPlainShell("$adb connect $host:$port")
+                withContext(Dispatchers.IO) { connectionManager.execPlainShell("$adb connect $host:$port") }
+                // Verify with an actual shell command — "adb connect" output is unreliable
+                val verify = withContext(Dispatchers.IO) {
+                    connectionManager.execPlainShell("$adb -s $host:$port shell echo ACCU_OK 2>&1")
                 }
-                val success = result.combinedOutput.contains("connected", ignoreCase = true)
-                if (success) {
+                val verified = verify.output.trim() == "ACCU_OK"
+                if (verified) {
                     _uiState.update { it.copy(isWifiConnected = true, connectedHost = "$host:$port") }
-                    addLine(OutputLine(lineIdCounter.incrementAndGet(), "Connected to $host:$port"))
+                    addLine(OutputLine(lineIdCounter.incrementAndGet(), "Connected and verified ✓  $host:$port"))
+                    connectionManager.checkAndUpdateState()
                 } else {
-                    addLine(OutputLine(lineIdCounter.incrementAndGet(), "Failed: ${result.combinedOutput}", isError = true))
+                    addLine(OutputLine(lineIdCounter.incrementAndGet(),
+                        "Connection failed — device unreachable: ${verify.combinedOutput.take(120)}", isError = true))
+                    _uiState.update { it.copy(isWifiConnected = false) }
                 }
             } else {
-                // adb not on device — show PC command
-                addLine(OutputLine(lineIdCounter.incrementAndGet(), "adb binary not on this device. Run from your PC: adb connect $host:$port", isError = false))
+                // No adb binary on this device — must be done from PC
+                addLine(OutputLine(lineIdCounter.incrementAndGet(),
+                    "No adb binary on this device. Run from your PC:\n  adb connect $host:$port", isError = false))
                 _uiState.update { it.copy(isWifiConnected = false) }
             }
         }
