@@ -145,8 +145,11 @@
         <service
             android:name=".services.CallRecordingService"
             android:exported="false"
-            android:foregroundServiceType="phoneCall|specialUse"
-            android:foregroundServiceSpecialUse="callRecording" />
+            android:foregroundServiceType="phoneCall|specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="callRecording" />
+        </service>
 
         <!-- Shizuku UserService (elevated IPC) -->
         <service
@@ -162,11 +165,13 @@
             android:name=".service.AccuSystemService"
             android:exported="true"
             android:foregroundServiceType="specialUse"
-            android:foregroundServiceSpecialUse="connectedDevice"
             android:permission="com.accu.api.permission.BIND_ACCU_SERVICE">
             <intent-filter>
                 <action android:name="com.accu.api.AccuSystemService" />
             </intent-filter>
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="connectedDevice" />
         </service>
 
         <!-- Permission Grant Dialog Activity (shown to user when an app requests ACCU access) -->
@@ -295,8 +300,11 @@
         <service
             android:name=".services.AutoFreezeService"
             android:exported="false"
-            android:foregroundServiceType="specialUse"
-            android:foregroundServiceSpecialUse="deviceMonitor" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="deviceMonitor" />
+        </service>
 
         <!-- Freeze All Tile Service (Hail) -->
         <service
