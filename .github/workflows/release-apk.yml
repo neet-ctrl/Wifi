@@ -1,0 +1,188 @@
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  ACCU — Signed Release APK                                               ║
+# ║  Fires on push to main/master, on any v* tag, or manually.              ║
+# ║  Keystore is baked in as base64 — no secrets setup required.             ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+name: "📦 Release APK — ACCU"
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  JAVA_VERSION: '17'
+  GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true'
+
+jobs:
+  release:
+    name: "🔐 Build & Publish Signed Release APK"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: "📥 Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: "☕ Set up JDK ${{ env.JAVA_VERSION }}"
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: gradle
+
+      - name: "📱 Setup Android SDK"
+        uses: android-actions/setup-android@v3
+
+      - name: "🔧 Download Gradle Wrapper JAR"
+        working-directory: android-control-center
+        run: |
+          WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"
+          if [ ! -f "$WRAPPER_JAR" ]; then
+            echo "Downloading gradle-wrapper.jar for Gradle 8.11.1…"
+            curl -fsSL -o "$WRAPPER_JAR" \
+              "https://github.com/gradle/gradle/raw/v8.11.1/gradle/wrapper/gradle-wrapper.jar" \
+              || curl -fsSL -o "$WRAPPER_JAR" \
+                "https://raw.githubusercontent.com/gradle/gradle/v8.11.1/gradle/wrapper/gradle-wrapper.jar"
+            echo "Downloaded: $(ls -lh $WRAPPER_JAR)"
+          else
+            echo "gradle-wrapper.jar already present."
+          fi
+
+      - name: "🔑 Grant gradlew execute permission"
+        working-directory: android-control-center
+        run: chmod +x gradlew
+
+      - name: "💾 Cache Gradle"
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.android/build-cache
+            android-control-center/.gradle
+          key: ${{ runner.os }}-gradle-accu-release-${{ hashFiles('android-control-center/**/*.gradle*', 'android-control-center/**/gradle-wrapper.properties', 'android-control-center/**/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-accu-
+
+      - name: "🔏 Decode release keystore"
+        working-directory: android-control-center
+        run: |
+          echo "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" \
+            | base64 -d > app/release.jks
+          echo "Keystore written: $(ls -lh app/release.jks)"
+
+      - name: "🏗️ Build signed release APK"
+        working-directory: android-control-center
+        run: |
+          ./gradlew assembleRelease \
+            --no-daemon \
+            --stacktrace \
+            -Pandroid.injected.testOnly=false
+        env:
+          JAVA_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g"
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+          JITPACK_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          KEYSTORE_PATH: release.jks
+          KEYSTORE_PASSWORD: "Sh@090609"
+          KEY_ALIAS: my-key
+          KEY_PASSWORD: "Sh@090609"
+
+      - name: "📦 Locate APKs"
+        id: apk
+        working-directory: android-control-center
+        run: |
+          APK_FILES=$(find app/build/outputs/apk/release -name "*.apk" ! -name "*-unsigned*" | sort)
+          echo "Found APKs:"
+          echo "$APK_FILES" | xargs ls -lh
+          PRIMARY=$(echo "$APK_FILES" | grep -i "universal" | head -1)
+          [ -z "$PRIMARY" ] && PRIMARY=$(echo "$APK_FILES" | head -1)
+          echo "primary=$PRIMARY" >> "$GITHUB_OUTPUT"
+
+      - name: "📊 APK size"
+        id: apk_info
+        run: |
+          SIZE_MB=$(stat -c%s "${{ steps.apk.outputs.primary }}" | awk '{printf "%.2f", $1/1048576}')
+          echo "size=${SIZE_MB} MB" >> "$GITHUB_OUTPUT"
+
+      - name: "📝 Generate release notes"
+        id: notes
+        working-directory: android-control-center
+        run: |
+          DATE=$(date +'%B %d, %Y')
+          VERSION=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts || echo "1.0.0")
+          BODY="## ACCU v${VERSION} — Release Build ${{ github.run_number }}
+
+          **Release Date:** ${DATE}
+
+          ### What's included
+          - Latest production build of Android Control Center Ultimate
+          - All crash-system, audio center, shell, and system features
+          - Signed with the official release keystore · R8 minified
+
+          ### Package Details
+          | Field | Value |
+          |---|---|
+          | Version | \`${VERSION}\` |
+          | Build # | \`${{ github.run_number }}\` |
+          | Build type | Release (signed) |
+          | APK size | ${{ steps.apk_info.outputs.size }} |
+          | Min Android | 10 (API 29) |
+          | Commit | \`${{ github.sha }}\` |
+
+          ### ABI variants attached
+          | File | Architecture |
+          |---|---|
+          | \`*-arm64-v8a-release.apk\` | Most modern phones |
+          | \`*-armeabi-v7a-release.apk\` | Older 32-bit ARM |
+          | \`*-x86_64-release.apk\` | Emulators / Intel |
+          | \`*-universal-release.apk\` | All architectures (largest) |
+
+          ### Installation
+          1. Download the APK for your device's architecture
+          2. Enable **Install unknown apps** for your file manager
+          3. Install and open ACCU"
+
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$BODY" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: "📤 Upload APKs as workflow artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "ACCU-release-build${{ github.run_number }}"
+          path: android-control-center/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: "🚀 Create GitHub Release"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}-release
+          name: "ACCU Release Build ${{ github.run_number }}"
+          body: ${{ steps.notes.outputs.body }}
+          files: android-control-center/app/build/outputs/apk/release/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "📋 Build Summary"
+        run: |
+          VERSION=$(grep -oP 'versionName\s*=\s*"\K[^"]+' android-control-center/app/build.gradle.kts || echo "1.0.0")
+          echo "## 📦 ACCU Release APK Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${VERSION}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build # | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| APK Size | ${{ steps.apk_info.outputs.size }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Release Tag | v${{ github.run_number }}-release |" >> $GITHUB_STEP_SUMMARY
