@@ -44,6 +44,7 @@ object SearchIndex {
         SearchResult("Fastboot & Control",   "Reboot modes, device control keys, fastboot flash commands","adb_fastboot",             "developer_mode",      "Shell & ADB",   listOf("fastboot","reboot","bootloader","recovery","flash","oem","unlock","boot","input","keyevent")),
         SearchResult("Screen Capture",       "Capture screenshots & record screen via ADB",               "adb_screen_capture",       "screenshot",          "Shell & ADB",   listOf("screenshot","screencap","screenrecord","record","capture","video","mp4","png","pull")),
         SearchResult("ADB Tutorial",         "Step-by-step guide: OTG ADB, Wi-Fi ADB, all features",     "adb_tutorial",             "school",              "Shell & ADB",   listOf("tutorial","guide","otg","wifi","wireless","connect","how to","adb","pair","usb","setup")),
+        SearchResult("Shell QS Tiles",       "Create Quick Settings tiles that run custom shell commands","shell_qs_tile_dashboard",  "grid_view",           "Shell & ADB",   listOf("qs","quick settings","tile","toggle","shell","custom","status bar","notification","aShell","shortcut","one-tap")),
 
         // ── Storage & Files ───────────────────────────────────────────────────
         SearchResult("Storage Center",       "Overview & tools for storage management",                  "storage",                  "storage",             "Storage",       listOf("storage","clean","disk","space","sd maid","overview")),
