@@ -1,10 +1,14 @@
 package com.airkey.wifiqr.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -20,6 +24,7 @@ import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import com.airkey.wifiqr.ui.theme.*
@@ -188,6 +193,88 @@ fun SettingsScreen(viewModel: WifiViewModel, onBack: () -> Unit) {
                 onOpenSettings = {},
                 autoGranted = true
             )
+
+            Spacer(Modifier.height(8.dp))
+            SettingsSectionLabel("AShell Permission Commands", Icons.Rounded.Terminal, NeonCyan)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Brush.linearGradient(listOf(CardSurface, DarkSurface.copy(0.97f))))
+                    .border(1.dp, NeonCyan.copy(0.3f), RoundedCornerShape(20.dp))
+                    .padding(16.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Terminal, null, tint = NeonCyan, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Paste directly into AShell — no adb shell prefix needed",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextMuted
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+
+                    AShellCommandRow(
+                        label = "Fine Location",
+                        sublabel = "Geofence + WiFi Radar",
+                        command = "pm grant com.airkey.wifiqr android.permission.ACCESS_FINE_LOCATION",
+                        accentColor = NeonCyan,
+                        context = context
+                    )
+                    AShellCommandRow(
+                        label = "Background Location",
+                        sublabel = "Geofence while app is closed",
+                        command = "pm grant com.airkey.wifiqr android.permission.ACCESS_BACKGROUND_LOCATION",
+                        accentColor = NeonCyan,
+                        context = context
+                    )
+                    AShellCommandRow(
+                        label = "Change WiFi State",
+                        sublabel = "Connect Instantly",
+                        command = "pm grant com.airkey.wifiqr android.permission.CHANGE_WIFI_STATE",
+                        accentColor = NeonPurple,
+                        context = context
+                    )
+                    AShellCommandRow(
+                        label = "Change Network State",
+                        sublabel = "Network switching",
+                        command = "pm grant com.airkey.wifiqr android.permission.CHANGE_NETWORK_STATE",
+                        accentColor = NeonPurple,
+                        context = context
+                    )
+                    AShellCommandRow(
+                        label = "Write System Settings ⭐",
+                        sublabel = "Connect Instantly — critical",
+                        command = "appops set com.airkey.wifiqr WRITE_SETTINGS allow",
+                        accentColor = OrangeWarn,
+                        context = context
+                    )
+                    AShellCommandRow(
+                        label = "NFC",
+                        sublabel = "Tag read/write",
+                        command = "pm grant com.airkey.wifiqr android.permission.NFC",
+                        accentColor = GreenSuccess,
+                        context = context
+                    )
+                    AShellCommandRow(
+                        label = "Read Phone State",
+                        sublabel = "WiFi Radar scan bypass",
+                        command = "pm grant com.airkey.wifiqr android.permission.READ_PHONE_STATE",
+                        accentColor = NeonPink,
+                        context = context
+                    )
+                    AShellCommandRow(
+                        label = "Nearby WiFi Devices",
+                        sublabel = "Android 13+ scanning",
+                        command = "pm grant com.airkey.wifiqr android.permission.NEARBY_WIFI_DEVICES",
+                        accentColor = NeonPink,
+                        context = context
+                    )
+                }
+            }
 
             Spacer(Modifier.height(8.dp))
             SettingsSectionLabel("PDF Export", Icons.Rounded.PictureAsPdf, NeonPink)
@@ -520,6 +607,93 @@ private fun AppInfoRow(icon: ImageVector, label: String, value: String, color: C
             Text(label, style = MaterialTheme.typography.labelSmall, color = TextMuted)
             Text(value, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
         }
+    }
+}
+
+@Composable
+private fun AShellCommandRow(
+    label: String,
+    sublabel: String,
+    command: String,
+    accentColor: Color,
+    context: Context
+) {
+    var copied by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 5.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(DarkSurface.copy(0.7f))
+            .border(1.dp, accentColor.copy(0.25f), RoundedCornerShape(14.dp))
+            .padding(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = accentColor,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    sublabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextMuted
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (copied) GreenSuccess.copy(0.15f) else accentColor.copy(0.12f))
+                    .border(1.dp, if (copied) GreenSuccess.copy(0.5f) else accentColor.copy(0.35f), RoundedCornerShape(8.dp))
+                    .clickable {
+                        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        cm.setPrimaryClip(ClipData.newPlainText("AShell command", command))
+                        Toast.makeText(context, "Copied!", Toast.LENGTH_SHORT).show()
+                        copied = true
+                        scope.launch {
+                            delay(2000)
+                            copied = false
+                        }
+                    }
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        if (copied) Icons.Rounded.CheckCircle else Icons.Rounded.ContentCopy,
+                        null,
+                        tint = if (copied) GreenSuccess else accentColor,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        if (copied) "Copied" else "Copy",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (copied) GreenSuccess else accentColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            command,
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+            color = Color.White.copy(0.85f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Black.copy(0.4f))
+                .padding(horizontal = 10.dp, vertical = 7.dp)
+        )
     }
 }
 
