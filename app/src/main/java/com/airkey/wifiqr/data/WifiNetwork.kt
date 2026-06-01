@@ -22,7 +22,8 @@ data class WifiNetwork(
     val savedAt: Long = System.currentTimeMillis(),
     val lastConnected: Long? = null,
     val category: String = "General",
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val qrCodeImagePath: String? = null
 ) {
     fun toWifiQrString(): String {
         val sec = when (securityType) {

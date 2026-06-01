@@ -2,6 +2,8 @@ package com.airkey.wifiqr.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
@@ -10,6 +12,7 @@ import android.net.wifi.WifiNetworkSpecifier
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.airkey.wifiqr.data.*
@@ -40,7 +43,7 @@ data class QrStyle(
 
 class WifiViewModel(application: Application) : AndroidViewModel(application) {
     private val db = WifiDatabase.getDatabase(application)
-    private val repo = WifiRepository(db.wifiDao())
+    private val repo = WifiRepository(db.wifiDao(), db.connectionEventDao(), db.geofenceConfigDao())
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -62,6 +65,9 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _connectMessage = MutableStateFlow<String?>(null)
     val connectMessage: StateFlow<String?> = _connectMessage.asStateFlow()
+
+    private val _pdfExportMessage = MutableStateFlow<String?>(null)
+    val pdfExportMessage: StateFlow<String?> = _pdfExportMessage.asStateFlow()
 
     val categories = listOf("All", "Home", "Work", "Travel", "Public", "Guest", "General")
 
@@ -93,12 +99,28 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun saveNetwork(network: WifiNetwork) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val existing = repo.getBySsid(network.ssid)
             if (existing != null) {
                 repo.update(network.copy(id = existing.id, savedAt = existing.savedAt))
             } else {
                 repo.insert(network)
+            }
+        }
+    }
+
+    fun saveNetworkWithQr(context: Context, network: WifiNetwork, bitmap: Bitmap?) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val existing = repo.getBySsid(network.ssid)
+            val id: Long = if (existing != null) {
+                repo.update(network.copy(id = existing.id, savedAt = existing.savedAt))
+                existing.id
+            } else {
+                repo.insert(network)
+            }
+            if (bitmap != null) {
+                val path = QrImageStore.save(context, id, bitmap)
+                repo.updateQrImagePath(id, path)
             }
         }
     }
@@ -136,12 +158,22 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
             showToast("Instant connect requires Android 10+")
             return
         }
+        if (!Settings.System.canWrite(context)) {
+            viewModelScope.launch(Dispatchers.Main) {
+                showToast("Need 'Modify System Settings' permission — opening Settings")
+                val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+                _connectMessage.value = "Grant 'Modify System Settings' permission, then try Connect again"
+            }
+            return
+        }
         viewModelScope.launch(Dispatchers.Main) {
             try {
                 activeNetworkCallback?.let { oldCallback ->
-                    try {
-                        activeConnectivityManager?.unregisterNetworkCallback(oldCallback)
-                    } catch (_: Exception) {}
+                    try { activeConnectivityManager?.unregisterNetworkCallback(oldCallback) } catch (_: Exception) {}
                 }
                 activeNetworkCallback = null
                 activeConnectivityManager = null
@@ -153,8 +185,7 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
                         showToast("WEP networks are not supported for instant connect")
                         return@launch
                     }
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                            wifiNet.securityType == SecurityType.WPA3.name -> {
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && wifiNet.securityType == SecurityType.WPA3.name -> {
                         specBuilder.setWpa3Passphrase(wifiNet.password)
                     }
                     else -> specBuilder.setWpa2Passphrase(wifiNet.password)
@@ -169,13 +200,15 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
 
                 val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
                 activeConnectivityManager = cm
-
                 val mainHandler = Handler(Looper.getMainLooper())
 
                 val callback = object : ConnectivityManager.NetworkCallback() {
                     override fun onAvailable(network: android.net.Network) {
                         viewModelScope.launch(Dispatchers.Main) {
                             repo.updateLastConnected(wifiNet.id)
+                            viewModelScope.launch(Dispatchers.IO) {
+                                repo.logConnectionEvent(wifiNet.id, wifiNet.ssid)
+                            }
                             _connectMessage.value = "✓ Connected to ${wifiNet.ssid}"
                             showToast("Connected to ${wifiNet.ssid}")
                         }
@@ -198,7 +231,6 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 activeNetworkCallback = callback
                 cm.requestNetwork(request, callback, mainHandler)
-
             } catch (e: Exception) {
                 showToast("Connect failed: ${e.message}")
             }
@@ -226,37 +258,105 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
             _backupMessage.value = "Restoring…"
             val result = BackupManager.performRestore(context, fileUri)
             result.fold(
-                onSuccess = { networks ->
-                    var added = 0
-                    var updated = 0
-                    networks.forEach { n ->
+                onSuccess = { pairs ->
+                    var added = 0; var updated = 0
+                    pairs.forEach { (n, imageBytes) ->
                         val existing = repo.getBySsid(n.ssid)
-                        if (existing != null) {
+                        val id: Long = if (existing != null) {
                             repo.update(n.copy(id = existing.id, savedAt = existing.savedAt))
                             updated++
+                            existing.id
                         } else {
-                            repo.insert(n)
                             added++
+                            repo.insert(n)
+                        }
+                        if (imageBytes != null) {
+                            val path = QrImageStore.saveFromBytes(context, id, imageBytes)
+                            repo.updateQrImagePath(id, path)
                         }
                     }
                     _backupMessage.value = "✓ Restored: $added new networks, $updated updated"
                 },
-                onFailure = { e ->
-                    _backupMessage.value = "Restore failed: ${e.message}"
-                }
+                onFailure = { e -> _backupMessage.value = "Restore failed: ${e.message}" }
             )
         }
     }
 
-    fun clearBackupMessage() {
-        _backupMessage.value = null
+    fun clearBackupMessage() { _backupMessage.value = null }
+
+    fun scheduleAutoBackup(context: Context, folderUri: Uri, intervalDays: Int) {
+        val prefs = AutoBackupWorker.getPrefs(context)
+        prefs.edit().putString(AutoBackupWorker.KEY_BACKUP_URI, folderUri.toString()).apply()
+        AutoBackupWorker.schedule(context, intervalDays)
+        _backupMessage.value = "✓ Auto-backup scheduled every ${if (intervalDays == 1) "day" else "$intervalDays days"}"
     }
+
+    fun cancelAutoBackup(context: Context) {
+        AutoBackupWorker.cancel(context)
+        _backupMessage.value = "Auto-backup cancelled"
+    }
+
+    fun exportPdfBooklet(context: Context, folderUri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _pdfExportMessage.value = "Generating PDF…"
+            val networks = repo.getAllNetworksList()
+            if (networks.isEmpty()) {
+                _pdfExportMessage.value = "No saved networks to export"
+                return@launch
+            }
+            val result = PdfExportManager.exportBooklet(context, networks, folderUri)
+            _pdfExportMessage.value = result.fold(
+                onSuccess = { name -> "✓ PDF saved: $name (${networks.size} pages)" },
+                onFailure = { e -> "PDF export failed: ${e.message}" }
+            )
+        }
+    }
+
+    fun clearPdfMessage() { _pdfExportMessage.value = null }
+
+    suspend fun logConnectionEvent(networkId: Long, ssid: String): Long =
+        withContext(Dispatchers.IO) { repo.logConnectionEvent(networkId, ssid) }
+
+    fun updateConnectionEventSpeeds(
+        eventId: Long,
+        downloadMbps: Float,
+        uploadMbps: Float,
+        pingMs: Int,
+        signalDbm: Int,
+        frequencyMhz: Int,
+        linkSpeedMbps: Int
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val event = repo.getEventById(eventId) ?: return@launch
+            repo.updateConnectionEvent(event.copy(
+                downloadSpeedMbps = downloadMbps,
+                uploadSpeedMbps = uploadMbps,
+                pingMs = pingMs,
+                signalDbm = signalDbm,
+                frequencyMhz = frequencyMhz,
+                linkSpeedMbps = linkSpeedMbps
+            ))
+        }
+    }
+
+    fun getEventsForNetwork(networkId: Long) = repo.getEventsForNetwork(networkId)
+
+    fun upsertGeofence(config: GeofenceConfig) {
+        viewModelScope.launch(Dispatchers.IO) { repo.upsertGeofence(config) }
+    }
+
+    fun deleteGeofence(config: GeofenceConfig) {
+        viewModelScope.launch(Dispatchers.IO) { repo.deleteGeofence(config) }
+    }
+
+    suspend fun getGeofenceForNetwork(networkId: Long): GeofenceConfig? =
+        withContext(Dispatchers.IO) { repo.getGeofenceForNetwork(networkId) }
+
+    fun getAllGeofencesFlow() = repo.getAllGeofencesFlow()
 
     override fun onCleared() {
         super.onCleared()
-        activeNetworkCallback?.let {
-            activeConnectivityManager?.unregisterNetworkCallback(it)
-        }
+        activeNetworkCallback?.let { activeConnectivityManager?.unregisterNetworkCallback(it) }
     }
 
     private fun showToast(msg: String) {

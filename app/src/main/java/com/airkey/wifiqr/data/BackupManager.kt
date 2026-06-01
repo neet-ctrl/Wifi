@@ -43,13 +43,13 @@ object BackupManager {
         }
     }
 
-    fun performRestore(context: Context, fileUri: Uri): Result<List<WifiNetwork>> {
+    fun performRestore(context: Context, fileUri: Uri): Result<List<Pair<WifiNetwork, ByteArray?>>> {
         return try {
             val bytes = context.contentResolver.openInputStream(fileUri)?.use { it.readBytes() }
                 ?: return Result.failure(Exception("Cannot open backup file"))
             val json = bytes.toString(Charsets.UTF_8)
-            val networks = parseBackupJson(json)
-            Result.success(networks)
+            val pairs = parseBackupJson(json)
+            Result.success(pairs)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -79,7 +79,8 @@ object BackupManager {
             obj.put("isFavorite", n.isFavorite)
 
             try {
-                val bmp = QrCodeGenerator.generate(n.toWifiQrString(), 512, defaultStyle, null)
+                val bmp: Bitmap? = n.qrCodeImagePath?.let { QrImageStore.load(it) }
+                    ?: QrCodeGenerator.generate(n.toWifiQrString(), 512, defaultStyle, null)
                 if (bmp != null) {
                     val bos = ByteArrayOutputStream()
                     bmp.compress(Bitmap.CompressFormat.PNG, 100, bos)
@@ -94,28 +95,30 @@ object BackupManager {
         return root.toString(2)
     }
 
-    private fun parseBackupJson(json: String): List<WifiNetwork> {
+    private fun parseBackupJson(json: String): List<Pair<WifiNetwork, ByteArray?>> {
         val root = JSONObject(json)
         val arr = root.optJSONArray("networks") ?: return emptyList()
-        val result = mutableListOf<WifiNetwork>()
+        val result = mutableListOf<Pair<WifiNetwork, ByteArray?>>()
 
         for (i in 0 until arr.length()) {
             try {
                 val obj = arr.getJSONObject(i)
-                result.add(
-                    WifiNetwork(
-                        id = 0,
-                        ssid = obj.getString("ssid"),
-                        password = obj.optString("password", ""),
-                        securityType = obj.optString("securityType", "WPA"),
-                        isHidden = obj.optBoolean("isHidden", false),
-                        notes = obj.optString("notes", ""),
-                        savedAt = obj.optLong("savedAt", System.currentTimeMillis()),
-                        lastConnected = if (obj.isNull("lastConnected")) null else obj.optLong("lastConnected"),
-                        category = obj.optString("category", "General"),
-                        isFavorite = obj.optBoolean("isFavorite", false)
-                    )
+                val network = WifiNetwork(
+                    id = 0,
+                    ssid = obj.getString("ssid"),
+                    password = obj.optString("password", ""),
+                    securityType = obj.optString("securityType", "WPA"),
+                    isHidden = obj.optBoolean("isHidden", false),
+                    notes = obj.optString("notes", ""),
+                    savedAt = obj.optLong("savedAt", System.currentTimeMillis()),
+                    lastConnected = if (obj.isNull("lastConnected")) null else obj.optLong("lastConnected"),
+                    category = obj.optString("category", "General"),
+                    isFavorite = obj.optBoolean("isFavorite", false)
                 )
+                val imageBytes: ByteArray? = obj.optString("qrImageBase64", "")
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { try { Base64.decode(it, Base64.NO_WRAP) } catch (_: Exception) { null } }
+                result.add(Pair(network, imageBytes))
             } catch (_: Exception) {}
         }
         return result

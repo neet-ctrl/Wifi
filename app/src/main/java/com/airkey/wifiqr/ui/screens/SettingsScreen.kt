@@ -26,6 +26,7 @@ import com.airkey.wifiqr.ui.theme.*
 import com.airkey.wifiqr.viewmodel.WifiViewModel
 import com.google.accompanist.permissions.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -42,6 +43,8 @@ fun SettingsScreen(viewModel: WifiViewModel, onBack: () -> Unit) {
     var storageGrantedState by remember { mutableStateOf(storageGranted) }
 
     val backupMessage by viewModel.backupMessage.collectAsState()
+    val pdfExportMessage by viewModel.pdfExportMessage.collectAsState()
+    var autoBackupDays by remember { mutableIntStateOf(1) }
 
     val backupFolderLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
@@ -52,6 +55,30 @@ fun SettingsScreen(viewModel: WifiViewModel, onBack: () -> Unit) {
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
             viewModel.backupNetworks(context, uri)
+        }
+    }
+
+    val pdfFolderLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            viewModel.exportPdfBooklet(context, uri)
+        }
+    }
+
+    val autoBackupFolderLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            viewModel.scheduleAutoBackup(context, uri, autoBackupDays)
         }
     }
 
@@ -163,6 +190,40 @@ fun SettingsScreen(viewModel: WifiViewModel, onBack: () -> Unit) {
             )
 
             Spacer(Modifier.height(8.dp))
+            SettingsSectionLabel("PDF Export", Icons.Rounded.PictureAsPdf, NeonPink)
+
+            AnimatedVisibility(
+                visible = pdfExportMessage != null,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                val isOk = pdfExportMessage?.startsWith("✓") == true
+                Row(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                        .background(if (isOk) GreenSuccess.copy(0.12f) else Color(0xFFFF4444).copy(0.12f))
+                        .border(1.dp, if (isOk) GreenSuccess.copy(0.4f) else Color(0xFFFF4444).copy(0.4f), RoundedCornerShape(14.dp))
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(if (isOk) Icons.Rounded.CheckCircle else Icons.Rounded.Error, null,
+                        tint = if (isOk) GreenSuccess else Color(0xFFFF6666), modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text(pdfExportMessage ?: "", color = if (isOk) GreenSuccess else Color(0xFFFF6666),
+                        style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            BackupActionCard(
+                icon = Icons.Rounded.PictureAsPdf,
+                title = "Export QR Booklet as PDF",
+                description = "Creates a printable PDF with one QR code per page for all your saved networks — perfect for offices, hotels, or home labels",
+                accentColor = NeonPink,
+                buttonLabel = "Choose Folder & Export PDF",
+                buttonIcon = Icons.Rounded.FolderOpen,
+                onClick = { pdfFolderLauncher.launch(null) }
+            )
+
+            Spacer(Modifier.height(8.dp))
             SettingsSectionLabel("Data Backup", Icons.Rounded.Backup, GreenSuccess)
 
             AnimatedVisibility(
@@ -222,6 +283,73 @@ fun SettingsScreen(viewModel: WifiViewModel, onBack: () -> Unit) {
                 buttonIcon = Icons.Rounded.FileOpen,
                 onClick = { restoreFileLauncher.launch(arrayOf("*/*")) }
             )
+
+            Spacer(Modifier.height(8.dp))
+            SettingsSectionLabel("Auto-Backup Schedule", Icons.Rounded.Schedule, OrangeWarn)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Brush.linearGradient(listOf(CardSurface, DarkSurface.copy(0.97f))))
+                    .border(1.dp, OrangeWarn.copy(0.35f), RoundedCornerShape(20.dp))
+                    .padding(18.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Schedule, null, tint = OrangeWarn, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Text("Backup Interval", style = MaterialTheme.typography.labelLarge, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                    }
+                    Text(
+                        "Choose how often AirKey automatically saves a backup to your chosen folder",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
+                    )
+                    val intervalOptions = listOf(1 to "Every day", 3 to "Every 3 days", 7 to "Every week", 14 to "Every 2 weeks", 30 to "Every month")
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        intervalOptions.forEach { (days, label) ->
+                            val selected = autoBackupDays == days
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (selected) OrangeWarn.copy(0.25f) else GlassWhite)
+                                    .border(1.dp, if (selected) OrangeWarn.copy(0.8f) else GlassWhite2, RoundedCornerShape(10.dp))
+                                    .clickable { autoBackupDays = days }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            ) {
+                                Text(label, style = MaterialTheme.typography.labelSmall, color = if (selected) OrangeWarn else TextSecondary, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+                            }
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { autoBackupFolderLauncher.launch(null) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = OrangeWarn.copy(0.18f), contentColor = OrangeWarn),
+                            border = BorderStroke(1.dp, OrangeWarn.copy(0.55f)),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
+                        ) {
+                            Icon(Icons.Rounded.FolderOpen, null, modifier = Modifier.size(15.dp))
+                            Spacer(Modifier.width(5.dp))
+                            Text("Set Folder & Schedule", style = MaterialTheme.typography.labelSmall)
+                        }
+                        Button(
+                            onClick = { viewModel.cancelAutoBackup(context) },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = RedError.copy(0.12f), contentColor = RedError),
+                            border = BorderStroke(1.dp, RedError.copy(0.4f)),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)
+                        ) {
+                            Icon(Icons.Rounded.Cancel, null, modifier = Modifier.size(15.dp))
+                        }
+                    }
+                }
+            }
 
             Spacer(Modifier.height(8.dp))
             SettingsSectionLabel("About AirKey", Icons.Rounded.Info, NeonPurple)

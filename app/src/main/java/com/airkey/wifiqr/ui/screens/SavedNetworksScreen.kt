@@ -9,6 +9,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import com.airkey.wifiqr.data.QrImageStore
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -45,7 +46,11 @@ import java.util.*
 fun SavedNetworksScreen(
     viewModel: WifiViewModel,
     onBack: () -> Unit,
-    onNavigateGenerate: (WifiNetwork) -> Unit
+    onNavigateGenerate: (WifiNetwork) -> Unit,
+    onNavigateSpeedTest: (WifiNetwork) -> Unit = {},
+    onNavigateRadar: () -> Unit = {},
+    onNavigateNfc: (WifiNetwork) -> Unit = {},
+    onNavigateHistory: (WifiNetwork) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -94,6 +99,12 @@ fun SavedNetworksScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = TextMuted
                     )
+                }
+                IconButton(
+                    onClick = onNavigateRadar,
+                    modifier = Modifier.background(NeonPurple.copy(0.15f), CircleShape)
+                ) {
+                    Icon(Icons.Rounded.Radar, null, tint = NeonPurple)
                 }
                 if (uiState.networkCount > 0) {
                     Box(
@@ -239,7 +250,10 @@ fun SavedNetworksScreen(
                         networks = uiState.networks,
                         context = context,
                         viewModel = viewModel,
-                        onNavigateGenerate = onNavigateGenerate
+                        onNavigateGenerate = onNavigateGenerate,
+                        onNavigateSpeedTest = onNavigateSpeedTest,
+                        onNavigateNfc = onNavigateNfc,
+                        onNavigateHistory = onNavigateHistory
                     )
                 } else {
                     QrCodesTab(
@@ -261,7 +275,10 @@ private fun NetworksTab(
     networks: List<WifiNetwork>,
     context: Context,
     viewModel: WifiViewModel,
-    onNavigateGenerate: (WifiNetwork) -> Unit
+    onNavigateGenerate: (WifiNetwork) -> Unit,
+    onNavigateSpeedTest: (WifiNetwork) -> Unit = {},
+    onNavigateNfc: (WifiNetwork) -> Unit = {},
+    onNavigateHistory: (WifiNetwork) -> Unit = {}
 ) {
     LazyColumn(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -287,7 +304,10 @@ private fun NetworksTab(
                     onToggleFavorite = { viewModel.toggleFavorite(network) },
                     onDelete = { viewModel.deleteNetwork(network) },
                     onConnectInstantly = { viewModel.connectInstantly(context, network) },
-                    onGenerateQr = { onNavigateGenerate(network) }
+                    onGenerateQr = { onNavigateGenerate(network) },
+                    onSpeedTest = { onNavigateSpeedTest(network) },
+                    onNfcWrite = { onNavigateNfc(network) },
+                    onHistory = { onNavigateHistory(network) }
                 )
             }
         }
@@ -353,9 +373,18 @@ fun QrNetworkCard(
     val clipboardManager = remember { context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
 
-    LaunchedEffect(network.id, network.ssid, network.password, network.securityType) {
-        qrBitmap = withContext(Dispatchers.Default) {
-            QrCodeGenerator.generate(network.toWifiQrString(), 360, QrStyle())
+    LaunchedEffect(network.id, network.qrCodeImagePath, network.ssid, network.password, network.securityType) {
+        qrBitmap = withContext(Dispatchers.IO) {
+            if (network.qrCodeImagePath != null) {
+                QrImageStore.load(network.qrCodeImagePath)
+                    ?: withContext(Dispatchers.Default) {
+                        QrCodeGenerator.generate(network.toWifiQrString(), 360, QrStyle())
+                    }
+            } else {
+                withContext(Dispatchers.Default) {
+                    QrCodeGenerator.generate(network.toWifiQrString(), 360, QrStyle())
+                }
+            }
         }
     }
 
@@ -681,7 +710,10 @@ fun NetworkCard(
     onToggleFavorite: () -> Unit,
     onDelete: () -> Unit,
     onConnectInstantly: () -> Unit,
-    onGenerateQr: () -> Unit
+    onGenerateQr: () -> Unit,
+    onSpeedTest: () -> Unit = {},
+    onNfcWrite: () -> Unit = {},
+    onHistory: () -> Unit = {}
 ) {
     var expanded by remember { mutableStateOf(false) }
     var showPassword by remember { mutableStateOf(false) }
@@ -894,6 +926,47 @@ fun NetworkCard(
                             ) {
                                 Text("Confirm?", style = MaterialTheme.typography.labelMedium)
                             }
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onSpeedTest,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = OrangeWarn.copy(0.15f), contentColor = OrangeWarn),
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+                            border = BorderStroke(1.dp, OrangeWarn.copy(0.5f))
+                        ) {
+                            Icon(Icons.Rounded.Speed, null, modifier = Modifier.size(13.dp))
+                            Spacer(Modifier.width(3.dp))
+                            Text("Speed", style = MaterialTheme.typography.labelSmall)
+                        }
+                        Button(
+                            onClick = onNfcWrite,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = NeonPurple.copy(0.15f), contentColor = NeonPurple),
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+                            border = BorderStroke(1.dp, NeonPurple.copy(0.5f))
+                        ) {
+                            Icon(Icons.Rounded.Nfc, null, modifier = Modifier.size(13.dp))
+                            Spacer(Modifier.width(3.dp))
+                            Text("NFC", style = MaterialTheme.typography.labelSmall)
+                        }
+                        Button(
+                            onClick = onHistory,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = GreenSuccess.copy(0.12f), contentColor = GreenSuccess),
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+                            border = BorderStroke(1.dp, GreenSuccess.copy(0.45f))
+                        ) {
+                            Icon(Icons.Rounded.History, null, modifier = Modifier.size(13.dp))
+                            Spacer(Modifier.width(3.dp))
+                            Text("History", style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }

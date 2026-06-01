@@ -1,0 +1,51 @@
+PDF QR Booklet Export — Export all saved networks as a printable PDF with one QR per page — great for offices/hotels.
+WiFi Speed Test — After connecting, run a speed test (download/upload/ping) right inside the app and log it per network.but with advanced detail about wifi ok
+Connection History & Stats — Track how often and when you connect to each network, time spent, and a usage chart per network.
+
+ Geofence Auto-Connect — When you walk into a saved location (home, office), automatically connect to the network. Uses GPS geofencing.
+ NFC Tag Writer — Write WiFi credentials directly to an NFC sticker. Phone touches the sticker → instantly connects. No scanning needed.  explain this  feature in more detail with all button
+WiFi Radar — Scan nearby WiFi signals and highlight which of your saved networks are currently in range, with live signal bars. Shows distance-from-router estimate.
+
+Auto-Backup Schedule — Set daily/weekly automatic backup to a chosen folder (runs silently in the background via WorkManager).
+
+Network Usage Timeline — Per-network graph showing when and how often you connected. Useful for tracking access to shared/guest networks
+
+20 minutes ago
+Before that see these error 1st connection one and tell how to give that permission if u will not ask even show ashell you format local adb command to grant and and then still in saved network screeen inside qr code tab ,it is not saving that exact same i made with all process means not exactly preview one and even backup not restoreing those exact same image of qrcode it should not auto recreate so make sure it must save that processes qr code in preview ok and tell full step how to grant all those permission for all new features ok and pdf export must that all same processed saved qr codes ok
+
+5 minutes ago
+I'll address all three issues. Let me first read the relevant files to understand the QR generation and saving code:
+
+Let me now understand the full picture and plan:
+
+WRITE_SETTINGS permission - I need to:
+
+Add a proper check in the ViewModel's connectInstantly function to detect if WRITE_SETTINGS is not granted, and redirect to Settings screen to grant it
+Show a clear error message with guidance
+QR Code saving - Currently in QrNetworkCard, the QR is regenerated on-the-fly via QrCodeGenerator.generate(). The issue is that the "Save QR" button saves qrBitmap which IS the generated bitmap - so it should actually be saving the right image.
+
+But the user is saying it's not saving the exact same one they created. The problem is that when they generate a network with custom QR style parameters (colors, etc.) in the preview, those settings aren't being preserved when the network is saved. Later when viewing it in the QR tab, it regenerates with default styling instead of the custom style they chose. I need to capture and store the QR image with its exact styling when the network is first saved, rather than regenerating it later with default parameters.
+
+The solution involves storing the QR image as a file and adding a reference to it in the WifiNetwork data, then loading from that stored file instead of regenerating. This same approach needs to apply to backup/restore functionality and PDF exports so they all use the preserved QR image rather than creating new ones with default styling. I need to check the PreviewTab implementation to see how the saving flow works and ensure the QR image gets stored with the chosen style applied.
+
+Let me read the PreviewTab, WifiViewModel (backup/PDF functions), and WifiRepository to understand the full picture:
+
+Let me read all remaining files I need in parallel before making all changes:
+
+Let me read the remaining files I need:
+
+Now I have the complete picture. Here's what I'm fixing:
+
+WRITE_SETTINGS — detect and open the exact Android Settings page to grant it
+QR exact image — store the styled bitmap to file when saving, load it back in QR tab instead of regenerating
+Backup/restore exact images — include QR images in backup, restore them to file
+PDF — use stored QR images
+Let me make all changes now in parallel:
+
+Now let me do all the remaining file changes in parallel:
+
+Continuing with all remaining changes in parallel:
+
+Now let me update WifiViewModel, BackupManager, PdfExportManager, GeneratorScreen, and SavedNetworksScreen all at once:
+
+Queue

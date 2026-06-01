@@ -184,13 +184,15 @@ fun GeneratorScreen(
                     onToast = { shareToast = it },
                     onSaveToVault = if (ssid.isNotBlank()) {
                         {
-                            viewModel.saveNetwork(
+                            viewModel.saveNetworkWithQr(
+                                context,
                                 WifiNetwork(
                                     ssid = ssid,
                                     password = password,
                                     securityType = securityType,
                                     isHidden = isHidden
-                                )
+                                ),
+                                qrBitmap
                             )
                         }
                     } else null
