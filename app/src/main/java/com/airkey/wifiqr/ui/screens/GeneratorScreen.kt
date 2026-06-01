@@ -161,11 +161,7 @@ fun GeneratorScreen(
                     password = password, onPasswordChange = { password = it },
                     showPassword = showPassword, onTogglePassword = { showPassword = !showPassword },
                     securityType = securityType, onSecurityChange = { securityType = it },
-                    isHidden = isHidden, onHiddenChange = { isHidden = it },
-                    onSave = {
-                        viewModel.saveNetwork(WifiNetwork(ssid = ssid, password = password, securityType = securityType, isHidden = isHidden))
-                    },
-                    canSave = ssid.isNotBlank()
+                    isHidden = isHidden, onHiddenChange = { isHidden = it }
                 )
                 1 -> StyleTab(
                     qrStyle = qrStyle,
@@ -185,7 +181,19 @@ fun GeneratorScreen(
                             shareToast = "Saved to gallery!"
                         }
                     },
-                    onToast = { shareToast = it }
+                    onToast = { shareToast = it },
+                    onSaveToVault = if (ssid.isNotBlank()) {
+                        {
+                            viewModel.saveNetwork(
+                                WifiNetwork(
+                                    ssid = ssid,
+                                    password = password,
+                                    securityType = securityType,
+                                    isHidden = isHidden
+                                )
+                            )
+                        }
+                    } else null
                 )
             }
             Spacer(Modifier.height(100.dp))
@@ -200,8 +208,7 @@ fun DetailsTab(
     password: String, onPasswordChange: (String) -> Unit,
     showPassword: Boolean, onTogglePassword: () -> Unit,
     securityType: String, onSecurityChange: (String) -> Unit,
-    isHidden: Boolean, onHiddenChange: (Boolean) -> Unit,
-    onSave: () -> Unit, canSave: Boolean
+    isHidden: Boolean, onHiddenChange: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     var showWifiPicker by remember { mutableStateOf(false) }
@@ -355,17 +362,6 @@ fun DetailsTab(
             )
         }
 
-        Button(
-            onClick = onSave,
-            modifier = Modifier.fillMaxWidth().height(54.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = NeonPurple),
-            enabled = canSave
-        ) {
-            Icon(Icons.Rounded.Save, null)
-            Spacer(Modifier.width(8.dp))
-            Text("Save to Vault", fontWeight = FontWeight.Bold)
-        }
     }
 
     if (showWifiPicker) {
@@ -769,8 +765,10 @@ fun PreviewTab(
     context: Context,
     onShare: () -> Unit,
     onSaveToGallery: () -> Unit,
-    onToast: (String) -> Unit
+    onToast: (String) -> Unit,
+    onSaveToVault: (() -> Unit)? = null
 ) {
+    var savedToVault by remember { mutableStateOf(false) }
     val folderPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         uri?.let {
             if (qrBitmap != null) {
@@ -944,6 +942,62 @@ fun PreviewTab(
                         style = MaterialTheme.typography.bodySmall,
                         color = GreenSuccess.copy(0.9f)
                     )
+                }
+            }
+
+            // ── Add to Saved Networks (primary vault action) ───────────────
+            if (onSaveToVault != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .coloredShadow(NeonPurple, 16.dp, 18.dp, alpha = 0.5f)
+                ) {
+                    Button(
+                        onClick = {
+                            if (!savedToVault) {
+                                onSaveToVault()
+                                savedToVault = true
+                                onToast("Added to Saved Networks!")
+                            }
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (savedToVault) GreenSuccess else Color.Transparent,
+                            contentColor = Color.White
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .then(
+                                if (!savedToVault) Modifier.background(
+                                    Brush.linearGradient(listOf(NeonPurple, NeonCyan)),
+                                    RoundedCornerShape(16.dp)
+                                ) else Modifier
+                            ),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    if (savedToVault) Icons.Rounded.CheckCircle else Icons.Rounded.BookmarkAdd,
+                                    null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    if (savedToVault) "Added to Saved Networks!" else "Add to Saved Networks",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
