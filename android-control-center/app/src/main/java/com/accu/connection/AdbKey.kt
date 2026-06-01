@@ -50,28 +50,24 @@ class AdbKey private constructor(
     val certificate: X509Certificate = buildCert(privateKey, publicKey)
 
     /**
-     * ADB-format public key in the `adb_keys` FILE format:
-     *   BASE64(524_raw_bytes) + " " + name + "\0"
+     * ADB public key in the format adbd expects for BOTH:
+     *   • PeerInfo.data during SPAKE2 pairing  (confirmed from Shizuku AdbPairingClient.kt)
+     *   • A_AUTH ADB_AUTH_RSAPUBLICKEY payload  (traditional ADB auth path)
+     *   • Storage in /data/misc/adb/adb_keys    (file format on device)
      *
-     * This is the format stored in /data/misc/adb/adb_keys on the device.
-     * Do NOT use this for PeerInfo during SPAKE2 pairing — adbd expects the
-     * raw 524 bytes there, not base64. Use [adbPublicKeyRaw] for PeerInfo.
+     * Format: BASE64(524_raw_bytes) + " " + name + "\0"
+     *
+     * Shizuku AdbPairingClient line 178:
+     *   PeerInfo(PeerInfo.Type.ADB_RSA_PUB_KEY.value, key.adbPublicKey)
+     * This is the same base64+name format — confirming it is correct for PeerInfo.
      */
     val adbPublicKey: ByteArray by lazy { publicKey.toAdbEncoded(name) }
 
     /**
-     * Raw 524-byte binary of the ADB RSA public key struct — for PeerInfo ONLY.
+     * Raw 524-byte binary of the ADB RSA public key struct (no base64, no name suffix).
      *
-     * This is what AOSP's `adb` tool sends in PeerInfo.data during SPAKE2 pairing:
-     *   android_pubkey_encode(rsa_key, peer_info.data, sizeof(peer_info.data))
-     *
-     * adbd receives these raw bytes, base64-encodes them, and writes to adb_keys.
-     * When validating a TLS cert on connect, adbd encodes the cert's public key
-     * the same way and compares — so raw bytes in PeerInfo ↔ raw bytes from cert
-     * will always match, regardless of any base64 encoding details.
-     *
-     * Sending [adbPublicKey] (base64 string) as PeerInfo is WRONG — adbd cannot
-     * parse it as an RSA struct and silently discards the key registration.
+     * NOT used in normal flow — kept for diagnostic/debugging purposes.
+     * PeerInfo uses [adbPublicKey] (base64+name), not raw bytes.
      */
     val adbPublicKeyRaw: ByteArray by lazy { publicKey.toAdbRaw() }
 

@@ -111,21 +111,11 @@ object AdbWifiPairingClient {
                 Timber.d("$TAG SPAKE2 cipher initialised (AES-128-GCM)")
 
                 // ── 5. Exchange PeerInfo — CLIENT SENDS FIRST ────────────────
-                // PeerInfo struct (8192 bytes total):
-                //   byte[0]    = type (0 = ADB_RSA_PUB_KEY)
-                //   byte[1..N] = raw 524-byte android_pubkey_encode() binary struct
-                //
-                // AOSP's adb tool (C++):
-                //   android_pubkey_encode(rsa_from_ssl, peer_info.data, sizeof(peer_info.data))
-                //
-                // adbd receives raw 524 bytes, base64-encodes them, writes to adb_keys.
-                // On TLS connect, adbd encodes the cert's public key the same way and
-                // string-matches against adb_keys — so the bytes MUST be raw binary.
-                //
-                // WRONG: base64 string (adbKey.adbPublicKey) — adbd can't parse it as RSA,
-                //        silently ignores the key, SPAKE2 still completes, connect fails.
-                // RIGHT: raw 524 bytes (adbKey.adbPublicKeyRaw / caller-supplied pubKeyBytes)
-                val keyToSend = pubKeyBytes ?: adbKey.adbPublicKeyRaw
+                // PeerInfo format confirmed from Shizuku AdbPairingClient.kt (line 178):
+                //   PeerInfo(ADB_RSA_PUB_KEY, key.adbPublicKey)
+                // where adbPublicKey = BASE64(524_raw_bytes) + " name\0"
+                // adbd accepts this and writes it to adb_keys.
+                val keyToSend = pubKeyBytes ?: adbKey.adbPublicKey
                 val peerInfoBuf = ByteBuffer.allocate(MAX_PEER_INFO_SIZE).order(ByteOrder.BIG_ENDIAN)
                 peerInfoBuf.put(PEER_TYPE_RSA_KEY)
                 peerInfoBuf.put(keyToSend, 0, keyToSend.size.coerceAtMost(MAX_PEER_INFO_SIZE - 1))

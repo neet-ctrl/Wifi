@@ -715,21 +715,11 @@ class AccuConnectionManager @Inject constructor(
         // ── Path B: AdbWifiPairingClient — BoringSSL SPAKE2 + Conscrypt TLS ────────────────
         Timber.i("$TAG completePairing (SPAKE2): pairing $host:$port ***")
         _state.value = ConnectionState.CONNECTING
-        // PeerInfo.data must contain the RAW 524-byte android_pubkey_encode() struct —
-        // NOT base64.  AOSP's adb tool does:
-        //   android_pubkey_encode(rsa_from_ssl, peer_info.data, sizeof(peer_info.data))
-        // adbd then base64-encodes and writes to adb_keys.  On TLS connect, adbd encodes
-        // the cert's public key the same way and does a string match — so the PeerInfo raw
-        // bytes and the cert's public key bytes MUST be produced by the same algorithm.
-        //
-        // adbKey.adbPublicKeyRaw = raw 524 bytes (matches android_pubkey_encode output).
-        // adbKey.adbPublicKey    = BASE64(raw) + " ACCU\0" — for adb_keys FILE format only,
-        //                          WRONG for PeerInfo (adbd can't parse it as an RSA struct).
-        val dadbPubKeyBytes: ByteArray = adbKey.adbPublicKeyRaw
-        Timber.d("$TAG PeerInfo raw key size=${dadbPubKeyBytes.size} " +
-            "first8=${dadbPubKeyBytes.take(8).joinToString(",") { it.toInt().and(0xFF).toString(16) }}")
-
-        val pairingOk = AdbWifiPairingClient.pair(host, port, code, adbKey, dadbPubKeyBytes)
+        // PeerInfo.data format confirmed from Shizuku reference implementation (AdbPairingClient.kt):
+        //   PeerInfo(ADB_RSA_PUB_KEY, key.adbPublicKey)
+        // where adbPublicKey = BASE64(524_raw_bytes) + " name\0"
+        // adbd accepts this format and writes the key to adb_keys.
+        val pairingOk = AdbWifiPairingClient.pair(host, port, code, adbKey, null)
         if (!pairingOk) {
             Timber.w("$TAG SPAKE2 pairing failed — likely wrong code")
             _state.value = ConnectionState.AWAITING_CODE
