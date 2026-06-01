@@ -22,6 +22,10 @@ add_library(adb_pairing SHARED
     adb_pairing.cpp
 )
 
+target_include_directories(adb_pairing PRIVATE
+    ${CMAKE_SOURCE_DIR}
+)
+
 target_link_libraries(adb_pairing
     log
     boringssl::crypto_static
