@@ -157,6 +157,12 @@
             android:name=".services.ShizukuUserService"
             android:exported="false" />
 
+        <!-- Sound Master — per-app audio capture/replay foreground service -->
+        <service
+            android:name=".services.AccuSoundMasterService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
         <!-- ══════════════════════════════════════════════════════════════ -->
         <!--  ACCU SYSTEM SERVICE — Third-party apps bind to this service  -->
         <!--  Action:  com.accu.api.AccuSystemService                      -->

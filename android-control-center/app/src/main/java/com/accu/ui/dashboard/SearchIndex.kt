@@ -60,16 +60,8 @@ object SearchIndex {
         SearchResult("Installer Center",     "Install APKs with advanced install options",               "installer",                "install_mobile",      "Storage",       listOf("install","apk","sideload","package","obb")),
 
         // ── Audio & Media ─────────────────────────────────────────────────────
-        SearchResult("Audio Center",         "JamesDSP audio engine — main hub",                         "audio_center",             "equalizer",           "Audio",         listOf("dsp","audio","equalizer","effects","jamesdsp","sound")),
-        SearchResult("Graphic EQ",           "31-band graphic equalizer",                                "graphic_eq",               "equalizer",           "Audio",         listOf("graphic","eq","equalizer","bands","boost","cut")),
-        SearchResult("Parametric EQ",        "Parametric equalizer with biquad filters",                 "parametric_eq",            "tune",                "Audio",         listOf("parametric","eq","filter","peak","shelf","biquad")),
-        SearchResult("Auto EQ",              "Load AutoEQ calibration profiles",                         "auto_eq",                  "equalizer",           "Audio",         listOf("autoeq","profile","headphone","preset","flat","calibration")),
-        SearchResult("Convolution Engine",   "Apply IR impulse / room reverb files",                     "convolution",              "waves",               "Audio",         listOf("convolution","impulse","reverb","IR","room","acoustic")),
-        SearchResult("DSP Controls",         "Real-time DSP bass/treble/stereo sliders",                 "dsp_controls",             "tune",                "Audio",         listOf("dsp","bass","treble","reverb","slider","stereo","real-time")),
-        SearchResult("JamesDSP Settings",    "JamesDSP engine configuration & options",                  "jamesdsp_settings",        "settings",            "Audio",         listOf("jamesdsp","settings","engine","config","service")),
-        SearchResult("Liveprog Editor",      "Script custom DSP effects in Eel language",                "liveprog_editor",          "code",                "Audio",         listOf("liveprog","eel","script","dsp","effect","code")),
-        SearchResult("Liveprog Params",      "Live parameter knobs for current Liveprog script",         "liveprog_params",          "tune",                "Audio",         listOf("liveprog","params","live","script","dsp","knob")),
-        SearchResult("App Audio Blocklist",  "Exclude specific apps from DSP processing",                "app_audio_blocklist",      "block",               "Audio",         listOf("blocklist","exclude","bypass","dsp","app","whitelist")),
+        SearchResult("Sound Master",         "Per-app volume, balance, 3-band EQ & output routing",      "sound_master",             "volume_up",           "Audio",         listOf("soundmaster","volume","eq","equalizer","per-app","boost","audio","bass","treble","balance","output","device","bluetooth","routing")),
+        SearchResult("Mixed Audio",          "Per-app audio focus control & mute — no interruptions",    "mixed_audio",              "tune",                "Audio",         listOf("mixedaudio","focus","mute","audio","per-app","batch","silence","ignore","deny","allow","mixed","concurrent")),
         SearchResult("Call Recorder",        "Rootless call recording via ACCU + scrcpy",                "call_recorder",            "call",                "Audio",         listOf("call","record","phone","accu","voip","recording")),
         SearchResult("Recording Settings",   "Call recorder quality, format & storage",                  "call_recording_settings",  "settings",            "Audio",         listOf("recording","settings","quality","format","call","mp3")),
 
@@ -122,7 +114,7 @@ object SearchIndex {
     )
 
     val quickLaunch: List<SearchResult> = entries.filter { it.route in setOf(
-        "accu_center", "shell", "app_manager", "privacy", "audio_center",
+        "accu_center", "shell", "app_manager", "privacy", "sound_master",
         "storage", "notification_center", "settings", "accu_service_hub",
     ) }
 }

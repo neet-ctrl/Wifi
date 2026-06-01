@@ -30,7 +30,8 @@ sealed class Screen(val route: String) {
     data object KeyMapper           : Screen("key_mapper")
     data object LanguageCenter      : Screen("language_center")
     data object NetworkCenter       : Screen("network_center")
-    data object AudioCenter         : Screen("audio_center")
+    data object SoundMaster         : Screen("sound_master")
+    data object MixedAudio          : Screen("mixed_audio")
     data object CallRecorder        : Screen("call_recorder")
     data object LearningCenter      : Screen("learning_center")
     data object Debloat             : Screen("debloat")
@@ -60,12 +61,6 @@ sealed class Screen(val route: String) {
 
     // ColorBlendr
     data object ColorBlendrStyles   : Screen("colorblendr_styles")
-
-    // RootlessJamesDSP
-    data object LiveprogEditor      : Screen("liveprog_editor")
-    data object ParametricEQ        : Screen("parametric_eq")
-    data object AutoEQ              : Screen("auto_eq")
-    data object AppAudioBlocklist   : Screen("app_audio_blocklist")
 
     // SDMaid SE
     data object AppCleaner          : Screen("app_cleaner")
@@ -144,13 +139,6 @@ sealed class Screen(val route: String) {
     data object InureTrackers       : Screen("inure_trackers")
     data object InureUsageStats     : Screen("inure_usage_stats")
     data object InureDisabledApps   : Screen("inure_disabled_apps")
-
-    // RootlessJamesDSP (additional)
-    data object GraphicEQ           : Screen("graphic_eq")
-    data object Convolution         : Screen("convolution")
-    data object DSPControls         : Screen("dsp_controls")
-    data object JamesDSPSettings    : Screen("jamesdsp_settings")
-    data object LiveprogParams      : Screen("liveprog_params")
 
     // ColorBlendr
     data object PerAppTheming       : Screen("per_app_theming")

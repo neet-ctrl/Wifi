@@ -26,11 +26,8 @@ import com.accu.ui.appmanager.AppExplorerScreen
 import com.accu.ui.appmanager.CantaLogsScreen
 import com.accu.ui.appmanager.InureAnalyticsScreen
 import com.accu.ui.appmanager.AppBatchOperationsScreen
-import com.accu.ui.audio.AudioCenterScreen
-import com.accu.ui.audio.LiveprogEditorScreen
-import com.accu.ui.audio.ParametricEQScreen
-import com.accu.ui.audio.AutoEQScreen
-import com.accu.ui.audio.AppAudioBlocklistScreen
+import com.accu.ui.audio.SoundMasterScreen
+import com.accu.ui.audio.MixedAudioScreen
 import com.accu.ui.automation.AutomationScreen
 import com.accu.ui.automation.KeyMapperAdvancedScreen
 import com.accu.ui.callrecorder.CallRecorderScreen
@@ -90,12 +87,6 @@ import com.accu.ui.appmanager.InureTrackersScreen
 import com.accu.ui.appmanager.InureUsageStatsScreen
 import com.accu.ui.appmanager.InureDisabledAppsScreen
 import com.accu.ui.appmanager.BlockerComponentSearchScreen
-// JamesDSP additional
-import com.accu.ui.audio.GraphicEQScreen
-import com.accu.ui.audio.ConvolutionScreen
-import com.accu.ui.audio.DSPControlsScreen
-import com.accu.ui.audio.JamesDSPSettingsScreen
-import com.accu.ui.audio.LiveprogParamsScreen
 // ColorBlendr
 import com.accu.ui.customization.PerAppThemingScreen
 // DarQ
@@ -378,17 +369,11 @@ fun AppNavigation(initialRoute: String? = null) {
             composable(Screen.NetworkCenter.route) {
                 NetworkCenterScreen(onBack = { navController.popBackStack() })
             }
-            composable(Screen.AudioCenter.route) {
-                AudioCenterScreen(
-                    onBack = { navController.popBackStack() },
-                    onNavigateToGraphicEQ = { navController.navigate(Screen.GraphicEQ.route) },
-                    onNavigateToConvolution = { navController.navigate(Screen.Convolution.route) },
-                    onNavigateToDSPControls = { navController.navigate(Screen.DSPControls.route) },
-                    onNavigateToSettings = { navController.navigate(Screen.JamesDSPSettings.route) },
-                    onNavigateToLiveprogParams = { navController.navigate(Screen.LiveprogParams.route) },
-                    onNavigateToParametricEQ = { navController.navigate(Screen.ParametricEQ.route) },
-                    onNavigateToAutoEQ = { navController.navigate(Screen.AutoEQ.route) },
-                )
+            composable(Screen.SoundMaster.route) {
+                SoundMasterScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Screen.MixedAudio.route) {
+                MixedAudioScreen(onBack = { navController.popBackStack() })
             }
             composable(Screen.CallRecorder.route) {
                 CallRecorderScreen(onBack = { navController.popBackStack() })
@@ -461,20 +446,6 @@ fun AppNavigation(initialRoute: String? = null) {
             // ColorBlendr
             composable(Screen.ColorBlendrStyles.route) {
                 ColorBlendrStylesScreen(onBack = { navController.popBackStack() })
-            }
-
-            // RootlessJamesDSP
-            composable(Screen.LiveprogEditor.route) {
-                LiveprogEditorScreen(onBack = { navController.popBackStack() })
-            }
-            composable(Screen.ParametricEQ.route) {
-                ParametricEQScreen(onBack = { navController.popBackStack() })
-            }
-            composable(Screen.AutoEQ.route) {
-                AutoEQScreen(onBack = { navController.popBackStack() })
-            }
-            composable(Screen.AppAudioBlocklist.route) {
-                AppAudioBlocklistScreen(onBack = { navController.popBackStack() })
             }
 
             // SDMaid SE
@@ -683,31 +654,6 @@ fun AppNavigation(initialRoute: String? = null) {
             // Blocker — Component Search
             composable(Screen.BlockerComponentSearch.route) {
                 BlockerComponentSearchScreen(onBack = { navController.popBackStack() })
-            }
-
-            // JamesDSP — Graphic EQ
-            composable(Screen.GraphicEQ.route) {
-                GraphicEQScreen(onBack = { navController.popBackStack() })
-            }
-
-            // JamesDSP — Convolution
-            composable(Screen.Convolution.route) {
-                ConvolutionScreen(onBack = { navController.popBackStack() })
-            }
-
-            // JamesDSP — DSP Controls
-            composable(Screen.DSPControls.route) {
-                DSPControlsScreen(onBack = { navController.popBackStack() })
-            }
-
-            // JamesDSP — Settings
-            composable(Screen.JamesDSPSettings.route) {
-                JamesDSPSettingsScreen(onBack = { navController.popBackStack() })
-            }
-
-            // JamesDSP — Liveprog Parameters
-            composable(Screen.LiveprogParams.route) {
-                LiveprogParamsScreen(onBack = { navController.popBackStack() })
             }
 
             // ColorBlendr — Per-App Theming

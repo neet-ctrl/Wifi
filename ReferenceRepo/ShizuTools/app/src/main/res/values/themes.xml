@@ -1,0 +1,19 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.AdbTools" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <item name="colorAccent">@color/theme_light</item>
+        <item name="colorContainer">@color/white</item>
+        <item name="strokeColor">@color/theme</item>
+        <item name="colorPrimary">@color/theme</item>
+    </style>
+
+    <style name="Theme.AdbTools" parent="Base.Theme.AdbTools" />
+
+    <style name="DialogActivityTheme" parent="Base.Theme.AdbTools">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:statusBarColor">@color/transparent</item>
+        <item name="android:windowBackground">@color/transparent</item>
+    </style>
+</resources>
