@@ -9,7 +9,6 @@
     <style name="Theme.AirKey.SplashScreen" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#0A0A1A</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
-        <item name="windowSplashScreenBrandingImage">@drawable/splash_icon</item>
         <item name="postSplashScreenTheme">@style/Theme.AirKey</item>
     </style>
 </resources>

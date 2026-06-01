@@ -54,10 +54,12 @@ fun ScanScreen(
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
     val context = LocalContext.current
     var hasScanned by remember { mutableStateOf(false) }
+    var torchEnabled by remember { mutableStateOf(false) }
 
     LaunchedEffect(scannedResult) {
         if (scannedResult != null && !hasScanned) {
             hasScanned = true
+            torchEnabled = false
             vibrate(context)
         }
     }
@@ -71,11 +73,16 @@ fun ScanScreen(
             cameraPermission.status.isGranted -> {
                 if (scannedResult == null) {
                     CameraPreviewSection(
+                        torchEnabled = torchEnabled,
                         onQrDetected = { raw ->
                             if (!hasScanned) viewModel.onQrScanned(raw)
                         }
                     )
-                    ScanOverlay(onBack = onBack)
+                    ScanOverlay(
+                        onBack = onBack,
+                        torchEnabled = torchEnabled,
+                        onTorchToggle = { torchEnabled = !torchEnabled }
+                    )
                 } else {
                     ScannedResultPanel(
                         result = scannedResult!!,
@@ -102,17 +109,22 @@ fun ScanScreen(
 
 @OptIn(ExperimentalGetImage::class)
 @Composable
-fun CameraPreviewSection(onQrDetected: (String) -> Unit) {
+fun CameraPreviewSection(torchEnabled: Boolean, onQrDetected: (String) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
     val barcodeScanner = remember { BarcodeScanning.getClient() }
     var lastScan by remember { mutableLongStateOf(0L) }
+    var cameraControl by remember { mutableStateOf<androidx.camera.core.CameraControl?>(null) }
 
     AndroidView(
         factory = { previewView },
         modifier = Modifier.fillMaxSize()
     )
+
+    LaunchedEffect(torchEnabled) {
+        cameraControl?.enableTorch(torchEnabled)
+    }
 
     LaunchedEffect(Unit) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
@@ -150,12 +162,14 @@ fun CameraPreviewSection(onQrDetected: (String) -> Unit) {
 
         try {
             cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(
+            val camera = cameraProvider.bindToLifecycle(
                 lifecycleOwner,
                 CameraSelector.DEFAULT_BACK_CAMERA,
                 preview,
                 imageAnalyzer
             )
+            cameraControl = camera.cameraControl
+            cameraControl?.enableTorch(torchEnabled)
         } catch (e: Exception) {
             Log.e("ScanScreen", "Camera bind failed", e)
         }
@@ -163,7 +177,7 @@ fun CameraPreviewSection(onQrDetected: (String) -> Unit) {
 }
 
 @Composable
-fun ScanOverlay(onBack: () -> Unit) {
+fun ScanOverlay(onBack: () -> Unit, torchEnabled: Boolean, onTorchToggle: () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition(label = "scan")
     val scanLine by infiniteTransition.animateFloat(
         initialValue = 0f, targetValue = 1f,
@@ -197,7 +211,7 @@ fun ScanOverlay(onBack: () -> Unit) {
                 Icon(Icons.Rounded.ArrowBack, contentDescription = "Back", tint = Color.White)
             }
             Spacer(Modifier.width(12.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     "Scan WiFi QR Code",
                     style = MaterialTheme.typography.titleLarge,
@@ -208,6 +222,21 @@ fun ScanOverlay(onBack: () -> Unit) {
                     "Works with any phone or app",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.6f)
+                )
+            }
+            IconButton(
+                onClick = onTorchToggle,
+                modifier = Modifier
+                    .background(
+                        if (torchEnabled) NeonCyan.copy(alpha = 0.25f) else GlassWhite,
+                        CircleShape
+                    )
+                    .size(44.dp)
+            ) {
+                Icon(
+                    if (torchEnabled) Icons.Rounded.FlashlightOn else Icons.Rounded.FlashlightOff,
+                    contentDescription = if (torchEnabled) "Turn off torch" else "Turn on torch",
+                    tint = if (torchEnabled) NeonCyan else Color.White
                 )
             }
         }
