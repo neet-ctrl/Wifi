@@ -480,37 +480,82 @@ fun PreviewTab(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         if (qrBitmap != null) {
-            // QR card
-            val infiniteTransition = rememberInfiniteTransition(label = "glow")
+            val qrColor = Color(qrStyle.foregroundColor.toInt())
+            val accentColor = Color(qrStyle.accentColor.toInt())
+
+            val infiniteTransition = rememberInfiniteTransition(label = "qrAnim")
             val glowAlpha by infiniteTransition.animateFloat(
-                initialValue = 0.4f, targetValue = 0.8f,
+                initialValue = 0.35f, targetValue = 0.85f,
                 animationSpec = infiniteRepeatable(tween(2000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
                 label = "glow"
             )
+            val ringRotation by infiniteTransition.animateFloat(
+                initialValue = 0f, targetValue = 360f,
+                animationSpec = infiniteRepeatable(tween(6000, easing = LinearEasing)),
+                label = "ring"
+            )
+            val ringRotation2 by infiniteTransition.animateFloat(
+                initialValue = 360f, targetValue = 0f,
+                animationSpec = infiniteRepeatable(tween(9000, easing = LinearEasing)),
+                label = "ring2"
+            )
+            val scanLine by infiniteTransition.animateFloat(
+                initialValue = 0f, targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(2200, easing = LinearEasing), RepeatMode.Reverse),
+                label = "scan"
+            )
+
             Box(contentAlignment = Alignment.Center) {
-                // Glow
+                // Outer diffuse glow
                 Box(
                     modifier = Modifier
-                        .size(300.dp)
+                        .size(340.dp)
                         .background(
-                            Brush.radialGradient(
-                                listOf(Color(qrStyle.foregroundColor.toInt()).copy(glowAlpha * 0.3f), Color.Transparent)
-                            ),
+                            Brush.radialGradient(listOf(qrColor.copy(glowAlpha * 0.18f), Color.Transparent)),
                             CircleShape
                         )
                 )
-                // QR
+                // Outer slow counter-rotating ring
+                Box(
+                    modifier = Modifier
+                        .size(308.dp)
+                        .graphicsLayer { rotationZ = ringRotation2 }
+                        .border(
+                            1.dp,
+                            Brush.sweepGradient(listOf(Color.Transparent, accentColor.copy(0.5f), Color.Transparent, qrColor.copy(0.3f), Color.Transparent)),
+                            RoundedCornerShape(36.dp)
+                        )
+                )
+                // Inner fast rotating ring
+                Box(
+                    modifier = Modifier
+                        .size(284.dp)
+                        .graphicsLayer { rotationZ = ringRotation }
+                        .border(
+                            1.5.dp,
+                            Brush.sweepGradient(listOf(Color.Transparent, qrColor.copy(0.8f), accentColor.copy(0.6f), Color.Transparent)),
+                            RoundedCornerShape(30.dp)
+                        )
+                )
+                // Tight glow halo
+                Box(
+                    modifier = Modifier
+                        .size(272.dp)
+                        .background(
+                            Brush.radialGradient(listOf(qrColor.copy(glowAlpha * 0.22f), Color.Transparent)),
+                            CircleShape
+                        )
+                )
+                // QR card
                 Box(
                     modifier = Modifier
                         .size(260.dp)
-                        .shadow(32.dp, RoundedCornerShape(24.dp), spotColor = Color(qrStyle.foregroundColor.toInt()))
+                        .coloredShadow(qrColor, 24.dp, 32.dp, alpha = 0.65f)
                         .clip(RoundedCornerShape(24.dp))
                         .background(Color(qrStyle.backgroundColor.toInt()))
                         .border(
-                            1.5.dp,
-                            Brush.linearGradient(
-                                listOf(Color(qrStyle.foregroundColor.toInt()), Color(qrStyle.accentColor.toInt()))
-                            ),
+                            2.dp,
+                            Brush.linearGradient(listOf(qrColor.copy(0.9f), accentColor.copy(0.7f))),
                             RoundedCornerShape(24.dp)
                         ),
                     contentAlignment = Alignment.Center
@@ -520,13 +565,59 @@ fun PreviewTab(
                         contentDescription = "WiFi QR Code",
                         modifier = Modifier.fillMaxSize()
                     )
+                    // Animated scan line overlay
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(2.dp)
+                                .offset(y = (scanLine * 244).dp)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(Color.Transparent, qrColor.copy(0.7f), accentColor.copy(0.7f), Color.Transparent)
+                                    )
+                                )
+                        )
+                    }
+                    // Top shine
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp)
+                            .align(Alignment.TopCenter)
+                            .background(
+                                Brush.verticalGradient(listOf(Color.White.copy(0.12f), Color.Transparent)),
+                                RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                            )
+                    )
                 }
             }
 
             // Network name label
             if (ssid.isNotBlank()) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(ssid, style = MaterialTheme.typography.titleMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .coloredShadow(NeonPurple, 14.dp, 12.dp, alpha = 0.2f)
+                        .background(
+                            Brush.linearGradient(listOf(CardSurface, DarkSurface)),
+                            RoundedCornerShape(14.dp)
+                        )
+                        .border(1.dp, GlassWhite2, RoundedCornerShape(14.dp))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        ssid,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            brush = Brush.linearGradient(listOf(NeonPurple, NeonCyan))
+                        ),
+                        fontWeight = FontWeight.Bold
+                    )
                     Text("Scan to connect instantly", style = MaterialTheme.typography.bodySmall, color = TextMuted)
                 }
             }
@@ -535,8 +626,9 @@ fun PreviewTab(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .coloredShadow(GreenSuccess, 14.dp, 10.dp, alpha = 0.2f)
                     .background(GreenSuccess.copy(0.08f), RoundedCornerShape(14.dp))
-                    .border(1.dp, GreenSuccess.copy(0.3f), RoundedCornerShape(14.dp))
+                    .border(1.dp, GreenSuccess.copy(0.35f), RoundedCornerShape(14.dp))
                     .padding(14.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -550,30 +642,42 @@ fun PreviewTab(
                 }
             }
 
-            // Share / Save
+            // Share / Save with glow
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                OutlinedButton(
-                    onClick = onShare,
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.5.dp, NeonPurple),
-                    modifier = Modifier.weight(1f).height(50.dp)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .coloredShadow(NeonPurple, 14.dp, 16.dp, alpha = 0.4f)
                 ) {
-                    Icon(Icons.Rounded.Share, null, tint = NeonPurple, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Share QR", color = NeonPurple, fontWeight = FontWeight.SemiBold)
+                    OutlinedButton(
+                        onClick = onShare,
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.5.dp, NeonPurple),
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    ) {
+                        Icon(Icons.Rounded.Share, null, tint = NeonPurple, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Share QR", color = NeonPurple, fontWeight = FontWeight.SemiBold)
+                    }
                 }
-                Button(
-                    onClick = onSaveToGallery,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = NeonCyan),
-                    modifier = Modifier.weight(1f).height(50.dp)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .coloredShadow(NeonCyan, 14.dp, 16.dp, alpha = 0.4f)
                 ) {
-                    Icon(Icons.Rounded.Download, null, tint = DeepBlack, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Save PNG", color = DeepBlack, fontWeight = FontWeight.Bold)
+                    Button(
+                        onClick = onSaveToGallery,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = NeonCyan),
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    ) {
+                        Icon(Icons.Rounded.Download, null, tint = DeepBlack, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Save PNG", color = DeepBlack, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -581,7 +685,12 @@ fun PreviewTab(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(GlassWhite, RoundedCornerShape(16.dp))
+                    .coloredShadow(NeonPurple, 16.dp, 10.dp, alpha = 0.15f)
+                    .background(
+                        Brush.linearGradient(listOf(CardSurface, DarkSurface)),
+                        RoundedCornerShape(16.dp)
+                    )
+                    .border(1.dp, GlassWhite2, RoundedCornerShape(16.dp))
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -594,22 +703,42 @@ fun PreviewTab(
             }
         } else {
             Spacer(Modifier.height(40.dp))
-            Box(
-                modifier = Modifier
-                    .size(260.dp)
-                    .background(CardSurface, RoundedCornerShape(24.dp))
-                    .border(1.dp, GlassWhite2, RoundedCornerShape(24.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Rounded.QrCode2, null, tint = TextMuted, modifier = Modifier.size(72.dp))
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        "Fill in Details tab\nto preview your QR code",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextMuted,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
+            val infiniteTransition = rememberInfiniteTransition(label = "emptyQr")
+            val pulseAlpha by infiniteTransition.animateFloat(
+                initialValue = 0.2f, targetValue = 0.5f,
+                animationSpec = infiniteRepeatable(tween(1600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+                label = "pulse"
+            )
+            Box(contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .size(300.dp)
+                        .background(
+                            Brush.radialGradient(listOf(NeonPurple.copy(pulseAlpha * 0.2f), Color.Transparent)),
+                            CircleShape
+                        )
+                )
+                Box(
+                    modifier = Modifier
+                        .size(260.dp)
+                        .coloredShadow(NeonPurple, 24.dp, 20.dp, alpha = 0.2f)
+                        .background(
+                            Brush.linearGradient(listOf(CardSurface, DarkSurface)),
+                            RoundedCornerShape(24.dp)
+                        )
+                        .border(1.dp, Brush.linearGradient(listOf(NeonPurple.copy(0.3f), GlassWhite2)), RoundedCornerShape(24.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Rounded.QrCode2, null, tint = NeonPurple.copy(pulseAlpha + 0.3f), modifier = Modifier.size(72.dp))
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "Fill in Details tab\nto preview your QR code",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextMuted,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
                 }
             }
         }

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.*
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import com.airkey.wifiqr.data.WifiNetwork
 import com.airkey.wifiqr.ui.screens.*
 import com.airkey.wifiqr.ui.theme.*
