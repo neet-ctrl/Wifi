@@ -764,6 +764,54 @@ class AccuConnectionManager @Inject constructor(
         }
     }
 
+    /**
+     * Re-attempt ONLY the TLS connection phase — no re-pairing needed.
+     *
+     * Call this when pairing already succeeded but the subsequent [AdbWifiConnectClient.connect]
+     * failed (e.g. transient network glitch, stale session port). The device's trust relationship
+     * (registered RSA key) persists until the user manually removes it from Developer Options.
+     *
+     * Uses the last persisted IP/port (written to prefs on every successful connect attempt).
+     * Falls back to the in-memory [sessionPort] if the persisted port is 0.
+     */
+    suspend fun retryConnectionOnly(): PairingResult = withContext(Dispatchers.IO) {
+        val host = getLastConnectedIp().ifBlank { pairingHost }
+        val port = getLastConnectedPort().takeIf { it > 0 }
+            ?: sessionPort.takeIf { it > 0 }
+            ?: return@withContext PairingResult.ConnectionFailed(
+                host, 0,
+                "No session port known — please re-pair from the pairing screen"
+            )
+
+        if (host.isBlank()) return@withContext PairingResult.ConnectionFailed(
+            "", port,
+            "No host IP known — please re-pair from the pairing screen"
+        )
+
+        Timber.i("$TAG retryConnectionOnly → $host:$port")
+        _state.value = ConnectionState.CONNECTING
+        return@withContext try {
+            val conn   = AdbWifiConnectClient.connect(host, port, adbKey)
+            val verify = conn.shell("echo ACCU_OK")
+            if (verify.trim() == "ACCU_OK") {
+                wifiConnectClient = conn
+                _state.value = ConnectionState.CONNECTED_WIRELESS
+                prefs.edit().putString(KEY_LAST_IP, host).putInt(KEY_LAST_PORT, port).apply()
+                showConnectedNotification(host, port)
+                Timber.i("$TAG retryConnectionOnly: TLS ADB verified ✓ $host:$port")
+                PairingResult.Success
+            } else {
+                conn.close()
+                _state.value = ConnectionState.AWAITING_CODE
+                PairingResult.ConnectionFailed(host, port, "TLS connected but echo check failed")
+            }
+        } catch (e: Exception) {
+            Timber.w("$TAG retryConnectionOnly failed: ${e.message?.take(200)}")
+            _state.value = ConnectionState.AWAITING_CODE
+            PairingResult.ConnectionFailed(host, port, e.message.orEmpty())
+        }
+    }
+
     /** Called after a successful [adb pair] to connect + verify. */
     private suspend fun connectAfterPair(host: String, adb: String): PairingResult {
         // Wait for session port from mDNS _adb-tls-connect._tcp

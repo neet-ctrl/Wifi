@@ -193,51 +193,75 @@ fun AdbPairingScreen(
 
                     if (state.pairingStatus.isNotBlank()) {
                         Spacer(Modifier.height(8.dp))
-                        val isPcCommand = state.pairingStatus.contains("adb pair")
-                        // Only truly successful if the paired-AND-connected message — not ConnectionFailed
-                        // which also contains "✓" ("Pairing succeeded ✓ but...")
-                        val isSuccess   = state.pairingStatus.contains("✓")
-                                       && !state.pairingStatus.contains("but", ignoreCase = true)
-                                       && !state.pairingStatus.contains("failed", ignoreCase = true)
-                        val statusColor = when {
-                            isSuccess   -> MaterialTheme.colorScheme.primary
-                            isPcCommand -> MaterialTheme.colorScheme.tertiary
-                            else        -> MaterialTheme.colorScheme.error
-                        }
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = when {
-                                    isSuccess   -> MaterialTheme.colorScheme.primaryContainer
-                                    isPcCommand -> MaterialTheme.colorScheme.tertiaryContainer
-                                    else        -> MaterialTheme.colorScheme.errorContainer
-                                }
-                            ),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Column(Modifier.padding(10.dp)) {
-                                if (isPcCommand) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Computer, null, Modifier.size(14.dp), tint = statusColor)
-                                        Spacer(Modifier.width(4.dp))
-                                        Text("Run from your PC", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = statusColor)
-                                        Spacer(Modifier.weight(1f))
-                                        IconButton(
-                                            onClick = { clipboardManager.setText(AnnotatedString(state.pairingStatus)) },
-                                            modifier = Modifier.size(28.dp),
-                                        ) {
-                                            Icon(Icons.Default.ContentCopy, "Copy commands", Modifier.size(14.dp), tint = statusColor)
+                        val isPcCommand      = state.pairingStatus.contains("adb pair")
+                        val isConnectionFail = state.isConnectionFailed
+                        val isSuccess        = state.pairingStatus.contains("✓")
+                                            && !state.pairingStatus.contains("but", ignoreCase = true)
+                                            && !state.pairingStatus.contains("failed", ignoreCase = true)
+
+                        when {
+                            // ── ConnectionFailed card — pairing OK but TLS session failed ──────
+                            isConnectionFail -> ConnectionFailedCard(
+                                host       = state.connectionFailedHost,
+                                port       = state.connectionFailedPort,
+                                rawError   = state.connectionFailedRaw,
+                                isRetrying = state.isRetryingConnection,
+                                onCopy     = {
+                                    clipboardManager.setText(
+                                        AnnotatedString(
+                                            buildString {
+                                                appendLine("=== ACCU Connection Failure Log ===")
+                                                if (state.connectionFailedHost.isNotBlank())
+                                                    appendLine("Target: ${state.connectionFailedHost}:${state.connectionFailedPort}")
+                                                appendLine()
+                                                append(state.connectionFailedRaw)
+                                            }
+                                        )
+                                    )
+                                },
+                                onRetry    = { viewModel.retryConnection() },
+                            )
+
+                            // ── PC-command card ───────────────────────────────────────────────
+                            isPcCommand -> {
+                                val statusColor = MaterialTheme.colorScheme.tertiary
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Column(Modifier.padding(10.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Computer, null, Modifier.size(14.dp), tint = statusColor)
+                                            Spacer(Modifier.width(4.dp))
+                                            Text("Run from your PC", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = statusColor)
+                                            Spacer(Modifier.weight(1f))
+                                            IconButton(
+                                                onClick = { clipboardManager.setText(AnnotatedString(state.pairingStatus)) },
+                                                modifier = Modifier.size(28.dp),
+                                            ) {
+                                                Icon(Icons.Default.ContentCopy, "Copy commands", Modifier.size(14.dp), tint = statusColor)
+                                            }
+                                        }
+                                        Spacer(Modifier.height(4.dp))
+                                        SelectionContainer {
+                                            Text(state.pairingStatus, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = statusColor, lineHeight = 18.sp)
                                         }
                                     }
-                                    Spacer(Modifier.height(4.dp))
                                 }
-                                SelectionContainer {
-                                    Text(
-                                        state.pairingStatus,
-                                        fontSize = 12.sp,
-                                        fontFamily = if (isPcCommand) FontFamily.Monospace else FontFamily.Default,
-                                        color = statusColor,
-                                        lineHeight = 18.sp,
-                                    )
+                            }
+
+                            // ── Generic success / error card ──────────────────────────────────
+                            else -> {
+                                val statusColor = if (isSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isSuccess) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
+                                    ),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    SelectionContainer {
+                                        Text(state.pairingStatus, fontSize = 12.sp, color = statusColor, lineHeight = 18.sp, modifier = Modifier.padding(10.dp))
+                                    }
                                 }
                             }
                         }
@@ -357,6 +381,142 @@ private fun StepCard(step: Int, currentStep: Int, title: String, content: @Compo
             if (isCurrent) {
                 Spacer(Modifier.height(14.dp))
                 content()
+            }
+        }
+    }
+}
+
+/**
+ * Error card shown when SPAKE2 pairing succeeded but the TLS ADB connection failed.
+ *
+ * Shows:
+ *  - "Pairing succeeded ✓" header so the user knows the code was correct
+ *  - Target host:port that was tried
+ *  - Full raw error log in monospace, selectable
+ *  - Copy button — copies a formatted bug report to clipboard
+ *  - Retry Connection button — re-attempts TLS connect without a new pairing code
+ */
+@Composable
+private fun ConnectionFailedCard(
+    host: String,
+    port: Int,
+    rawError: String,
+    isRetrying: Boolean,
+    onCopy: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    var showFullLog by remember { mutableStateOf(false) }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(12.dp)) {
+
+            // ── Header row ────────────────────────────────────────────────────
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.LinkOff, null,
+                    Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.error,
+                )
+                Spacer(Modifier.width(6.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Pairing succeeded ✓ — Connection failed",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    if (host.isNotBlank() && port > 0) {
+                        Text(
+                            "$host : $port",
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                    }
+                }
+                // Copy button
+                IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Default.ContentCopy, "Copy error log",
+                        Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // ── Expand / collapse log ─────────────────────────────────────────
+            TextButton(
+                onClick = { showFullLog = !showFullLog },
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 2.dp),
+            ) {
+                Icon(
+                    if (showFullLog) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    null, Modifier.size(16.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    if (showFullLog) "Hide error log" else "Show full error log",
+                    fontSize = 12.sp,
+                )
+            }
+
+            AnimatedVisibility(showFullLog) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                    ),
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                ) {
+                    SelectionContainer {
+                        Text(
+                            rawError.ifBlank { "(no error detail captured)" },
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            lineHeight = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(10.dp),
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // ── Action row ────────────────────────────────────────────────────
+            Text(
+                "The pairing code worked — your device already trusts ACCU. " +
+                "Just tap Retry; no new code is needed.",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                lineHeight = 16.sp,
+            )
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = onRetry,
+                enabled = !isRetrying,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor   = MaterialTheme.colorScheme.onError,
+                ),
+            ) {
+                if (isRetrying) {
+                    CircularProgressIndicator(
+                        Modifier.size(16.dp), strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onError,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Retrying…")
+                } else {
+                    Icon(Icons.Default.Refresh, null, Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Retry Connection")
+                }
             }
         }
     }

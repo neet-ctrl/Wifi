@@ -27,6 +27,15 @@ data class ShizukuUiState(
     val isWirelessAdbEnabled: Boolean = false,
     val isPairing: Boolean = false,
     val pairingStatus: String = "",
+    /** True when pairing succeeded but the TLS connection phase failed — enables "Retry Connection". */
+    val isConnectionFailed: Boolean = false,
+    /** Full raw error from the failed connection attempt, shown in the expanded error card. */
+    val connectionFailedRaw: String = "",
+    /** Host that was tried when connection failed — shown in the error card. */
+    val connectionFailedHost: String = "",
+    /** Port that was tried when connection failed — shown in the error card. */
+    val connectionFailedPort: Int = 0,
+    val isRetryingConnection: Boolean = false,
     val serverPid: Int = -1,
     val serverStartMethod: String = "",
     val logs: List<ShizukuLogEntry> = emptyList(),
@@ -297,14 +306,67 @@ class ShizukuViewModel @Inject constructor(
                 }
                 is AccuConnectionManager.PairingResult.ConnectionFailed -> {
                     val portInfo = if (result.sessionPort > 0) " (port ${result.sessionPort})" else ""
-                    val status = "Pairing succeeded ✓ but connection to ${result.host}$portInfo failed.\n${result.rawOutput}"
-                    _state.update { it.copy(isPairing = false, pairingStatus = status) }
-                    addLog("Connection failed — ${result.rawOutput.take(80)}", LogLevel.ERROR)
+                    val status = "Pairing succeeded ✓ but connection to ${result.host}$portInfo failed.\nTap \"Retry Connection\" — no new code needed."
+                    _state.update {
+                        it.copy(
+                            isPairing = false,
+                            pairingStatus = status,
+                            isConnectionFailed = true,
+                            connectionFailedRaw = result.rawOutput,
+                            connectionFailedHost = result.host,
+                            connectionFailedPort = result.sessionPort,
+                        )
+                    }
+                    addLog("Connection failed — ${result.rawOutput.take(200)}", LogLevel.ERROR)
                 }
                 is AccuConnectionManager.PairingResult.NoPairingService -> {
                     val status = "No pairing service found yet.\nGo to: Developer Options → Wireless debugging → Pair device with pairing code"
                     _state.update { it.copy(isPairing = false, pairingStatus = status) }
                     addLog("completePairing: pairingPort=0, mDNS not resolved yet", LogLevel.ERROR)
+                }
+            }
+        }
+    }
+
+    /**
+     * Re-attempt only the TLS connection phase after a [PairingResult.ConnectionFailed].
+     * Pairing already succeeded so the device still trusts our key — no new code required.
+     */
+    fun retryConnection() {
+        viewModelScope.launch {
+            _state.update { it.copy(isRetryingConnection = true, pairingStatus = "Retrying connection…") }
+            addLog("Retrying TLS ADB connection (no re-pairing needed)…", LogLevel.INFO)
+            when (val result = connectionManager.retryConnectionOnly()) {
+                is AccuConnectionManager.PairingResult.Success -> {
+                    _state.update {
+                        it.copy(
+                            isRetryingConnection = false,
+                            isConnectionFailed = false,
+                            pairingStatus = "Connected ✓",
+                            connectionFailedRaw = "",
+                        )
+                    }
+                    addLog("Retry succeeded — TLS ADB connected ✓", LogLevel.SUCCESS)
+                    refresh()
+                }
+                is AccuConnectionManager.PairingResult.ConnectionFailed -> {
+                    val portInfo = if (result.sessionPort > 0) " (port ${result.sessionPort})" else ""
+                    val status = "Pairing succeeded ✓ but connection to ${result.host}$portInfo failed.\nTap \"Retry Connection\" — no new code needed."
+                    _state.update {
+                        it.copy(
+                            isRetryingConnection = false,
+                            isConnectionFailed = true,
+                            pairingStatus = status,
+                            connectionFailedRaw = result.rawOutput,
+                            connectionFailedHost = result.host,
+                            connectionFailedPort = result.sessionPort,
+                        )
+                    }
+                    addLog("Retry failed — ${result.rawOutput.take(200)}", LogLevel.ERROR)
+                }
+                else -> {
+                    _state.update { it.copy(isRetryingConnection = false, pairingStatus = "Retry failed — please re-pair from the pairing screen") }
+                    addLog("retryConnection: unexpected result $result", LogLevel.ERROR)
                 }
             }
         }
