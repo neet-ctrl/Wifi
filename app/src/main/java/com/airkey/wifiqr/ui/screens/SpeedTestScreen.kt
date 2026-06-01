@@ -1,6 +1,10 @@
 package com.airkey.wifiqr.ui.screens
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.wifi.WifiManager
 import android.os.Build
 import androidx.compose.animation.*
@@ -18,7 +22,6 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
-import com.airkey.wifiqr.data.ConnectionEvent
 import com.airkey.wifiqr.data.WifiNetwork
 import com.airkey.wifiqr.ui.theme.*
 import com.airkey.wifiqr.viewmodel.WifiViewModel
@@ -26,7 +29,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.OutputStream
-import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
@@ -61,7 +63,8 @@ fun SpeedTestScreen(
     var progress by remember { mutableFloatStateOf(0f) }
     var liveSpeed by remember { mutableFloatStateOf(0f) }
 
-    val wifiInfo = remember { getWifiDetails(context) }
+    var wifiInfo by remember { mutableStateOf(getWifiDetails(context)) }
+    var notOnWifi by remember { mutableStateOf(false) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "radar")
     val radarAngle by infiniteTransition.animateFloat(
@@ -75,33 +78,47 @@ fun SpeedTestScreen(
             testState = TestState.PINGING
             progress = 0f
             liveSpeed = 0f
+            notOnWifi = false
             try {
-                val ping = measurePing()
+                // Refresh WiFi info at the moment the test starts
+                val freshInfo = withContext(Dispatchers.IO) { getWifiDetails(context) }
+                wifiInfo = freshInfo
+
+                // Get the active WiFi network handle so we can bind HTTP requests to it.
+                // This guarantees the test measures WiFi speed, never mobile data.
+                val wifiNetwork = withContext(Dispatchers.IO) { getWifiNetwork(context) }
+                if (wifiNetwork == null) {
+                    notOnWifi = true
+                }
+
+                val ping = measurePing(wifiNetwork)
                 progress = 0.25f
                 testState = TestState.DOWNLOADING
-                val (dl, dlLive) = measureDownload { liveSpeed = it; progress = 0.25f + it / 100f * 0.35f }
+                val (dl, _) = measureDownload(wifiNetwork) { liveSpeed = it; progress = 0.25f + it / 100f * 0.35f }
                 progress = 0.60f
                 testState = TestState.UPLOADING
-                val (ul, _) = measureUpload { liveSpeed = it; progress = 0.60f + it / 100f * 0.35f }
+                val (ul, _) = measureUpload(wifiNetwork) { liveSpeed = it; progress = 0.60f + it / 100f * 0.35f }
                 progress = 1f
 
+                val info = withContext(Dispatchers.IO) { getWifiDetails(context) }
+                wifiInfo = info
                 result = SpeedResult(
                     pingMs = ping,
                     downloadMbps = dl,
                     uploadMbps = ul,
-                    signalDbm = wifiInfo.signalDbm,
-                    frequencyMhz = wifiInfo.frequencyMhz,
-                    linkSpeedMbps = wifiInfo.linkSpeedMbps,
-                    bssid = wifiInfo.bssid,
-                    ssid = wifiInfo.ssid,
-                    channelWidth = wifiInfo.channelWidth,
-                    ip = wifiInfo.ip
+                    signalDbm = info.signalDbm,
+                    frequencyMhz = info.frequencyMhz,
+                    linkSpeedMbps = info.linkSpeedMbps,
+                    bssid = info.bssid,
+                    ssid = info.ssid,
+                    channelWidth = info.channelWidth,
+                    ip = info.ip
                 )
                 testState = TestState.DONE
 
                 if (network != null) {
                     val eventId = viewModel.logConnectionEvent(network.id, network.ssid)
-                    viewModel.updateConnectionEventSpeeds(eventId, dl, ul, ping, wifiInfo.signalDbm, wifiInfo.frequencyMhz, wifiInfo.linkSpeedMbps)
+                    viewModel.updateConnectionEventSpeeds(eventId, dl, ul, ping, info.signalDbm, info.frequencyMhz, info.linkSpeedMbps)
                 }
             } catch (e: Exception) {
                 errorMsg = e.message ?: "Test failed"
@@ -127,7 +144,28 @@ fun SpeedTestScreen(
             Column(Modifier.weight(1f)) {
                 Text("WiFi Speed Test", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
                 Text(if (wifiInfo.ssid.isNotEmpty()) "Connected to ${wifiInfo.ssid}" else "Not connected to WiFi",
-                    style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                    style = MaterialTheme.typography.bodySmall, color = if (wifiInfo.ssid.isNotEmpty()) NeonCyan else OrangeWarn)
+            }
+        }
+
+        // Warning banner — shown if test ran but no WiFi was found
+        AnimatedVisibility(visible = notOnWifi) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .background(OrangeWarn.copy(0.15f), RoundedCornerShape(12.dp))
+                    .border(1.dp, OrangeWarn.copy(0.4f), RoundedCornerShape(12.dp))
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Rounded.Warning, null, tint = OrangeWarn, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Not connected to WiFi — result shows your current internet connection speed, not WiFi",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = OrangeWarn
+                )
             }
         }
 
@@ -404,29 +442,58 @@ fun getWifiDetails(context: Context): WifiDetails {
     } catch (_: Exception) { WifiDetails() }
 }
 
-private suspend fun measurePing(): Int = withContext(Dispatchers.IO) {
+/** Returns the active WiFi [Network] handle, or null if not connected to WiFi. */
+private suspend fun getWifiNetwork(context: Context): Network? = withContext(Dispatchers.IO) {
+    val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    // Fast path: check the currently active network first
+    val active = cm.activeNetwork
+    if (active != null) {
+        val caps = cm.getNetworkCapabilities(active)
+        if (caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return@withContext active
+    }
+    // Slower path: enumerate all networks
+    cm.allNetworks.forEach { net ->
+        val caps = cm.getNetworkCapabilities(net) ?: return@forEach
+        if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        ) return@withContext net
+    }
+    null
+}
+
+private suspend fun measurePing(wifiNetwork: Network?): Int = withContext(Dispatchers.IO) {
     try {
-        val pings = (1..3).map {
+        val pings = (1..5).map {
             val start = System.currentTimeMillis()
-            Socket().use { socket ->
-                socket.connect(InetSocketAddress("1.1.1.1", 53), 3000)
+            if (wifiNetwork != null) {
+                wifiNetwork.socketFactory.createSocket().use { socket ->
+                    socket.connect(InetSocketAddress("1.1.1.1", 53), 3000)
+                }
+            } else {
+                Socket().use { socket -> socket.connect(InetSocketAddress("1.1.1.1", 53), 3000) }
             }
             (System.currentTimeMillis() - start).toInt()
         }
-        pings.min()
+        // Drop highest, average rest for a clean reading
+        pings.sorted().dropLast(1).average().roundToInt()
     } catch (_: Exception) { 999 }
 }
 
-private suspend fun measureDownload(onProgress: (Float) -> Unit): Pair<Float, Float> =
+private suspend fun measureDownload(wifiNetwork: Network?, onProgress: (Float) -> Unit): Pair<Float, Float> =
     withContext(Dispatchers.IO) {
         try {
-            val url = URL("https://speed.cloudflare.com/__down?bytes=5000000")
-            val conn = url.openConnection() as HttpURLConnection
+            // 25 MB — large enough to give accurate readings even on 200+ Mbps connections
+            val url = URL("https://speed.cloudflare.com/__down?bytes=25000000")
+            val conn = if (wifiNetwork != null) {
+                wifiNetwork.openConnection(url) as java.net.HttpURLConnection
+            } else {
+                url.openConnection() as java.net.HttpURLConnection
+            }
             conn.connectTimeout = 10_000
-            conn.readTimeout = 30_000
+            conn.readTimeout = 60_000
             conn.connect()
             val start = System.currentTimeMillis()
-            val buf = ByteArray(32768)
+            val buf = ByteArray(65536)
             var total = 0L
             val stream = conn.inputStream
             while (true) {
@@ -434,47 +501,55 @@ private suspend fun measureDownload(onProgress: (Float) -> Unit): Pair<Float, Fl
                 if (n < 0) break
                 total += n
                 val elapsed = (System.currentTimeMillis() - start) / 1000.0
-                val speedMbps = if (elapsed > 0) ((total * 8.0) / 1_000_000.0 / elapsed).toFloat() else 0f
-                onProgress(speedMbps.coerceAtMost(100f))
+                if (elapsed > 0) {
+                    val speedMbps = ((total * 8.0) / 1_000_000.0 / elapsed).toFloat()
+                    onProgress(speedMbps.coerceAtMost(1000f))
+                }
             }
             conn.disconnect()
             val elapsed = (System.currentTimeMillis() - start) / 1000.0
-            val speed = ((total * 8.0) / 1_000_000.0 / elapsed).toFloat()
+            val speed = if (elapsed > 0) ((total * 8.0) / 1_000_000.0 / elapsed).toFloat() else 0f
             Pair(speed, speed)
         } catch (e: Exception) {
             Pair(0f, 0f)
         }
     }
 
-private suspend fun measureUpload(onProgress: (Float) -> Unit): Pair<Float, Float> =
+private suspend fun measureUpload(wifiNetwork: Network?, onProgress: (Float) -> Unit): Pair<Float, Float> =
     withContext(Dispatchers.IO) {
         try {
+            val uploadBytes = 5_000_000L  // 5 MB upload
             val url = URL("https://speed.cloudflare.com/__up")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = if (wifiNetwork != null) {
+                wifiNetwork.openConnection(url) as java.net.HttpURLConnection
+            } else {
+                url.openConnection() as java.net.HttpURLConnection
+            }
             conn.requestMethod = "POST"
             conn.doOutput = true
-            conn.setFixedLengthStreamingMode(2_000_000L)
+            conn.setFixedLengthStreamingMode(uploadBytes)
             conn.connectTimeout = 10_000
-            conn.readTimeout = 30_000
+            conn.readTimeout = 60_000
             conn.connect()
             val start = System.currentTimeMillis()
             val out: OutputStream = conn.outputStream
-            val buf = ByteArray(32768) { 65 }
+            val buf = ByteArray(65536) { 65 }
             var written = 0L
-            val total = 2_000_000L
-            while (written < total) {
-                val toWrite = minOf(buf.size.toLong(), total - written).toInt()
+            while (written < uploadBytes) {
+                val toWrite = minOf(buf.size.toLong(), uploadBytes - written).toInt()
                 out.write(buf, 0, toWrite)
                 written += toWrite
                 val elapsed = (System.currentTimeMillis() - start) / 1000.0
-                val speedMbps = if (elapsed > 0) ((written * 8.0) / 1_000_000.0 / elapsed).toFloat() else 0f
-                onProgress(speedMbps.coerceAtMost(100f))
+                if (elapsed > 0) {
+                    val speedMbps = ((written * 8.0) / 1_000_000.0 / elapsed).toFloat()
+                    onProgress(speedMbps.coerceAtMost(1000f))
+                }
             }
             out.flush()
             conn.responseCode
             conn.disconnect()
             val elapsed = (System.currentTimeMillis() - start) / 1000.0
-            val speed = ((written * 8.0) / 1_000_000.0 / elapsed).toFloat()
+            val speed = if (elapsed > 0) ((written * 8.0) / 1_000_000.0 / elapsed).toFloat() else 0f
             Pair(speed, speed)
         } catch (e: Exception) {
             Pair(0f, 0f)
