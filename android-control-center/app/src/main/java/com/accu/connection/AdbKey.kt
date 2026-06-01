@@ -94,11 +94,22 @@ class AdbKey private constructor(
 
     private fun buildKeyManager() = object : X509ExtendedKeyManager() {
         private val alias = "key"
-        override fun chooseClientAlias(types: Array<out String>, i: Array<out Principal>?, s: Socket?) =
-            if (types.any { it == "RSA" }) alias else null
+
+        // Always present our certificate regardless of the key-type list.
+        //
+        // Android adbd (TLS 1.3) sends a CertificateRequest whose signature_algorithms
+        // extension only includes rsa_pss_pss_sha256 / rsa_pss_rsae_sha256.
+        // Conscrypt maps those to key-type "RSASSA-PSS" (not "RSA"), so a strict
+        // types.any { it == "RSA" } check returns null and we send no cert.
+        // adbd enforces SSL_VERIFY_FAIL_IF_NO_PEER_CERT → sends close_notify →
+        // startHandshake() throws SSLException("connection closed").
+        //
+        // We only ever have one key, so returning alias unconditionally is safe.
+        override fun chooseClientAlias(types: Array<out String>?, i: Array<out Principal>?, s: Socket?) = alias
+        override fun chooseEngineClientAlias(types: Array<out String>?, i: Array<out Principal>?, e: SSLEngine?) = alias
         override fun getCertificateChain(a: String?) = if (a == alias) arrayOf(certificate) else null
         override fun getPrivateKey(a: String?)        = if (a == alias) privateKey else null
-        override fun getClientAliases(t: String?, i: Array<out Principal>?) = null
+        override fun getClientAliases(t: String?, i: Array<out Principal>?) = arrayOf(alias)
         override fun getServerAliases(t: String, i: Array<out Principal>?)  = null
         override fun chooseServerAlias(t: String, i: Array<out Principal>?, s: Socket?) = null
     }

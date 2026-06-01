@@ -723,6 +723,11 @@ class AccuConnectionManager @Inject constructor(
         }
         Timber.i("$TAG SPAKE2 pairing succeeded ✓")
 
+        // Give adbd ~1.5 s to flush the new key into adb_keys before we attempt
+        // the TLS session connection.  Without this pause the connect can arrive
+        // before adbd has written the authorised-key file and we get rejected.
+        kotlinx.coroutines.delay(1_500)
+
         // Pairing succeeded — wait for session port then connect
         val deadline = System.currentTimeMillis() + 8_000L
         while (sessionPort <= 0 && System.currentTimeMillis() < deadline) {

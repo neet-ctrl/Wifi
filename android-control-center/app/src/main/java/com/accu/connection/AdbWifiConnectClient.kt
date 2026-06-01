@@ -77,14 +77,31 @@ class AdbWifiConnectClient private constructor(
             .createSocket(raw, host, port, /*autoClose=*/ true) as SSLSocket
         ssl.soTimeout = SO_TIMEOUT_MS
         ssl.useClientMode = true
-        ssl.startHandshake()
+
+        try {
+            ssl.startHandshake()
+        } catch (e: Exception) {
+            // Wrap with a clear message so the UI shows "TLS handshake failed"
+            // rather than a cryptic Conscrypt internal message.
+            // Common causes:
+            //  - "connection closed" → adbd sent close_notify; usually means no client
+            //    cert was sent (chooseClientAlias returned null for "RSASSA-PSS" key type)
+            //  - "Handshake failed" → cipher mismatch
+            throw IllegalStateException("TLS handshake failed (${e.message}). " +
+                "Check that this device ran a fresh pair before connecting.", e)
+        }
         sslSocket = ssl
-        Timber.i("$TAG TLS handshake OK → $host:$port")
+        Timber.i("$TAG TLS handshake OK → $host:$port  " +
+            "protocol=${ssl.session.protocol}  suite=${ssl.session.cipherSuite}")
 
         din  = DataInputStream(ssl.inputStream)
         dout = DataOutputStream(ssl.outputStream)
 
-        doAdbHandshake()
+        try {
+            doAdbHandshake()
+        } catch (e: Exception) {
+            throw IllegalStateException("ADB CNXN handshake failed (TLS was OK): ${e.message}", e)
+        }
         Timber.i("$TAG ADB CNXN handshake complete ✓")
     }
 
