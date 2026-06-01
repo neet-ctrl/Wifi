@@ -28,6 +28,9 @@ class WifiRepository(
     suspend fun logConnectionEvent(networkId: Long, ssid: String): Long =
         eventDao.insert(ConnectionEvent(networkId = networkId, ssid = ssid))
 
+    suspend fun logConnectionEventFull(event: ConnectionEvent): Long =
+        eventDao.insert(event)
+
     suspend fun updateConnectionEvent(event: ConnectionEvent) = eventDao.update(event)
     suspend fun getEventById(id: Long): ConnectionEvent? = eventDao.getById(id)
     fun getEventsForNetwork(networkId: Long): Flow<List<ConnectionEvent>> =
@@ -36,6 +39,7 @@ class WifiRepository(
         eventDao.getEventsForNetworkList(networkId)
     fun getRecentEvents(limit: Int = 100): Flow<List<ConnectionEvent>> =
         eventDao.getRecentEvents(limit)
+    suspend fun getAllEventsList(): List<ConnectionEvent> = eventDao.getAllEventsList()
     suspend fun getConnectionCount(networkId: Long): Int = eventDao.getConnectionCount(networkId)
     suspend fun deleteEventsForNetwork(networkId: Long) = eventDao.deleteForNetwork(networkId)
 
@@ -45,6 +49,7 @@ class WifiRepository(
         geofenceDao.getForNetwork(networkId)
     suspend fun getAllEnabledGeofences(): List<GeofenceConfig> = geofenceDao.getAllEnabled()
     fun getAllGeofencesFlow(): Flow<List<GeofenceConfig>> = geofenceDao.getAllFlow()
+    suspend fun getAllGeofencesList(): List<GeofenceConfig> = geofenceDao.getAllList()
     suspend fun setGeofenceEnabled(networkId: Long, enabled: Boolean) =
         geofenceDao.setEnabled(networkId, enabled)
 }

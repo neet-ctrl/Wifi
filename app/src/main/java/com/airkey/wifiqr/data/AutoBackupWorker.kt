@@ -21,8 +21,10 @@ class AutoBackupWorker(
             val folderUri = Uri.parse(uriStr)
             val db = WifiDatabase.getDatabase(ctx)
             val networks = db.wifiDao().getAllNetworksList()
+            val events = db.connectionEventDao().getAllEventsList()
+            val geofences = db.geofenceConfigDao().getAllList()
 
-            val result = BackupManager.performBackup(ctx, folderUri, networks)
+            val result = BackupManager.performBackup(ctx, folderUri, networks, events, geofences)
             if (result.isSuccess) {
                 prefs.edit()
                     .putLong(KEY_LAST_BACKUP_TIME, System.currentTimeMillis())

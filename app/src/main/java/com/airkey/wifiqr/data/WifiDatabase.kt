@@ -71,6 +71,9 @@ interface ConnectionEventDao {
     @Query("SELECT * FROM connection_events ORDER BY connectedAt DESC LIMIT :limit")
     fun getRecentEvents(limit: Int = 100): Flow<List<ConnectionEvent>>
 
+    @Query("SELECT * FROM connection_events ORDER BY connectedAt DESC")
+    suspend fun getAllEventsList(): List<ConnectionEvent>
+
     @Query("SELECT COUNT(*) FROM connection_events WHERE networkId = :networkId")
     suspend fun getConnectionCount(networkId: Long): Int
 
@@ -80,6 +83,7 @@ interface ConnectionEventDao {
     @Query("SELECT * FROM connection_events WHERE id = :id")
     suspend fun getById(id: Long): ConnectionEvent?
 }
+
 
 @Dao
 interface GeofenceConfigDao {
@@ -97,6 +101,9 @@ interface GeofenceConfigDao {
 
     @Query("SELECT * FROM geofence_configs")
     fun getAllFlow(): Flow<List<GeofenceConfig>>
+
+    @Query("SELECT * FROM geofence_configs")
+    suspend fun getAllList(): List<GeofenceConfig>
 
     @Query("UPDATE geofence_configs SET enabled = :enabled WHERE networkId = :networkId")
     suspend fun setEnabled(networkId: Long, enabled: Boolean)

@@ -245,9 +245,11 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             _backupMessage.value = "Creating backup…"
             val networks = repo.getAllNetworksList()
-            val result = BackupManager.performBackup(context, folderUri, networks)
+            val events = repo.getAllEventsList()
+            val geofences = repo.getAllGeofencesList()
+            val result = BackupManager.performBackup(context, folderUri, networks, events, geofences)
             _backupMessage.value = result.fold(
-                onSuccess = { name -> "✓ Backup saved: $name (${networks.size} networks)" },
+                onSuccess = { name -> "✓ Backup saved: $name (${networks.size} networks, ${events.size} events, ${geofences.size} geofences)" },
                 onFailure = { e -> "Backup failed: ${e.message}" }
             )
         }
@@ -258,10 +260,13 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
             _backupMessage.value = "Restoring…"
             val result = BackupManager.performRestore(context, fileUri)
             result.fold(
-                onSuccess = { pairs ->
+                onSuccess = { restoreResult ->
                     var added = 0; var updated = 0
-                    pairs.forEach { (n, imageBytes) ->
+                    // Build a map of old networkId → new networkId for remapping events/geofences
+                    val idMap = mutableMapOf<Long, Long>()
+                    restoreResult.networks.forEach { (n, imageBytes) ->
                         val existing = repo.getBySsid(n.ssid)
+                        val oldId = n.id
                         val id: Long = if (existing != null) {
                             repo.update(n.copy(id = existing.id, savedAt = existing.savedAt))
                             updated++
@@ -270,12 +275,23 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
                             added++
                             repo.insert(n)
                         }
+                        idMap[oldId] = id
                         if (imageBytes != null) {
                             val path = QrImageStore.saveFromBytes(context, id, imageBytes)
                             repo.updateQrImagePath(id, path)
                         }
                     }
-                    _backupMessage.value = "✓ Restored: $added new networks, $updated updated"
+                    // Restore connection events (remapping networkId)
+                    restoreResult.connectionEvents.forEach { event ->
+                        val remappedId = idMap[event.networkId] ?: event.networkId
+                        repo.logConnectionEventFull(event.copy(id = 0, networkId = remappedId))
+                    }
+                    // Restore geofence configs (remapping networkId)
+                    restoreResult.geofenceConfigs.forEach { geo ->
+                        val remappedId = idMap[geo.networkId] ?: geo.networkId
+                        repo.upsertGeofence(geo.copy(networkId = remappedId))
+                    }
+                    _backupMessage.value = "✓ Restored: $added new, $updated updated, ${restoreResult.connectionEvents.size} history events, ${restoreResult.geofenceConfigs.size} geofences"
                 },
                 onFailure = { e -> _backupMessage.value = "Restore failed: ${e.message}" }
             )
