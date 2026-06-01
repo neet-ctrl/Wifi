@@ -5,6 +5,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
@@ -20,11 +23,13 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import com.airkey.wifiqr.ui.theme.*
+import com.airkey.wifiqr.viewmodel.WifiViewModel
 import com.google.accompanist.permissions.*
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(viewModel: WifiViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
@@ -35,6 +40,35 @@ fun SettingsScreen(onBack: () -> Unit) {
         else true
     }
     var storageGrantedState by remember { mutableStateOf(storageGranted) }
+
+    val backupMessage by viewModel.backupMessage.collectAsState()
+
+    val backupFolderLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            viewModel.backupNetworks(context, uri)
+        }
+    }
+
+    val restoreFileLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.restoreNetworks(context, uri)
+        }
+    }
+
+    LaunchedEffect(backupMessage) {
+        if (backupMessage != null) {
+            delay(5000)
+            viewModel.clearBackupMessage()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -52,7 +86,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text("Settings", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
-                Text("Permissions & App Info", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                Text("Permissions, Backup & App Info", style = MaterialTheme.typography.bodySmall, color = TextMuted)
             }
         }
 
@@ -129,6 +163,67 @@ fun SettingsScreen(onBack: () -> Unit) {
             )
 
             Spacer(Modifier.height(8.dp))
+            SettingsSectionLabel("Data Backup", Icons.Rounded.Backup, GreenSuccess)
+
+            AnimatedVisibility(
+                visible = backupMessage != null,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                val isSuccess = backupMessage?.startsWith("✓") == true || backupMessage?.startsWith("Restored") == true
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(
+                            if (isSuccess) GreenSuccess.copy(alpha = 0.12f)
+                            else Color(0xFFFF4444).copy(alpha = 0.12f)
+                        )
+                        .border(
+                            1.dp,
+                            if (isSuccess) GreenSuccess.copy(0.4f) else Color(0xFFFF4444).copy(0.4f),
+                            RoundedCornerShape(14.dp)
+                        )
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        if (isSuccess) Icons.Rounded.CheckCircle else Icons.Rounded.Error,
+                        null,
+                        tint = if (isSuccess) GreenSuccess else Color(0xFFFF6666),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        backupMessage ?: "",
+                        color = if (isSuccess) GreenSuccess else Color(0xFFFF6666),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            BackupActionCard(
+                icon = Icons.Rounded.CloudUpload,
+                title = "Create Backup",
+                description = "Saves all your WiFi networks & QR codes into a single .wifi file in any folder you choose",
+                accentColor = NeonPurple,
+                buttonLabel = "Choose Folder & Backup",
+                buttonIcon = Icons.Rounded.FolderOpen,
+                onClick = { backupFolderLauncher.launch(null) }
+            )
+
+            BackupActionCard(
+                icon = Icons.Rounded.CloudDownload,
+                title = "Restore Backup",
+                description = "Pick a .wifi backup file — all networks are merged with your existing data, nothing is overwritten",
+                accentColor = NeonCyan,
+                buttonLabel = "Select .wifi File",
+                buttonIcon = Icons.Rounded.FileOpen,
+                onClick = { restoreFileLauncher.launch(arrayOf("*/*")) }
+            )
+
+            Spacer(Modifier.height(8.dp))
             SettingsSectionLabel("About AirKey", Icons.Rounded.Info, NeonPurple)
 
             Box(
@@ -170,6 +265,56 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
 
             Spacer(Modifier.height(100.dp))
+        }
+    }
+}
+
+@Composable
+private fun BackupActionCard(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    accentColor: Color,
+    buttonLabel: String,
+    buttonIcon: ImageVector,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .coloredShadow(accentColor, 16.dp, 12.dp, alpha = 0.18f)
+            .clip(RoundedCornerShape(18.dp))
+            .background(Brush.linearGradient(listOf(CardSurface, DarkSurface.copy(alpha = 0.95f))))
+            .border(1.dp, accentColor.copy(0.35f), RoundedCornerShape(18.dp))
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .background(accentColor.copy(0.15f), CircleShape)
+                    .border(1.dp, accentColor.copy(0.3f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = accentColor, modifier = Modifier.size(24.dp))
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.bodyLarge, color = TextPrimary, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(2.dp))
+                Text(description, style = MaterialTheme.typography.bodySmall, color = TextMuted)
+            }
+        }
+        Button(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth().height(46.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = accentColor.copy(alpha = 0.85f))
+        ) {
+            Icon(buttonIcon, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(buttonLabel, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

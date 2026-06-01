@@ -2,12 +2,14 @@ package com.airkey.wifiqr.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import android.net.wifi.WifiManager
 import android.net.wifi.WifiNetworkSuggestion
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.airkey.wifiqr.data.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -49,6 +51,9 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _editingNetwork = MutableStateFlow<WifiNetwork?>(null)
     val editingNetwork: StateFlow<WifiNetwork?> = _editingNetwork.asStateFlow()
+
+    private val _backupMessage = MutableStateFlow<String?>(null)
+    val backupMessage: StateFlow<String?> = _backupMessage.asStateFlow()
 
     val categories = listOf("All", "Home", "Work", "Travel", "Public", "Guest", "General")
 
@@ -153,6 +158,49 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
                 showToast("Could not connect: ${e.message}")
             }
         }
+    }
+
+    fun backupNetworks(context: Context, folderUri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _backupMessage.value = "Creating backup…"
+            val networks = repo.getAllNetworksList()
+            val result = BackupManager.performBackup(context, folderUri, networks)
+            _backupMessage.value = result.fold(
+                onSuccess = { name -> "✓ Backup saved: $name (${networks.size} networks)" },
+                onFailure = { e -> "Backup failed: ${e.message}" }
+            )
+        }
+    }
+
+    fun restoreNetworks(context: Context, fileUri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _backupMessage.value = "Restoring…"
+            val result = BackupManager.performRestore(context, fileUri)
+            result.fold(
+                onSuccess = { networks ->
+                    var added = 0
+                    var updated = 0
+                    networks.forEach { n ->
+                        val existing = repo.getBySsid(n.ssid)
+                        if (existing != null) {
+                            repo.update(n.copy(id = existing.id, savedAt = existing.savedAt))
+                            updated++
+                        } else {
+                            repo.insert(n)
+                            added++
+                        }
+                    }
+                    _backupMessage.value = "✓ Restored: $added new networks, $updated updated"
+                },
+                onFailure = { e ->
+                    _backupMessage.value = "Restore failed: ${e.message}"
+                }
+            )
+        }
+    }
+
+    fun clearBackupMessage() {
+        _backupMessage.value = null
     }
 
     private fun showToast(msg: String) {

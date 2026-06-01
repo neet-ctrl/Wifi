@@ -44,6 +44,9 @@ interface WifiDao {
 
     @Query("UPDATE wifi_networks SET lastConnected = :time WHERE id = :id")
     suspend fun updateLastConnected(id: Long, time: Long)
+
+    @Query("SELECT * FROM wifi_networks ORDER BY savedAt DESC")
+    suspend fun getAllNetworksList(): List<WifiNetwork>
 }
 
 @Database(entities = [WifiNetwork::class], version = 1, exportSchema = false)

@@ -18,4 +18,5 @@ class WifiRepository(private val dao: WifiDao) {
     suspend fun getCount(): Int = dao.getCount()
     suspend fun setFavorite(id: Long, isFav: Boolean) = dao.setFavorite(id, isFav)
     suspend fun updateLastConnected(id: Long) = dao.updateLastConnected(id, System.currentTimeMillis())
+    suspend fun getAllNetworksList(): List<WifiNetwork> = dao.getAllNetworksList()
 }

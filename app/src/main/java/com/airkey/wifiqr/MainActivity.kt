@@ -192,7 +192,7 @@ fun AirKeyApp(viewModel: WifiViewModel) {
                 )
             }
             composable(Screen.Settings.route) {
-                SettingsScreen(onBack = { navController.popBackStack() })
+                SettingsScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
             }
         }
 
