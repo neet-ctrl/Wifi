@@ -260,10 +260,13 @@ class ShellViewModel @Inject constructor(
     }
 
     private fun addLine(line: OutputLine) {
-        _output.update { current -> current + line }
+        _output.update { current ->
+            val next = current + line
+            if (next.size > 1500) next.takeLast(1500) else next
+        }
     }
 
     companion object {
-        fun preloadedExamples(): List<CommandExample> = emptyList()
+        fun preloadedExamples(): List<CommandExample> = PRELOADED_COMMANDS
     }
 }

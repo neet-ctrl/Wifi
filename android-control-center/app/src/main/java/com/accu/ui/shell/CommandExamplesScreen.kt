@@ -132,7 +132,7 @@ class CommandExamplesViewModel @Inject constructor(
     } catch (_: Exception) { emptyList() }
 }
 
-private val PRELOADED_COMMANDS = listOf(
+internal val PRELOADED_COMMANDS = listOf(
     // Activity Manager
     CommandExample("am01","Force-stop app","am force-stop <package>","Force stops a specific package, terminating its processes.",listOf("am","package","kill")),
     CommandExample("am02","Start activity","am start -n <package>/<activity>","Starts a specific activity of an application.",listOf("am","activity","launch")),

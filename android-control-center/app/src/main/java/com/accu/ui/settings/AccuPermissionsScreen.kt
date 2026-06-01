@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.AlarmManager
 import android.app.AppOpsManager
 import android.app.NotificationManager
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -632,8 +633,24 @@ fun AccuPermissionsScreen(onBack: () -> Unit = {}) {
     ) { isGranted ->
         refresh()
         scope.launch {
-            if (isGranted) snackbar.showSnackbar("Permission granted ✓")
-            else snackbar.showSnackbar("Permission denied by user")
+            if (isGranted) {
+                snackbar.showSnackbar("Permission granted ✓")
+            } else {
+                val raw = pendingNormalPermRaw
+                val activity = context as? Activity
+                val isPermanentlyDenied = raw != null && activity != null &&
+                    !activity.shouldShowRequestPermissionRationale(raw)
+                if (isPermanentlyDenied) {
+                    context.startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            .setData(Uri.parse("package:${context.packageName}"))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                    snackbar.showSnackbar("Permanently denied — grant in App Settings ↗")
+                } else {
+                    snackbar.showSnackbar("Permission denied")
+                }
+            }
         }
         pendingNormalPermRaw = null
     }
@@ -942,9 +959,21 @@ fun AccuPermissionsScreen(onBack: () -> Unit = {}) {
                                     normalPermLauncher.launch(perm.rawPermission)
                                 }
                                 GrantMethod.ADB_ONLY -> {
-                                    val cmd = "adb shell pm grant ${context.packageName} ${perm.rawPermission}"
+                                    val cmd = "pm grant ${context.packageName} ${perm.rawPermission}"
                                     copyToClipboard(context, cmd)
-                                    scope.launch { snackbar.showSnackbar("ADB command copied to clipboard") }
+                                    scope.launch { snackbar.showSnackbar("ACCU shell command copied to clipboard") }
+                                }
+                                GrantMethod.AUTOMATIC -> {
+                                    scope.launch {
+                                        grantingId = perm.id
+                                        val ok = vm.grantPermission(context.packageName, perm.rawPermission)
+                                        grantingId = null
+                                        refresh()
+                                        snackbar.showSnackbar(
+                                            if (ok) "${perm.friendlyName} granted ✓"
+                                            else "Auto-granted at install — reinstall or check manifest"
+                                        )
+                                    }
                                 }
                                 else -> {
                                     scope.launch { snackbar.showSnackbar("${perm.friendlyName}: ${perm.grantMethod.label}") }
@@ -958,14 +987,14 @@ fun AccuPermissionsScreen(onBack: () -> Unit = {}) {
                                 if (ok) {
                                     snackbar.showSnackbar("${perm.friendlyName} revoked ✓")
                                 } else {
-                                    val fallback = "adb shell pm revoke ${context.packageName} ${perm.rawPermission}"
+                                    val fallback = "pm revoke ${context.packageName} ${perm.rawPermission}"
                                     copyToClipboard(context, fallback)
-                                    snackbar.showSnackbar("Revoke failed — ADB command copied to clipboard")
+                                    snackbar.showSnackbar("Revoke failed — shell command copied to clipboard")
                                 }
                             }
                         },
                         onCopyAdb = {
-                            val cmd = "adb shell pm grant ${context.packageName} ${perm.rawPermission}"
+                            val cmd = "pm grant ${context.packageName} ${perm.rawPermission}"
                             copyToClipboard(context, cmd)
                             scope.launch { snackbar.showSnackbar("Copied: $cmd") }
                         },
@@ -1464,6 +1493,17 @@ private fun PermissionCard(
                                     Text("Root only", style = MaterialTheme.typography.labelMedium)
                                 }
                             }
+                            GrantMethod.AUTOMATIC -> {
+                                FilledTonalButton(
+                                    onClick  = onGrant,
+                                    modifier = Modifier.height(32.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp),
+                                ) {
+                                    Icon(Icons.Default.CheckCircle, null, Modifier.size(14.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Fix Grant", style = MaterialTheme.typography.labelMedium)
+                                }
+                            }
                             else -> {}
                         }
                     }
@@ -1532,11 +1572,11 @@ private fun PermissionCard(
                         }
                     }
 
-                    // ADB / ACCU command
+                    // ACCU Shell command
                     if (perm.grantMethod == GrantMethod.ADB_ONLY ||
                         perm.grantMethod == GrantMethod.SHIZUKU) {
-                        val cmd = "adb shell pm grant ${LocalContext.current.packageName} ${perm.rawPermission}"
-                        DetailHeader(Icons.Default.Terminal, MaterialTheme.colorScheme.tertiary, "ADB command")
+                        val cmd = "pm grant ${LocalContext.current.packageName} ${perm.rawPermission}"
+                        DetailHeader(Icons.Default.Terminal, MaterialTheme.colorScheme.tertiary, "ACCU Shell command")
                         Row(
                             Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
