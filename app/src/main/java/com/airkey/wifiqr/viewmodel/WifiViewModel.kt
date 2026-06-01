@@ -67,15 +67,17 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            combine(_searchQuery, _selectedCategory) { query, category -> query to category }
-                .flatMapLatest { (query, category) ->
-                    repo.getFilteredNetworks(query, category)
+            combine(repo.allNetworks, _searchQuery, _selectedCategory) { all, query, category ->
+                all.filter { n ->
+                    (query.isBlank() || n.ssid.contains(query, ignoreCase = true) ||
+                            n.notes.contains(query, ignoreCase = true)) &&
+                            (category == "All" || n.category == category)
                 }
-                .collect { networks ->
-                    _uiState.update {
-                        it.copy(networks = networks, networkCount = networks.size)
-                    }
+            }.collect { networks ->
+                _uiState.update {
+                    it.copy(networks = networks, networkCount = networks.size)
                 }
+            }
         }
     }
 
@@ -104,6 +106,14 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleFavorite(network: WifiNetwork) {
         viewModelScope.launch { repo.update(network.copy(isFavorite = !network.isFavorite)) }
+    }
+
+    fun onQrScanned(raw: String) {
+        _scannedResult.value = parseWifiQrCode(raw)
+    }
+
+    fun clearScannedResult() {
+        _scannedResult.value = null
     }
 
     fun setScannedResult(result: ScannedWifiResult?) {

@@ -57,12 +57,13 @@ fun GeneratorScreen(
     var activeTab by remember { mutableIntStateOf(0) }
     var shareToast by remember { mutableStateOf("") }
     var logoBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var logoKey by remember { mutableIntStateOf(0) }
 
     val network = remember(ssid, password, securityType, isHidden) {
         WifiNetwork(ssid = ssid, password = password, securityType = securityType, isHidden = isHidden)
     }
     val qrContent = network.toWifiQrString()
-    val qrBitmap = remember(qrContent, qrStyle, logoBitmap) {
+    val qrBitmap = remember(qrContent, qrStyle, logoKey) {
         if (ssid.isNotBlank()) QrCodeGenerator.generate(qrContent, 512, qrStyle, logoBitmap) else null
     }
 
@@ -170,7 +171,7 @@ fun GeneratorScreen(
                     qrStyle = qrStyle,
                     onStyleChange = viewModel::updateQrStyle,
                     logoBitmap = logoBitmap,
-                    onLogoBitmapChange = { logoBitmap = it }
+                    onLogoBitmapChange = { logoBitmap = it; logoKey++ }
                 )
                 2 -> PreviewTab(
                     qrBitmap = qrBitmap,
@@ -453,19 +454,24 @@ fun StyleTab(
     onLogoBitmapChange: (Bitmap?) -> Unit
 ) {
     val context = LocalContext.current
+    // "text" or "image" — initialise from whether a bitmap is already loaded
+    var logoMode by remember { mutableStateOf(if (logoBitmap != null) "image" else "text") }
+
     val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             val bmp = try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     android.graphics.ImageDecoder.decodeBitmap(
                         android.graphics.ImageDecoder.createSource(context.contentResolver, uri)
-                    )
+                    ) { decoder, _, _ ->
+                        decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                    }
                 } else {
                     @Suppress("DEPRECATION")
                     BitmapFactory.decodeStream(context.contentResolver.openInputStream(uri))
-                }
+                }?.copy(android.graphics.Bitmap.Config.ARGB_8888, false)
             } catch (e: Exception) { null }
-            onLogoBitmapChange(bmp)
+            if (bmp != null) onLogoBitmapChange(bmp)
         }
     }
     Column(
@@ -567,6 +573,8 @@ fun StyleTab(
         }
 
         SectionHeader("Center Logo", Icons.Rounded.Stars)
+
+        // ── Enable / disable toggle ──────────────────────────────────────
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -583,72 +591,170 @@ fun StyleTab(
             }
             Switch(
                 checked = qrStyle.showLogo,
-                onCheckedChange = { onStyleChange(qrStyle.copy(showLogo = it)) },
+                onCheckedChange = { on ->
+                    onStyleChange(qrStyle.copy(showLogo = on))
+                    if (!on) { onLogoBitmapChange(null); logoMode = "text" }
+                },
                 colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = NeonPurple)
             )
         }
+
         AnimatedVisibility(visible = qrStyle.showLogo, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = qrStyle.logoText,
-                    onValueChange = { onStyleChange(qrStyle.copy(logoText = it.take(3))) },
-                    label = { Text("Logo Text (max 3 chars)") },
-                    leadingIcon = { Icon(Icons.Rounded.TextFields, null, tint = NeonPurple) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = airKeyTextFieldColors(),
-                    singleLine = true,
-                    supportingText = { Text("Text shows when no image logo is selected", color = TextMuted, style = MaterialTheme.typography.labelSmall) }
-                )
-                if (logoBitmap != null) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(GlassWhite, RoundedCornerShape(14.dp))
-                            .border(1.dp, GreenSuccess.copy(0.4f), RoundedCornerShape(14.dp))
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+                // ── Text / Image segment toggle ──────────────────────────
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(GlassWhite, RoundedCornerShape(14.dp))
+                        .border(1.dp, GlassWhite2, RoundedCornerShape(14.dp))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    listOf(
+                        Triple("text",  "Text Logo",  Icons.Rounded.TextFields),
+                        Triple("image", "Image Logo", Icons.Rounded.Image)
+                    ).forEach { (mode, label, icon) ->
+                        val selected = logoMode == mode
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(GlassWhite2),
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .then(
+                                    if (selected) Modifier.background(
+                                        Brush.linearGradient(listOf(NeonPurple, NeonCyan)),
+                                        RoundedCornerShape(10.dp)
+                                    ) else Modifier.background(Color.Transparent)
+                                )
+                                .clickable {
+                                    logoMode = mode
+                                    if (mode == "text") onLogoBitmapChange(null)
+                                }
+                                .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Image(
-                                bitmap = logoBitmap.asImageBitmap(),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                            )
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Logo Image Set", style = MaterialTheme.typography.labelMedium, color = GreenSuccess, fontWeight = FontWeight.SemiBold)
-                            Text("Replaces text in QR center", style = MaterialTheme.typography.bodySmall, color = TextMuted)
-                        }
-                        IconButton(onClick = { onLogoBitmapChange(null) }) {
-                            Icon(Icons.Rounded.Close, null, tint = Color(0xFFFF4444), modifier = Modifier.size(20.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    icon, null,
+                                    tint = if (selected) Color.White else TextMuted,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Text(
+                                    label,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = if (selected) Color.White else TextMuted,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
                         }
                     }
                 }
-                OutlinedButton(
-                    onClick = { imagePickerLauncher.launch("image/*") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, if (logoBitmap != null) NeonCyan.copy(0.6f) else NeonPurple.copy(0.5f))
+
+                // ── Text mode ────────────────────────────────────────────
+                AnimatedVisibility(
+                    visible = logoMode == "text",
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
                 ) {
-                    Icon(
-                        Icons.Rounded.Image, null,
-                        tint = if (logoBitmap != null) NeonCyan else NeonPurple,
-                        modifier = Modifier.size(16.dp)
+                    OutlinedTextField(
+                        value = qrStyle.logoText,
+                        onValueChange = { onStyleChange(qrStyle.copy(logoText = it.take(3))) },
+                        label = { Text("Logo Text (max 3 chars)") },
+                        leadingIcon = { Icon(Icons.Rounded.TextFields, null, tint = NeonPurple) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = airKeyTextFieldColors(),
+                        singleLine = true,
+                        supportingText = {
+                            Text("Shown in a gradient circle at the center of the QR", color = TextMuted, style = MaterialTheme.typography.labelSmall)
+                        }
                     )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        if (logoBitmap != null) "Change Logo Image" else "Import Logo Image",
-                        color = if (logoBitmap != null) NeonCyan else NeonPurple
-                    )
+                }
+
+                // ── Image mode ───────────────────────────────────────────
+                AnimatedVisibility(
+                    visible = logoMode == "image",
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (logoBitmap != null) {
+                            // Image preview row
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(GlassWhite, RoundedCornerShape(14.dp))
+                                    .border(1.dp, GreenSuccess.copy(0.4f), RoundedCornerShape(14.dp))
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(52.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(GlassWhite2),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        bitmap = logoBitmap.asImageBitmap(),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(12.dp)),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Logo Image Set", style = MaterialTheme.typography.labelMedium, color = GreenSuccess, fontWeight = FontWeight.SemiBold)
+                                    Text("Showing with rounded corners in QR", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                                }
+                                IconButton(onClick = { onLogoBitmapChange(null) }) {
+                                    Icon(Icons.Rounded.Close, null, tint = RedError, modifier = Modifier.size(20.dp))
+                                }
+                            }
+                            // Change image button
+                            OutlinedButton(
+                                onClick = { imagePickerLauncher.launch("image/*") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp),
+                                border = BorderStroke(1.dp, NeonCyan.copy(0.6f))
+                            ) {
+                                Icon(Icons.Rounded.Image, null, tint = NeonCyan, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Change Logo Image", color = NeonCyan)
+                            }
+                        } else {
+                            // No image yet — large pick button
+                            Button(
+                                onClick = { imagePickerLauncher.launch("image/*") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(80.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = NeonPurple.copy(0.15f),
+                                    contentColor = NeonPurple
+                                ),
+                                border = BorderStroke(1.dp, NeonPurple.copy(0.5f))
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(Icons.Rounded.AddPhotoAlternate, null, modifier = Modifier.size(26.dp))
+                                    Spacer(Modifier.height(4.dp))
+                                    Text("Pick Image from Gallery", style = MaterialTheme.typography.labelMedium)
+                                }
+                            }
+                            Text(
+                                "Your image will appear with rounded corners inside the QR code",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -211,24 +211,34 @@ object QrCodeGenerator {
     }
 
     private fun drawLogoCenter(canvas: Canvas, size: Int, style: QrStyle, logoBitmap: Bitmap? = null) {
-        val logoSize = size * 0.18f
+        val logoSize = size * 0.20f
         val cx = size / 2f
         val cy = size / 2f
+        val r = logoSize / 2
+        val cornerRadius = r * 0.40f          // rounded corners, not full circle
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
+        // Background rounded rect with glow
         paint.color = style.backgroundColor.toInt()
-        paint.setShadowLayer(8f, 0f, 0f, style.accentColor.toInt())
-        canvas.drawCircle(cx, cy, logoSize / 2 + 6f, paint)
+        paint.setShadowLayer(10f, 0f, 0f, style.accentColor.toInt())
+        canvas.drawRoundRect(
+            RectF(cx - r - 7f, cy - r - 7f, cx + r + 7f, cy + r + 7f),
+            cornerRadius + 4f, cornerRadius + 4f, paint
+        )
         paint.clearShadowLayer()
 
         if (logoBitmap != null) {
-            val r = logoSize / 2
             val saveCount = canvas.save()
             val clipPath = Path()
-            clipPath.addCircle(cx, cy, r, Path.Direction.CW)
+            clipPath.addRoundRect(
+                RectF(cx - r, cy - r, cx + r, cy + r),
+                cornerRadius, cornerRadius,
+                Path.Direction.CW
+            )
             canvas.clipPath(clipPath)
-            val destRect = RectF(cx - r, cy - r, cx + r, cy + r)
-            canvas.drawBitmap(logoBitmap, null, destRect, paint)
+            // scale the source bitmap into the destination rect
+            val src = android.graphics.Rect(0, 0, logoBitmap.width, logoBitmap.height)
+            canvas.drawBitmap(logoBitmap, src, RectF(cx - r, cy - r, cx + r, cy + r), paint)
             canvas.restoreToCount(saveCount)
         } else {
             paint.shader = LinearGradient(
