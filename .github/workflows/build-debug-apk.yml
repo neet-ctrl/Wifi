@@ -87,7 +87,6 @@ jobs:
           cd "$PROJECT"
           ./gradlew assembleDebug --stacktrace --no-daemon
         env:
-          JAVA_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=512m"
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
 
       # ─── 8. APK info ─────────────────────────────────────────────────────────

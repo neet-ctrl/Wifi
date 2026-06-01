@@ -102,7 +102,6 @@ jobs:
           cd "$PROJECT"
           ./gradlew assembleRelease --no-daemon --stacktrace
         env:
-          JAVA_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=512m"
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
           KEYSTORE_PATH: "release.jks"
           KEYSTORE_PASSWORD: ${{ env.KEYSTORE_PASSWORD }}
