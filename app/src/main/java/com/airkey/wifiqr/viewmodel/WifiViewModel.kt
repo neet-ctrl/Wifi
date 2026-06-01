@@ -2,9 +2,11 @@ package com.airkey.wifiqr.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.Uri
-import android.net.wifi.WifiManager
-import android.net.wifi.WifiNetworkSuggestion
+import android.net.wifi.WifiNetworkSpecifier
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -55,70 +57,57 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
     private val _backupMessage = MutableStateFlow<String?>(null)
     val backupMessage: StateFlow<String?> = _backupMessage.asStateFlow()
 
+    private val _connectMessage = MutableStateFlow<String?>(null)
+    val connectMessage: StateFlow<String?> = _connectMessage.asStateFlow()
+
     val categories = listOf("All", "Home", "Work", "Travel", "Public", "Guest", "General")
+
+    private var activeNetworkCallback: ConnectivityManager.NetworkCallback? = null
+    private var activeConnectivityManager: ConnectivityManager? = null
 
     init {
         viewModelScope.launch {
-            combine(
-                _searchQuery,
-                _selectedCategory
-            ) { query, category -> Pair(query, category) }
+            combine(_searchQuery, _selectedCategory) { query, category -> query to category }
                 .flatMapLatest { (query, category) ->
-                    when {
-                        query.isNotEmpty() -> repo.searchNetworks(query)
-                        category != "All" -> repo.getByCategory(category)
-                        else -> repo.allNetworks
-                    }
+                    repo.getFilteredNetworks(query, category)
                 }
                 .collect { networks ->
-                    _uiState.update { it.copy(networks = networks, networkCount = networks.size) }
+                    _uiState.update {
+                        it.copy(networks = networks, networkCount = networks.size)
+                    }
                 }
         }
     }
 
     fun onSearchQuery(query: String) {
         _searchQuery.value = query
-        _uiState.update { it.copy(searchQuery = query) }
     }
 
     fun onCategorySelect(category: String) {
         _selectedCategory.value = category
-        _uiState.update { it.copy(selectedCategory = category) }
-    }
-
-    fun onQrScanned(raw: String) {
-        val result = parseWifiQrCode(raw)
-        _scannedResult.value = result
-    }
-
-    fun clearScannedResult() {
-        _scannedResult.value = null
     }
 
     fun saveNetwork(network: WifiNetwork) {
         viewModelScope.launch {
             val existing = repo.getBySsid(network.ssid)
             if (existing != null) {
-                repo.update(network.copy(id = existing.id))
-                showToast("Network updated!")
+                repo.update(network.copy(id = existing.id, savedAt = existing.savedAt))
             } else {
                 repo.insert(network)
-                showToast("Network saved!")
             }
         }
     }
 
     fun deleteNetwork(network: WifiNetwork) {
-        viewModelScope.launch {
-            repo.delete(network)
-            showToast("Network deleted")
-        }
+        viewModelScope.launch { repo.delete(network) }
     }
 
     fun toggleFavorite(network: WifiNetwork) {
-        viewModelScope.launch {
-            repo.setFavorite(network.id, !network.isFavorite)
-        }
+        viewModelScope.launch { repo.update(network.copy(isFavorite = !network.isFavorite)) }
+    }
+
+    fun setScannedResult(result: ScannedWifiResult?) {
+        _scannedResult.value = result
     }
 
     fun updateQrStyle(style: QrStyle) {
@@ -129,35 +118,76 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
         _editingNetwork.value = network
     }
 
-    fun connectToWifi(context: Context, network: WifiNetwork) {
+    fun connectInstantly(context: Context, wifiNet: WifiNetwork) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            showToast("Instant connect requires Android 10+")
+            return
+        }
         viewModelScope.launch {
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
-                    val suggestion = WifiNetworkSuggestion.Builder()
-                        .setSsid(network.ssid)
-                        .apply {
-                            if (network.password.isNotEmpty()) {
-                                when (network.securityType) {
-                                    SecurityType.WEP.name -> setWpa2Passphrase(network.password)
-                                    SecurityType.WPA3.name -> setWpa3Passphrase(network.password)
-                                    SecurityType.OPEN.name -> { /* no password */ }
-                                    else -> setWpa2Passphrase(network.password)
-                                }
-                            }
-                        }
-                        .setIsHiddenSsid(network.isHidden)
-                        .build()
-                    wifiManager.addNetworkSuggestions(listOf(suggestion))
-                    repo.updateLastConnected(network.id)
-                    showToast("Connection suggested for ${network.ssid}")
-                } else {
-                    showToast("Auto-connect available on Android 10+")
+                activeNetworkCallback?.let {
+                    activeConnectivityManager?.unregisterNetworkCallback(it)
                 }
+
+                val specBuilder = WifiNetworkSpecifier.Builder().setSsid(wifiNet.ssid)
+                when {
+                    wifiNet.securityType == SecurityType.OPEN.name || wifiNet.password.isEmpty() -> {}
+                    wifiNet.securityType == SecurityType.WEP.name -> {
+                        showToast("WEP networks are not supported for instant connect")
+                        return@launch
+                    }
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                            wifiNet.securityType == SecurityType.WPA3.name -> {
+                        specBuilder.setWpa3Passphrase(wifiNet.password)
+                    }
+                    else -> specBuilder.setWpa2Passphrase(wifiNet.password)
+                }
+                if (wifiNet.isHidden) specBuilder.setIsHiddenSsid(true)
+
+                val specifier = specBuilder.build()
+                val request = NetworkRequest.Builder()
+                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                    .setNetworkSpecifier(specifier)
+                    .build()
+
+                val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                activeConnectivityManager = cm
+
+                val callback = object : ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: android.net.Network) {
+                        viewModelScope.launch {
+                            repo.updateLastConnected(wifiNet.id)
+                            _connectMessage.value = "✓ Connected to ${wifiNet.ssid}"
+                            showToast("Connected to ${wifiNet.ssid}")
+                        }
+                    }
+                    override fun onUnavailable() {
+                        viewModelScope.launch {
+                            _connectMessage.value = "Could not reach ${wifiNet.ssid}"
+                            showToast("Could not connect to ${wifiNet.ssid}")
+                        }
+                        activeNetworkCallback = null
+                        activeConnectivityManager = null
+                    }
+                    override fun onLost(network: android.net.Network) {
+                        viewModelScope.launch {
+                            showToast("Lost connection to ${wifiNet.ssid}")
+                        }
+                        activeNetworkCallback = null
+                        activeConnectivityManager = null
+                    }
+                }
+                activeNetworkCallback = callback
+                cm.requestNetwork(request, callback)
+
             } catch (e: Exception) {
-                showToast("Could not connect: ${e.message}")
+                showToast("Connect failed: ${e.message}")
             }
         }
+    }
+
+    fun clearConnectMessage() {
+        _connectMessage.value = null
     }
 
     fun backupNetworks(context: Context, folderUri: Uri) {
@@ -201,6 +231,13 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearBackupMessage() {
         _backupMessage.value = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        activeNetworkCallback?.let {
+            activeConnectivityManager?.unregisterNetworkCallback(it)
+        }
     }
 
     private fun showToast(msg: String) {
