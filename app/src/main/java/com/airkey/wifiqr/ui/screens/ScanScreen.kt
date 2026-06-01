@@ -5,12 +5,15 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.provider.Settings
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -55,6 +58,31 @@ fun ScanScreen(
     val context = LocalContext.current
     var hasScanned by remember { mutableStateOf(false) }
     var torchEnabled by remember { mutableStateOf(false) }
+    var imagePickError by remember { mutableStateOf(false) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null && !hasScanned) {
+            try {
+                val image = com.google.mlkit.vision.common.InputImage.fromFilePath(context, uri)
+                com.google.mlkit.vision.barcode.BarcodeScanning.getClient()
+                    .process(image)
+                    .addOnSuccessListener { barcodes ->
+                        val raw = barcodes.firstOrNull()?.rawValue
+                        if (raw != null) {
+                            imagePickError = false
+                            viewModel.onQrScanned(raw)
+                        } else {
+                            imagePickError = true
+                        }
+                    }
+                    .addOnFailureListener { imagePickError = true }
+            } catch (e: Exception) {
+                imagePickError = true
+            }
+        }
+    }
 
     LaunchedEffect(scannedResult) {
         if (scannedResult != null && !hasScanned) {
@@ -81,7 +109,9 @@ fun ScanScreen(
                     ScanOverlay(
                         onBack = onBack,
                         torchEnabled = torchEnabled,
-                        onTorchToggle = { torchEnabled = !torchEnabled }
+                        onTorchToggle = { torchEnabled = !torchEnabled },
+                        onPickImage = { imagePickError = false; imagePickerLauncher.launch("image/*") },
+                        imagePickError = imagePickError
                     )
                 } else {
                     ScannedResultPanel(
@@ -177,7 +207,13 @@ fun CameraPreviewSection(torchEnabled: Boolean, onQrDetected: (String) -> Unit) 
 }
 
 @Composable
-fun ScanOverlay(onBack: () -> Unit, torchEnabled: Boolean, onTorchToggle: () -> Unit) {
+fun ScanOverlay(
+    onBack: () -> Unit,
+    torchEnabled: Boolean,
+    onTorchToggle: () -> Unit,
+    onPickImage: () -> Unit,
+    imagePickError: Boolean
+) {
     val infiniteTransition = rememberInfiniteTransition(label = "scan")
     val scanLine by infiniteTransition.animateFloat(
         initialValue = 0f, targetValue = 1f,
@@ -351,6 +387,53 @@ fun ScanOverlay(onBack: () -> Unit, torchEnabled: Boolean, onTorchToggle: () -> 
                     ScanTip(Icons.Rounded.PhoneAndroid, "Any Android")
                     ScanTip(Icons.Rounded.PhoneIphone, "Any iPhone")
                     ScanTip(Icons.Rounded.Apps, "Any App")
+                }
+                Spacer(Modifier.height(20.dp))
+                OutlinedButton(
+                    onClick = onPickImage,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, NeonPurple.copy(alpha = 0.6f)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = GlassWhite,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(
+                        Icons.Rounded.PhotoLibrary,
+                        contentDescription = null,
+                        tint = NeonPurple,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Pick QR from Gallery",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                AnimatedVisibility(
+                    visible = imagePickError,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(RedError.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .border(1.dp, RedError.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Icon(Icons.Rounded.ErrorOutline, null, tint = RedError, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "No QR code found in that image",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = RedError
+                        )
+                    }
                 }
             }
         }
