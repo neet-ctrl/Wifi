@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -191,6 +192,7 @@ fun GeneratorScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailsTab(
     ssid: String, onSsidChange: (String) -> Unit,
@@ -200,6 +202,10 @@ fun DetailsTab(
     isHidden: Boolean, onHiddenChange: (Boolean) -> Unit,
     onSave: () -> Unit, canSave: Boolean
 ) {
+    val context = LocalContext.current
+    var showWifiPicker by remember { mutableStateOf(false) }
+    var availableNetworks by remember { mutableStateOf<List<String>>(emptyList()) }
+
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -211,11 +217,34 @@ fun DetailsTab(
             onValueChange = onSsidChange,
             label = { Text("WiFi Name (SSID)") },
             leadingIcon = { Icon(Icons.Rounded.Wifi, null, tint = NeonPurple) },
+            trailingIcon = {
+                IconButton(onClick = {
+                    val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                    val networks = mutableSetOf<String>()
+                    try {
+                        wm.scanResults?.forEach { r ->
+                            val n = r.SSID?.takeIf { it.isNotBlank() }
+                            if (n != null) networks.add(n)
+                        }
+                    } catch (_: Exception) {}
+                    try {
+                        @Suppress("DEPRECATION")
+                        wm.configuredNetworks?.forEach { cfg ->
+                            val n = cfg.SSID?.removeSurrounding("\"")?.takeIf { it.isNotBlank() }
+                            if (n != null) networks.add(n)
+                        }
+                    } catch (_: Exception) {}
+                    availableNetworks = networks.sorted()
+                    showWifiPicker = true
+                }) {
+                    Icon(Icons.Rounded.ArrowDropDown, null, tint = NeonPurple)
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = airKeyTextFieldColors(),
             singleLine = true,
-            supportingText = { Text("The network name visible to devices", color = TextMuted, style = MaterialTheme.typography.labelSmall) }
+            supportingText = { Text("Tap ▾ to pick from nearby networks", color = TextMuted, style = MaterialTheme.typography.labelSmall) }
         )
 
         OutlinedTextField(
@@ -335,6 +364,83 @@ fun DetailsTab(
             Icon(Icons.Rounded.Save, null)
             Spacer(Modifier.width(8.dp))
             Text("Save to Vault", fontWeight = FontWeight.Bold)
+        }
+    }
+
+    if (showWifiPicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showWifiPicker = false },
+            containerColor = Color(0xFF12122A),
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 48.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Rounded.Wifi, null, tint = NeonPurple)
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        "Select WiFi Network",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                if (availableNetworks.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 36.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Rounded.WifiOff, null, tint = TextMuted, modifier = Modifier.size(44.dp))
+                            Spacer(Modifier.height(12.dp))
+                            Text("No networks found", color = TextMuted, style = MaterialTheme.typography.bodyMedium)
+                            Spacer(Modifier.height(4.dp))
+                            Text("Enable WiFi & allow location access", color = TextMuted, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 400.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(availableNetworks) { name ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(GlassWhite)
+                                    .border(1.dp, GlassWhite2, RoundedCornerShape(14.dp))
+                                    .clickable {
+                                        onSsidChange(name)
+                                        showWifiPicker = false
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Rounded.Wifi, null, tint = NeonPurple, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    name,
+                                    color = TextPrimary,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

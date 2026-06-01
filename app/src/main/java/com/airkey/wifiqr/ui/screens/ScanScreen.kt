@@ -274,6 +274,19 @@ fun ScanOverlay(
                     tint = if (torchEnabled) NeonCyan else Color.White
                 )
             }
+            Spacer(Modifier.width(8.dp))
+            IconButton(
+                onClick = onPickImage,
+                modifier = Modifier
+                    .background(GlassWhite, CircleShape)
+                    .size(44.dp)
+            ) {
+                Icon(
+                    Icons.Rounded.PhotoLibrary,
+                    contentDescription = "Pick QR from gallery",
+                    tint = NeonPurple
+                )
+            }
         }
 
         Box(modifier = Modifier.weight(1f).fillMaxWidth().background(Color.Black.copy(alpha = 0.55f)))
