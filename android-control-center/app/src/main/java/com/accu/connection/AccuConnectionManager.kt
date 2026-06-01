@@ -715,16 +715,15 @@ class AccuConnectionManager @Inject constructor(
         // ── Path B: AdbWifiPairingClient — BoringSSL SPAKE2 + Conscrypt TLS ────────────────
         Timber.i("$TAG completePairing (SPAKE2): pairing $host:$port ***")
         _state.value = ConnectionState.CONNECTING
-        // Pass dadb's .pub file bytes as the PeerInfo public key.
-        // dadb generates this file using the same android_pubkey_encode algorithm that
-        // adbd uses internally (BoringSSL).  When adbd verifies the TLS session cert it
-        // runs android_pubkey_encode on the cert's public key and looks for a match in
-        // its trusted-key database — that match only succeeds if the PeerInfo key we
-        // sent during pairing was encoded with the identical algorithm.
-        // Using adbKeyPair.publicKey (the .pub file) guarantees byte-for-byte identity.
-        val dadbPubKeyBytes: ByteArray? = runCatching { adbKeyPair.publicKey }.getOrNull()
-        Timber.d("$TAG dadbPubKeyBytes size=${dadbPubKeyBytes?.size} " +
-            "first8=${dadbPubKeyBytes?.take(8)?.joinToString(",") { it.toInt().and(0xFF).toString(16) }}")
+        // Pass the ADB-format public key bytes as the PeerInfo public key.
+        // adbKey.adbPublicKey is computed from the same RSA private key that dadb uses,
+        // using the identical android_pubkey_encode algorithm (AOSP android_pubkey.c).
+        // When adbd verifies the TLS session cert it runs android_pubkey_encode on the
+        // cert's public key and looks for a match in its trusted-key database — using
+        // the same key for both pairing PeerInfo and TLS cert guarantees that match.
+        val dadbPubKeyBytes: ByteArray = adbKey.adbPublicKey
+        Timber.d("$TAG dadbPubKeyBytes size=${dadbPubKeyBytes.size} " +
+            "first8=${dadbPubKeyBytes.take(8).joinToString(",") { it.toInt().and(0xFF).toString(16) }}")
 
         val pairingOk = AdbWifiPairingClient.pair(host, port, code, adbKey, dadbPubKeyBytes)
         if (!pairingOk) {
