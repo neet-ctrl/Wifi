@@ -8,12 +8,15 @@ import android.net.NetworkRequest
 import android.net.Uri
 import android.net.wifi.WifiNetworkSpecifier
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.airkey.wifiqr.data.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class UiState(
     val networks: List<WifiNetwork> = emptyList(),
@@ -133,11 +136,15 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
             showToast("Instant connect requires Android 10+")
             return
         }
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Main) {
             try {
-                activeNetworkCallback?.let {
-                    activeConnectivityManager?.unregisterNetworkCallback(it)
+                activeNetworkCallback?.let { oldCallback ->
+                    try {
+                        activeConnectivityManager?.unregisterNetworkCallback(oldCallback)
+                    } catch (_: Exception) {}
                 }
+                activeNetworkCallback = null
+                activeConnectivityManager = null
 
                 val specBuilder = WifiNetworkSpecifier.Builder().setSsid(wifiNet.ssid)
                 when {
@@ -163,32 +170,34 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
                 val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
                 activeConnectivityManager = cm
 
+                val mainHandler = Handler(Looper.getMainLooper())
+
                 val callback = object : ConnectivityManager.NetworkCallback() {
                     override fun onAvailable(network: android.net.Network) {
-                        viewModelScope.launch {
+                        viewModelScope.launch(Dispatchers.Main) {
                             repo.updateLastConnected(wifiNet.id)
                             _connectMessage.value = "✓ Connected to ${wifiNet.ssid}"
                             showToast("Connected to ${wifiNet.ssid}")
                         }
                     }
                     override fun onUnavailable() {
-                        viewModelScope.launch {
+                        viewModelScope.launch(Dispatchers.Main) {
                             _connectMessage.value = "Could not reach ${wifiNet.ssid}"
                             showToast("Could not connect to ${wifiNet.ssid}")
+                            activeNetworkCallback = null
+                            activeConnectivityManager = null
                         }
-                        activeNetworkCallback = null
-                        activeConnectivityManager = null
                     }
                     override fun onLost(network: android.net.Network) {
-                        viewModelScope.launch {
+                        viewModelScope.launch(Dispatchers.Main) {
                             showToast("Lost connection to ${wifiNet.ssid}")
+                            activeNetworkCallback = null
+                            activeConnectivityManager = null
                         }
-                        activeNetworkCallback = null
-                        activeConnectivityManager = null
                     }
                 }
                 activeNetworkCallback = callback
-                cm.requestNetwork(request, callback)
+                cm.requestNetwork(request, callback, mainHandler)
 
             } catch (e: Exception) {
                 showToast("Connect failed: ${e.message}")
