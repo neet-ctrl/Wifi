@@ -142,9 +142,18 @@ class AccuConnectionManager @Inject constructor(
         AdbKeyPair.read(privFile, pubFile)
     }
 
-    /** RSA identity for wireless ADB pairing and connection (SPAKE2 + TLS cert). */
+    /**
+     * RSA identity for wireless ADB pairing (TLS cert + SPAKE2 PeerInfo).
+     *
+     * IMPORTANT: This loads from the SAME "accu_adb_key" PKCS8 PEM file that
+     * [adbKeyPair] uses. This guarantees that the key the device authorises
+     * during pairing is identical to the key dadb uses to sign the ADB AUTH
+     * challenge during [Dadb.create] — they MUST be the same key or connection
+     * will fail with "RSA verify failed" even after a successful pairing.
+     */
     private val adbKey: AdbKey by lazy {
-        AdbKey(PreferenceAdbKeyStore(prefs), "ACCU")
+        @Suppress("UNUSED_EXPRESSION") adbKeyPair  // ensure dadb creates the file first
+        AdbKey.fromFile(File(context.filesDir, "accu_adb_key"), "ACCU")
     }
 
     private val prefs: SharedPreferences
