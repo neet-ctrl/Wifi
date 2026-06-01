@@ -103,17 +103,17 @@ fun ConnectionHistoryScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    if (avgDownload != null) StatCard("Avg Download", "${avgDownload.roundToInt()} Mbps", Icons.Rounded.Download, NeonCyan, Modifier.weight(1f))
-                    if (avgUpload != null) StatCard("Avg Upload", "${avgUpload!!.roundToInt()} Mbps", Icons.Rounded.Upload, NeonPurple, Modifier.weight(1f))
-                    if (avgPing != null) StatCard("Avg Ping", "${avgPing.roundToInt()} ms", Icons.Rounded.Timer, OrangeWarn, Modifier.weight(1f))
+                    if (avgDownload != null) HistoryStatCard("Avg Download", "${avgDownload.roundToInt()} Mbps", Icons.Rounded.Download, NeonCyan, Modifier.weight(1f))
+                    if (avgUpload != null) HistoryStatCard("Avg Upload", "${avgUpload!!.roundToInt()} Mbps", Icons.Rounded.Upload, NeonPurple, Modifier.weight(1f))
+                    if (avgPing != null) HistoryStatCard("Avg Ping", "${avgPing.roundToInt()} ms", Icons.Rounded.Timer, OrangeWarn, Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(16.dp))
             }
 
             if (bestSignal != null) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    StatCard("Best Signal", "$bestSignal dBm", Icons.Rounded.SignalCellularAlt, GreenSuccess, Modifier.weight(1f))
-                    StatCard("Total Sessions", "$totalConnections", Icons.Rounded.Bolt, NeonPurple, Modifier.weight(1f))
+                    HistoryStatCard("Best Signal", "$bestSignal dBm", Icons.Rounded.SignalCellularAlt, GreenSuccess, Modifier.weight(1f))
+                    HistoryStatCard("Total Sessions", "$totalConnections", Icons.Rounded.Bolt, NeonPurple, Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(16.dp))
             }
@@ -198,7 +198,7 @@ private fun BarChart(data: List<Pair<String, Int>>) {
 }
 
 @Composable
-private fun StatCard(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, modifier: Modifier) {
+private fun HistoryStatCard(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, modifier: Modifier) {
     Column(
         modifier = modifier
             .background(GlassWhite, RoundedCornerShape(14.dp))
