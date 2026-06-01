@@ -4,14 +4,11 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import android.net.Uri
-import android.net.wifi.WifiNetworkSpecifier
+import android.net.wifi.WifiManager
+import android.net.wifi.WifiNetworkSuggestion
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
+import android.os.Bundle
 import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -70,9 +67,6 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
     val pdfExportMessage: StateFlow<String?> = _pdfExportMessage.asStateFlow()
 
     val categories = listOf("All", "Home", "Work", "Travel", "Public", "Guest", "General")
-
-    private var activeNetworkCallback: ConnectivityManager.NetworkCallback? = null
-    private var activeConnectivityManager: ConnectivityManager? = null
 
     init {
         viewModelScope.launch {
@@ -154,83 +148,81 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun connectInstantly(context: Context, wifiNet: WifiNetwork) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            showToast("Instant connect requires Android 10+")
-            return
-        }
-        if (!Settings.System.canWrite(context)) {
-            viewModelScope.launch(Dispatchers.Main) {
-                showToast("Need 'Modify System Settings' permission — opening Settings")
-                val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
-                    data = Uri.parse("package:${context.packageName}")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-                _connectMessage.value = "Grant 'Modify System Settings' permission, then try Connect again"
-            }
-            return
-        }
         viewModelScope.launch(Dispatchers.Main) {
             try {
-                activeNetworkCallback?.let { oldCallback ->
-                    try { activeConnectivityManager?.unregisterNetworkCallback(oldCallback) } catch (_: Exception) {}
-                }
-                activeNetworkCallback = null
-                activeConnectivityManager = null
-
-                val specBuilder = WifiNetworkSpecifier.Builder().setSsid(wifiNet.ssid)
                 when {
-                    wifiNet.securityType == SecurityType.OPEN.name || wifiNet.password.isEmpty() -> {}
-                    wifiNet.securityType == SecurityType.WEP.name -> {
-                        showToast("WEP networks are not supported for instant connect")
-                        return@launch
-                    }
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && wifiNet.securityType == SecurityType.WPA3.name -> {
-                        specBuilder.setWpa3Passphrase(wifiNet.password)
-                    }
-                    else -> specBuilder.setWpa2Passphrase(wifiNet.password)
-                }
-                if (wifiNet.isHidden) specBuilder.setIsHiddenSsid(true)
-
-                val specifier = specBuilder.build()
-                val request = NetworkRequest.Builder()
-                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                    .setNetworkSpecifier(specifier)
-                    .build()
-
-                val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-                activeConnectivityManager = cm
-                val mainHandler = Handler(Looper.getMainLooper())
-
-                val callback = object : ConnectivityManager.NetworkCallback() {
-                    override fun onAvailable(network: android.net.Network) {
-                        viewModelScope.launch(Dispatchers.Main) {
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
+                        // Android 11+ — triggers the native "Join network?" dialog,
+                        // exactly the same as Google Lens "Join Network".
+                        // This is a real system-managed connection: full speed,
+                        // WiFi status bar icon, and internet routing all work normally.
+                        val suggBuilder = WifiNetworkSuggestion.Builder().setSsid(wifiNet.ssid)
+                        when {
+                            wifiNet.securityType == SecurityType.OPEN.name || wifiNet.password.isEmpty() -> {}
+                            wifiNet.securityType == SecurityType.WEP.name -> {
+                                showToast("WEP is not supported — opening WiFi settings")
+                                context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                                return@launch
+                            }
+                            wifiNet.securityType == SecurityType.WPA3.name ->
+                                suggBuilder.setWpa3Passphrase(wifiNet.password)
+                            else -> suggBuilder.setWpa2Passphrase(wifiNet.password)
+                        }
+                        if (wifiNet.isHidden) suggBuilder.setIsHiddenSsid(true)
+                        val suggestion = suggBuilder.build()
+                        val bundle = Bundle().apply {
+                            putParcelableArrayList(
+                                "android.provider.extra.WIFI_NETWORK_LIST",
+                                arrayListOf(suggestion)
+                            )
+                        }
+                        val intent = Intent("android.settings.WIFI_ADD_NETWORKS").apply {
+                            putExtras(bundle)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(intent)
+                        viewModelScope.launch(Dispatchers.IO) {
                             repo.updateLastConnected(wifiNet.id)
+                            repo.logConnectionEvent(wifiNet.id, wifiNet.ssid)
+                        }
+                    }
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                        // Android 10 — add a system-level network suggestion.
+                        // Android connects in the background; full speed and status bar icon work.
+                        val suggBuilder = WifiNetworkSuggestion.Builder().setSsid(wifiNet.ssid)
+                        when {
+                            wifiNet.securityType == SecurityType.OPEN.name || wifiNet.password.isEmpty() -> {}
+                            wifiNet.securityType == SecurityType.WEP.name -> {
+                                showToast("WEP is not supported — opening WiFi settings")
+                                context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                                return@launch
+                            }
+                            wifiNet.securityType == SecurityType.WPA3.name ->
+                                suggBuilder.setWpa3Passphrase(wifiNet.password)
+                            else -> suggBuilder.setWpa2Passphrase(wifiNet.password)
+                        }
+                        if (wifiNet.isHidden) suggBuilder.setIsHiddenSsid(true)
+                        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                        val result = wifiManager.addNetworkSuggestions(listOf(suggBuilder.build()))
+                        if (result == WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS ||
+                            result == WifiManager.STATUS_NETWORK_SUGGESTIONS_ERROR_ADD_DUPLICATE
+                        ) {
                             viewModelScope.launch(Dispatchers.IO) {
+                                repo.updateLastConnected(wifiNet.id)
                                 repo.logConnectionEvent(wifiNet.id, wifiNet.ssid)
                             }
-                            _connectMessage.value = "✓ Connected to ${wifiNet.ssid}"
-                            showToast("Connected to ${wifiNet.ssid}")
+                            showToast("Network added — Android will connect to ${wifiNet.ssid}")
+                            context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        } else {
+                            showToast("Could not add network (code $result) — opening WiFi settings")
+                            context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                         }
                     }
-                    override fun onUnavailable() {
-                        viewModelScope.launch(Dispatchers.Main) {
-                            _connectMessage.value = "Could not reach ${wifiNet.ssid}"
-                            showToast("Could not connect to ${wifiNet.ssid}")
-                            activeNetworkCallback = null
-                            activeConnectivityManager = null
-                        }
-                    }
-                    override fun onLost(network: android.net.Network) {
-                        viewModelScope.launch(Dispatchers.Main) {
-                            showToast("Lost connection to ${wifiNet.ssid}")
-                            activeNetworkCallback = null
-                            activeConnectivityManager = null
-                        }
+                    else -> {
+                        showToast("Requires Android 10+ — opening WiFi settings")
+                        context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     }
                 }
-                activeNetworkCallback = callback
-                cm.requestNetwork(request, callback, mainHandler)
             } catch (e: Exception) {
                 showToast("Connect failed: ${e.message}")
             }
@@ -372,7 +364,6 @@ class WifiViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
-        activeNetworkCallback?.let { activeConnectivityManager?.unregisterNetworkCallback(it) }
     }
 
     private fun showToast(msg: String) {

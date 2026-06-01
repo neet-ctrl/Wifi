@@ -1,7 +1,9 @@
 package com.airkey.wifiqr.data
 
+import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.parcelize.Parcelize
 
 enum class SecurityType(val display: String, val wifiCode: String) {
     WPA("WPA/WPA2", "WPA"),
@@ -10,8 +12,10 @@ enum class SecurityType(val display: String, val wifiCode: String) {
     OPEN("Open (No Password)", "nopass")
 }
 
+@Parcelize
 @Entity(tableName = "wifi_networks")
 data class WifiNetwork(
+
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val ssid: String,
@@ -24,7 +28,7 @@ data class WifiNetwork(
     val category: String = "General",
     val isFavorite: Boolean = false,
     val qrCodeImagePath: String? = null
-) {
+) : Parcelable {
     fun toWifiQrString(): String {
         val sec = when (securityType) {
             SecurityType.OPEN.name -> "nopass"
