@@ -13,7 +13,8 @@ object QrCodeGenerator {
     fun generate(
         content: String,
         size: Int = 512,
-        style: QrStyle = QrStyle()
+        style: QrStyle = QrStyle(),
+        logoBitmap: Bitmap? = null
     ): Bitmap? {
         if (content.isBlank()) return null
         return try {
@@ -48,7 +49,7 @@ object QrCodeGenerator {
             drawFrame(canvas, size, style)
 
             if (style.showLogo) {
-                drawLogoCenter(canvas, size, style)
+                drawLogoCenter(canvas, size, style, logoBitmap)
             }
 
             bitmap
@@ -209,30 +210,43 @@ object QrCodeGenerator {
         }
     }
 
-    private fun drawLogoCenter(canvas: Canvas, size: Int, style: QrStyle) {
+    private fun drawLogoCenter(canvas: Canvas, size: Int, style: QrStyle, logoBitmap: Bitmap? = null) {
         val logoSize = size * 0.18f
+        val cx = size / 2f
+        val cy = size / 2f
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
         paint.color = style.backgroundColor.toInt()
         paint.setShadowLayer(8f, 0f, 0f, style.accentColor.toInt())
-        canvas.drawCircle(size / 2f, size / 2f, logoSize / 2 + 6f, paint)
+        canvas.drawCircle(cx, cy, logoSize / 2 + 6f, paint)
         paint.clearShadowLayer()
 
-        paint.shader = LinearGradient(
-            size / 2f - logoSize / 2, size / 2f - logoSize / 2,
-            size / 2f + logoSize / 2, size / 2f + logoSize / 2,
-            intArrayOf(style.foregroundColor.toInt(), style.accentColor.toInt()),
-            null, Shader.TileMode.CLAMP
-        )
-        canvas.drawCircle(size / 2f, size / 2f, logoSize / 2, paint)
-        paint.shader = null
+        if (logoBitmap != null) {
+            val r = logoSize / 2
+            val saveCount = canvas.save()
+            val clipPath = Path()
+            clipPath.addCircle(cx, cy, r, Path.Direction.CW)
+            canvas.clipPath(clipPath)
+            val destRect = RectF(cx - r, cy - r, cx + r, cy + r)
+            canvas.drawBitmap(logoBitmap, null, destRect, paint)
+            canvas.restoreToCount(saveCount)
+        } else {
+            paint.shader = LinearGradient(
+                cx - logoSize / 2, cy - logoSize / 2,
+                cx + logoSize / 2, cy + logoSize / 2,
+                intArrayOf(style.foregroundColor.toInt(), style.accentColor.toInt()),
+                null, Shader.TileMode.CLAMP
+            )
+            canvas.drawCircle(cx, cy, logoSize / 2, paint)
+            paint.shader = null
 
-        paint.color = Color.WHITE
-        paint.textSize = logoSize * 0.42f
-        paint.textAlign = Paint.Align.CENTER
-        paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        val textY = size / 2f - (paint.descent() + paint.ascent()) / 2
-        canvas.drawText(style.logoText.take(2).uppercase(), size / 2f, textY, paint)
+            paint.color = Color.WHITE
+            paint.textSize = logoSize * 0.42f
+            paint.textAlign = Paint.Align.CENTER
+            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            val textY = cy - (paint.descent() + paint.ascent()) / 2
+            canvas.drawText(style.logoText.take(2).uppercase(), cx, textY, paint)
+        }
     }
 
     private fun starPath(cx: Float, cy: Float, outerR: Float, innerR: Float, points: Int): Path {

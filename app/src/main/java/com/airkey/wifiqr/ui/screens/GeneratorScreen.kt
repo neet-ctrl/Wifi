@@ -32,6 +32,10 @@ import com.airkey.wifiqr.ui.components.QrCodeGenerator
 import com.airkey.wifiqr.ui.theme.*
 import com.airkey.wifiqr.viewmodel.QrStyle
 import com.airkey.wifiqr.viewmodel.WifiViewModel
+import android.graphics.BitmapFactory
+import android.provider.DocumentsContract
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import java.io.File
 import java.io.FileOutputStream
 
@@ -51,13 +55,14 @@ fun GeneratorScreen(
     var showPassword by remember { mutableStateOf(false) }
     var activeTab by remember { mutableIntStateOf(0) }
     var shareToast by remember { mutableStateOf("") }
+    var logoBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     val network = remember(ssid, password, securityType, isHidden) {
         WifiNetwork(ssid = ssid, password = password, securityType = securityType, isHidden = isHidden)
     }
     val qrContent = network.toWifiQrString()
-    val qrBitmap = remember(qrContent, qrStyle) {
-        if (ssid.isNotBlank()) QrCodeGenerator.generate(qrContent, 512, qrStyle) else null
+    val qrBitmap = remember(qrContent, qrStyle, logoBitmap) {
+        if (ssid.isNotBlank()) QrCodeGenerator.generate(qrContent, 512, qrStyle, logoBitmap) else null
     }
 
     LaunchedEffect(shareToast) {
@@ -160,7 +165,12 @@ fun GeneratorScreen(
                     },
                     canSave = ssid.isNotBlank()
                 )
-                1 -> StyleTab(qrStyle = qrStyle, onStyleChange = viewModel::updateQrStyle)
+                1 -> StyleTab(
+                    qrStyle = qrStyle,
+                    onStyleChange = viewModel::updateQrStyle,
+                    logoBitmap = logoBitmap,
+                    onLogoBitmapChange = { logoBitmap = it }
+                )
                 2 -> PreviewTab(
                     qrBitmap = qrBitmap,
                     qrStyle = qrStyle,
@@ -172,7 +182,8 @@ fun GeneratorScreen(
                             saveQrToGallery(context, qrBitmap)
                             shareToast = "Saved to gallery!"
                         }
-                    }
+                    },
+                    onToast = { shareToast = it }
                 )
             }
             Spacer(Modifier.height(100.dp))
@@ -329,7 +340,28 @@ fun DetailsTab(
 }
 
 @Composable
-fun StyleTab(qrStyle: QrStyle, onStyleChange: (QrStyle) -> Unit) {
+fun StyleTab(
+    qrStyle: QrStyle,
+    onStyleChange: (QrStyle) -> Unit,
+    logoBitmap: Bitmap?,
+    onLogoBitmapChange: (Bitmap?) -> Unit
+) {
+    val context = LocalContext.current
+    val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            val bmp = try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    android.graphics.ImageDecoder.decodeBitmap(
+                        android.graphics.ImageDecoder.createSource(context.contentResolver, uri)
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    BitmapFactory.decodeStream(context.contentResolver.openInputStream(uri))
+                }
+            } catch (e: Exception) { null }
+            onLogoBitmapChange(bmp)
+        }
+    }
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -450,17 +482,69 @@ fun StyleTab(qrStyle: QrStyle, onStyleChange: (QrStyle) -> Unit) {
             )
         }
         AnimatedVisibility(visible = qrStyle.showLogo, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-            OutlinedTextField(
-                value = qrStyle.logoText,
-                onValueChange = { onStyleChange(qrStyle.copy(logoText = it.take(3))) },
-                label = { Text("Logo Text (max 3 chars)") },
-                leadingIcon = { Icon(Icons.Rounded.TextFields, null, tint = NeonPurple) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = airKeyTextFieldColors(),
-                singleLine = true,
-                supportingText = { Text("Appears centered inside the QR code", color = TextMuted, style = MaterialTheme.typography.labelSmall) }
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = qrStyle.logoText,
+                    onValueChange = { onStyleChange(qrStyle.copy(logoText = it.take(3))) },
+                    label = { Text("Logo Text (max 3 chars)") },
+                    leadingIcon = { Icon(Icons.Rounded.TextFields, null, tint = NeonPurple) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = airKeyTextFieldColors(),
+                    singleLine = true,
+                    supportingText = { Text("Text shows when no image logo is selected", color = TextMuted, style = MaterialTheme.typography.labelSmall) }
+                )
+                if (logoBitmap != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(GlassWhite, RoundedCornerShape(14.dp))
+                            .border(1.dp, GreenSuccess.copy(0.4f), RoundedCornerShape(14.dp))
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(GlassWhite2),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                bitmap = logoBitmap.asImageBitmap(),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            )
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Logo Image Set", style = MaterialTheme.typography.labelMedium, color = GreenSuccess, fontWeight = FontWeight.SemiBold)
+                            Text("Replaces text in QR center", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                        }
+                        IconButton(onClick = { onLogoBitmapChange(null) }) {
+                            Icon(Icons.Rounded.Close, null, tint = Color(0xFFFF4444), modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+                OutlinedButton(
+                    onClick = { imagePickerLauncher.launch("image/*") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, if (logoBitmap != null) NeonCyan.copy(0.6f) else NeonPurple.copy(0.5f))
+                ) {
+                    Icon(
+                        Icons.Rounded.Image, null,
+                        tint = if (logoBitmap != null) NeonCyan else NeonPurple,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        if (logoBitmap != null) "Change Logo Image" else "Import Logo Image",
+                        color = if (logoBitmap != null) NeonCyan else NeonPurple
+                    )
+                }
+            }
         }
     }
 }
@@ -472,8 +556,17 @@ fun PreviewTab(
     ssid: String,
     context: Context,
     onShare: () -> Unit,
-    onSaveToGallery: () -> Unit
+    onSaveToGallery: () -> Unit,
+    onToast: (String) -> Unit
 ) {
+    val folderPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        uri?.let {
+            if (qrBitmap != null) {
+                val ok = saveQrToFolder(context, qrBitmap, it)
+                onToast(if (ok) "Saved to selected folder!" else "Save failed — try again")
+            }
+        }
+    }
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -642,41 +735,63 @@ fun PreviewTab(
                 }
             }
 
-            // Share / Save with glow
-            Row(
+            // Share / Save actions
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .coloredShadow(NeonPurple, 14.dp, 16.dp, alpha = 0.4f)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = onShare,
-                        shape = RoundedCornerShape(14.dp),
-                        border = BorderStroke(1.5.dp, NeonPurple),
-                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .coloredShadow(NeonPurple, 14.dp, 16.dp, alpha = 0.4f)
                     ) {
-                        Icon(Icons.Rounded.Share, null, tint = NeonPurple, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Share QR", color = NeonPurple, fontWeight = FontWeight.SemiBold)
+                        OutlinedButton(
+                            onClick = onShare,
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.5.dp, NeonPurple),
+                            modifier = Modifier.fillMaxWidth().height(50.dp)
+                        ) {
+                            Icon(Icons.Rounded.Share, null, tint = NeonPurple, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Share QR", color = NeonPurple, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .coloredShadow(NeonCyan, 14.dp, 16.dp, alpha = 0.4f)
+                    ) {
+                        Button(
+                            onClick = onSaveToGallery,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = NeonCyan),
+                            modifier = Modifier.fillMaxWidth().height(50.dp)
+                        ) {
+                            Icon(Icons.Rounded.Download, null, tint = DeepBlack, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Save PNG", color = DeepBlack, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
                 Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .coloredShadow(NeonCyan, 14.dp, 16.dp, alpha = 0.4f)
+                        .fillMaxWidth()
+                        .coloredShadow(NeonPink, 14.dp, 16.dp, alpha = 0.35f)
                 ) {
                     Button(
-                        onClick = onSaveToGallery,
+                        onClick = { if (qrBitmap != null) folderPickerLauncher.launch(null) },
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = NeonCyan),
-                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                        colors = ButtonDefaults.buttonColors(containerColor = NeonPink),
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        enabled = qrBitmap != null
                     ) {
-                        Icon(Icons.Rounded.Download, null, tint = DeepBlack, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Rounded.CreateNewFolder, null, tint = Color.White, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Save PNG", color = DeepBlack, fontWeight = FontWeight.Bold)
+                        Text("Save to Folder", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -843,7 +958,10 @@ fun shareQrCode(context: Context, bitmap: Bitmap) {
             putExtra(Intent.EXTRA_TEXT, "Scan to connect to WiFi instantly! Made with AirKey")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(intent, "Share WiFi QR Code"))
+        context.startActivity(
+            Intent.createChooser(intent, "Share WiFi QR Code")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
     } catch (e: Exception) {
         e.printStackTrace()
     }
@@ -867,5 +985,25 @@ fun saveQrToGallery(context: Context, bitmap: Bitmap) {
         }
     } catch (e: Exception) {
         e.printStackTrace()
+    }
+}
+
+fun saveQrToFolder(context: Context, bitmap: Bitmap, folderUri: Uri): Boolean {
+    return try {
+        val fileName = "AirKey_QR_${System.currentTimeMillis()}.png"
+        val treeDocId = DocumentsContract.getTreeDocumentId(folderUri)
+        val parentDocUri = DocumentsContract.buildDocumentUriUsingTree(folderUri, treeDocId)
+        val fileUri = DocumentsContract.createDocument(
+            context.contentResolver, parentDocUri, "image/png", fileName
+        )
+        fileUri?.let { uri ->
+            context.contentResolver.openOutputStream(uri)?.use { os ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, os)
+            }
+        }
+        fileUri != null
+    } catch (e: Exception) {
+        e.printStackTrace()
+        false
     }
 }

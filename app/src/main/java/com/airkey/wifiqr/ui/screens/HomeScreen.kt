@@ -26,7 +26,8 @@ fun HomeScreen(
     viewModel: WifiViewModel,
     onNavigateScan: () -> Unit,
     onNavigateGenerate: () -> Unit,
-    onNavigateSaved: () -> Unit
+    onNavigateSaved: () -> Unit,
+    onNavigateSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val infiniteTransition = rememberInfiniteTransition(label = "bg")
@@ -184,31 +185,31 @@ fun HomeScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            Row(
+            ActionCard(
+                title = "Generate QR",
+                subtitle = "Create stunning custom QR codes",
+                icon = Icons.Rounded.QrCode2,
+                gradientColors = listOf(Color(0xFF00C9FF), NeonCyan),
+                glowColor = NeonCyan,
+                onClick = onNavigateGenerate,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                ActionCard(
-                    title = "Generate QR",
-                    subtitle = "Create stunning custom codes",
-                    icon = Icons.Rounded.QrCode2,
-                    gradientColors = listOf(Color(0xFF00C9FF), NeonCyan),
-                    glowColor = NeonCyan,
-                    onClick = onNavigateGenerate,
-                    modifier = Modifier.weight(1f)
-                )
-                ActionCard(
-                    title = "Saved WiFi",
-                    subtitle = "Your network vault",
-                    icon = Icons.Rounded.Bookmark,
-                    gradientColors = listOf(NeonPink, Color(0xFFFF6B35)),
-                    glowColor = NeonPink,
-                    onClick = onNavigateSaved,
-                    modifier = Modifier.weight(1f)
-                )
-            }
+                    .padding(horizontal = 24.dp)
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            ActionCard(
+                title = "Saved WiFi",
+                subtitle = "Your network vault & history",
+                icon = Icons.Rounded.Bookmark,
+                gradientColors = listOf(NeonPink, Color(0xFFFF6B35)),
+                glowColor = NeonPink,
+                onClick = onNavigateSaved,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+            )
 
             Spacer(Modifier.height(28.dp))
 
@@ -236,6 +237,18 @@ fun HomeScreen(
             }
 
             Spacer(Modifier.height(120.dp))
+        }
+
+        IconButton(
+            onClick = onNavigateSettings,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .systemBarsPadding()
+                .padding(end = 16.dp, top = 8.dp)
+                .background(GlassWhite, CircleShape)
+                .border(1.dp, GlassWhite2, CircleShape)
+        ) {
+            Icon(Icons.Rounded.Settings, contentDescription = "Settings", tint = TextSecondary, modifier = Modifier.size(20.dp))
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.airkey.wifiqr
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,6 +23,7 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -32,6 +34,7 @@ import com.airkey.wifiqr.data.WifiNetwork
 import com.airkey.wifiqr.ui.screens.*
 import com.airkey.wifiqr.ui.theme.*
 import com.airkey.wifiqr.viewmodel.WifiViewModel
+import com.google.accompanist.permissions.*
 import kotlinx.coroutines.delay
 
 sealed class Screen(val route: String) {
@@ -43,6 +46,7 @@ sealed class Screen(val route: String) {
         private fun encode(s: String) = java.net.URLEncoder.encode(s, "UTF-8")
     }
     object Saved : Screen("saved")
+    object Settings : Screen("settings")
 }
 
 class MainActivity : ComponentActivity() {
@@ -68,6 +72,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AirKeyApp(viewModel: WifiViewModel) {
     val navController = rememberNavController()
@@ -75,13 +80,35 @@ fun AirKeyApp(viewModel: WifiViewModel) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route?.substringBefore("?")
 
-    val showBottomBar = currentRoute in listOf("home", "scan", "saved")
+    val showBottomBar = currentRoute in listOf("home", "scan", "saved", "settings")
+
+    val cameraPermission = rememberPermissionState(android.Manifest.permission.CAMERA)
+    val locationPermission = rememberPermissionState(android.Manifest.permission.ACCESS_FINE_LOCATION)
+
+    var startupPermissionsDone by remember { mutableStateOf(false) }
+    var showStartupPermissions by remember {
+        mutableStateOf(
+            !cameraPermission.status.isGranted || !locationPermission.status.isGranted
+        )
+    }
 
     LaunchedEffect(uiState.toastMessage) {
         if (uiState.toastMessage != null) {
             delay(2500)
             viewModel.clearToast()
         }
+    }
+
+    if (showStartupPermissions && !startupPermissionsDone) {
+        StartupPermissionsScreen(
+            cameraPermission = cameraPermission,
+            locationPermission = locationPermission,
+            onContinue = {
+                startupPermissionsDone = true
+                showStartupPermissions = false
+            }
+        )
+        return
     }
 
     Box(
@@ -102,7 +129,8 @@ fun AirKeyApp(viewModel: WifiViewModel) {
                     viewModel = viewModel,
                     onNavigateScan = { navController.navigate(Screen.Scan.route) },
                     onNavigateGenerate = { navController.navigate(Screen.Generate.createRoute()) },
-                    onNavigateSaved = { navController.navigate(Screen.Saved.route) }
+                    onNavigateSaved = { navController.navigate(Screen.Saved.route) },
+                    onNavigateSettings = { navController.navigate(Screen.Settings.route) }
                 )
             }
             composable(Screen.Scan.route) {
@@ -163,9 +191,11 @@ fun AirKeyApp(viewModel: WifiViewModel) {
                     }
                 )
             }
+            composable(Screen.Settings.route) {
+                SettingsScreen(onBack = { navController.popBackStack() })
+            }
         }
 
-        // Bottom navigation bar
         AnimatedVisibility(
             visible = showBottomBar,
             modifier = Modifier.align(Alignment.BottomCenter),
@@ -184,7 +214,6 @@ fun AirKeyApp(viewModel: WifiViewModel) {
             )
         }
 
-        // Toast notification
         AnimatedVisibility(
             visible = uiState.toastMessage != null,
             modifier = Modifier
@@ -210,12 +239,177 @@ fun AirKeyApp(viewModel: WifiViewModel) {
     }
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun StartupPermissionsScreen(
+    cameraPermission: PermissionState,
+    locationPermission: PermissionState,
+    onContinue: () -> Unit
+) {
+    val context = LocalContext.current
+    val storageGranted = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            android.os.Environment.isExternalStorageManager()
+        else true
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DeepBlack)
+            .systemBarsPadding(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        Brush.linearGradient(listOf(NeonPurple, NeonCyan)),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Rounded.Security, null, tint = Color.White, modifier = Modifier.size(40.dp))
+            }
+
+            Text(
+                "Permissions Needed",
+                style = MaterialTheme.typography.headlineSmall,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "AirKey needs a few permissions to scan QR codes, save networks, and store files on your device.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                StartupPermRow(
+                    icon = Icons.Rounded.CameraAlt,
+                    title = "Camera",
+                    description = "Scan WiFi QR codes",
+                    granted = cameraPermission.status.isGranted,
+                    color = NeonPurple,
+                    onRequest = { cameraPermission.launchPermissionRequest() }
+                )
+                StartupPermRow(
+                    icon = Icons.Rounded.LocationOn,
+                    title = "Location",
+                    description = "Required for WiFi scanning on Android 8+",
+                    granted = locationPermission.status.isGranted,
+                    color = NeonCyan,
+                    onRequest = { locationPermission.launchPermissionRequest() }
+                )
+                StartupPermRow(
+                    icon = Icons.Rounded.FolderOpen,
+                    title = "Manage Files",
+                    description = "Save QR codes to any folder",
+                    granted = storageGranted,
+                    color = NeonPink,
+                    onRequest = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            try {
+                                val intent = android.content.Intent(
+                                    android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                                    android.net.Uri.parse("package:${context.packageName}")
+                                )
+                                context.startActivity(intent)
+                            } catch (_: Exception) {}
+                        }
+                    }
+                )
+            }
+
+            Button(
+                onClick = onContinue,
+                modifier = Modifier.fillMaxWidth().height(54.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent
+                ),
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Brush.linearGradient(listOf(NeonPurple, NeonCyan)), RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Continue to AirKey", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            }
+
+            TextButton(onClick = onContinue) {
+                Text("Skip for now", color = TextMuted, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StartupPermRow(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    granted: Boolean,
+    color: Color,
+    onRequest: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(CardSurface, RoundedCornerShape(14.dp))
+            .border(1.dp, if (granted) color.copy(0.35f) else GlassWhite2, RoundedCornerShape(14.dp))
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .background(color.copy(0.15f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = TextMuted)
+        }
+        Spacer(Modifier.width(8.dp))
+        if (granted) {
+            Icon(Icons.Rounded.CheckCircle, null, tint = GreenSuccess, modifier = Modifier.size(22.dp))
+        } else {
+            TextButton(
+                onClick = onRequest,
+                colors = ButtonDefaults.textButtonColors(contentColor = color),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                Text("Grant", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
 @Composable
 fun AirKeyBottomBar(currentRoute: String?, onNavigate: (String) -> Unit) {
     val items = listOf(
         NavItem("home", "Home", Icons.Rounded.Home),
         NavItem("scan", "Scan", Icons.Rounded.QrCodeScanner),
         NavItem("saved", "Saved", Icons.Rounded.Bookmark),
+        NavItem("settings", "Settings", Icons.Rounded.Settings),
     )
 
     Box(
@@ -251,7 +445,7 @@ fun AirKeyBottomBar(currentRoute: String?, onNavigate: (String) -> Unit) {
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() }
                             ) { onNavigate(item.route) }
-                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
