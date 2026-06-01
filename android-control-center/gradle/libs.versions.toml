@@ -32,7 +32,7 @@ moshi = "1.15.2"
 reorderable = "2.3.1"
 zxing = "3.5.3"
 jsoup = "1.18.3"
-dadb = "1.2.7"
+dadb = "1.2.10"
 
 [libraries]
 # Build tools

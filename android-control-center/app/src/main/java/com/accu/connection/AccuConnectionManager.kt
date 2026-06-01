@@ -130,18 +130,20 @@ class AccuConnectionManager @Inject constructor(
 
     /**
      * Persistent ADB RSA key pair stored in app-private storage.
-     * The SAME key must be used for both [completePairing] and [reconnect] — the target
-     * device authorises the public key during pairing, and rejects unknown keys on connect.
+     * dadb's AdbKeyPair.generate(privFile, pubFile) writes PKCS8 PEM + ADB-format base64 pub key.
+     * The SAME key pair must be used for both [completePairing] and [reconnect].
      */
     private val adbKeyPair: AdbKeyPair by lazy {
-        val keyFile = File(context.filesDir, "accu_adb_key")
-        try {
-            if (keyFile.exists()) AdbKeyPair.read(keyFile)
-            else AdbKeyPair.generate().also { it.write(keyFile) }
-        } catch (_: Exception) {
-            AdbKeyPair.generate().also { try { it.write(keyFile) } catch (_: Exception) {} }
+        val privFile = File(context.filesDir, "accu_adb_key")
+        val pubFile  = File(context.filesDir, "accu_adb_key.pub")
+        if (!privFile.exists() || !pubFile.exists()) {
+            try { AdbKeyPair.generate(privFile, pubFile) } catch (_: Exception) {}
         }
+        AdbKeyPair.read(privFile, pubFile)
     }
+
+    /** The .pub file written alongside adbKeyPair — used by AdbWifiPairingClient. */
+    private val adbPubFile: File get() = File(context.filesDir, "accu_adb_key.pub")
 
     private val prefs: SharedPreferences
         get() = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -639,25 +641,18 @@ class AccuConnectionManager @Inject constructor(
             return@withContext connectAfterPair(host, adb)
         }
 
-        // ── Path B: dadb — pure-Kotlin ADB TLS protocol (works on all Android phones) ──
-        Timber.i("$TAG completePairing (dadb): pairing $host:$port ***")
+        // ── Path B: AdbWifiPairingClient — pure-Kotlin SPAKE2 (works on all Android phones) ──
+        // Ensure our RSA key pair exists before pairing so the .pub file is ready
+        @Suppress("UNUSED_EXPRESSION") adbKeyPair  // force lazy init → creates priv + pub files
+        Timber.i("$TAG completePairing (SPAKE2): pairing $host:$port ***")
         _state.value = ConnectionState.CONNECTING
-        try {
-            Dadb.pair(host, port, code, adbKeyPair)
-            Timber.i("$TAG dadb pairing succeeded ✓")
-        } catch (e: Exception) {
-            Timber.w("$TAG dadb pairing failed: ${e.message?.take(120)}")
+        val pairingOk = AdbWifiPairingClient.pair(host, port, code, adbPubFile)
+        if (!pairingOk) {
+            Timber.w("$TAG SPAKE2 pairing failed — likely wrong code")
             _state.value = ConnectionState.AWAITING_CODE
-            // Report as wrong code if the exception message suggests authentication failure
-            val isAuthFail = e.message.orEmpty().let { msg ->
-                msg.contains("auth", ignoreCase = true) ||
-                msg.contains("pair", ignoreCase = true) ||
-                msg.contains("code", ignoreCase = true) ||
-                msg.contains("refused", ignoreCase = true)
-            }
-            return@withContext if (isAuthFail) PairingResult.WrongCode(e.message.orEmpty())
-                               else PairingResult.NoAdbBinary(host, port)
+            return@withContext PairingResult.WrongCode("SPAKE2 pairing rejected — check the 6-digit code")
         }
+        Timber.i("$TAG SPAKE2 pairing succeeded ✓")
 
         // Pairing succeeded — wait for session port then connect
         val deadline = System.currentTimeMillis() + 8_000L
