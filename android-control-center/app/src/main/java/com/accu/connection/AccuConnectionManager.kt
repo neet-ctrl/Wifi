@@ -129,6 +129,14 @@ class AccuConnectionManager @Inject constructor(
     private var dadbConnection: Dadb? = null
 
     /**
+     * Live TLS ADB connection — preferred over [dadbConnection] for wireless sessions.
+     * [dadb.Dadb.create()] speaks plain TCP ADB; Android 11+ wireless ADB session ports
+     * require mTLS. [AdbWifiConnectClient] opens the TLS socket using the same
+     * [AdbKey.sslContext] used during SPAKE2 pairing, so the device accepts our cert.
+     */
+    private var wifiConnectClient: AdbWifiConnectClient? = null
+
+    /**
      * Persistent ADB RSA key pair stored in app-private storage.
      * dadb's AdbKeyPair.generate(privFile, pubFile) writes PKCS8 PEM + ADB-format base64 pub key.
      * The SAME key pair must be used for both [completePairing] and [reconnect].
@@ -233,7 +241,24 @@ class AccuConnectionManager @Inject constructor(
                 // Priority 1: LibSU root — uid=0 on local device
                 Shell.getShell().isRoot -> execRoot(command)
 
-                // Priority 2a: dadb connection (no adb binary — pure-Kotlin ADB protocol)
+                // Priority 2a: TLS wireless ADB client (Android 11+, no adb binary needed)
+                // NOTE: dadb.Dadb.create() uses plain TCP — it cannot connect to Android 11+
+                // wireless ADB session ports which require mTLS. AdbWifiConnectClient opens a
+                // TLS socket using the same AdbKey registered during SPAKE2 pairing.
+                _state.value == ConnectionState.CONNECTED_WIRELESS && wifiConnectClient != null -> {
+                    try {
+                        val out = wifiConnectClient!!.shell(command)
+                        ShellResult(out, "", 0)
+                    } catch (e: Exception) {
+                        Timber.w(e, "$TAG wifiConnectClient exec failed — clearing connection")
+                        wifiConnectClient?.close()
+                        wifiConnectClient = null
+                        _state.value = ConnectionState.DISCONNECTED
+                        ShellResult("", e.message ?: "wifi connect error", -1)
+                    }
+                }
+
+                // Priority 2b: dadb connection (legacy / USB OTG plain-TCP ADB)
                 _state.value == ConnectionState.CONNECTED_WIRELESS && dadbConnection != null -> {
                     try {
                         val result = dadbConnection!!.shell(command)
@@ -387,7 +412,20 @@ class AccuConnectionManager @Inject constructor(
             _state.value = ConnectionState.CONNECTED_ROOT
             return
         }
-        // If dadb connection is live, verify it quickly
+        // Check TLS wireless client first (preferred for Android 11+ wireless ADB)
+        val existingWifi = wifiConnectClient
+        if (existingWifi != null) {
+            try {
+                if (existingWifi.shell("echo ok").trim() == "ok") {
+                    _state.value = ConnectionState.CONNECTED_WIRELESS
+                    return
+                }
+            } catch (_: Exception) {
+                wifiConnectClient = null
+            }
+        }
+
+        // Fall back to dadb plain-TCP connection (legacy / USB OTG)
         val existingDadb = dadbConnection
         if (existingDadb != null) {
             try {
@@ -435,7 +473,23 @@ class AccuConnectionManager @Inject constructor(
             val port = getLastConnectedPort()
             if (ip.isBlank()) return@withContext false
 
-            // Priority 2: dadb (no adb binary needed) — uses the same persisted key as pairing
+            // Priority 2: TLS wireless ADB (Android 11+ — requires mTLS, not plain dadb)
+            try {
+                val conn   = AdbWifiConnectClient.connect(ip, port, adbKey)
+                val verify = conn.shell("echo ACCU_OK")
+                if (verify.trim() == "ACCU_OK") {
+                    wifiConnectClient = conn
+                    _state.value = ConnectionState.CONNECTED_WIRELESS
+                    Timber.i("$TAG reconnect: TLS ADB verified at $ip:$port")
+                    return@withContext true
+                } else {
+                    conn.close()
+                }
+            } catch (e: Exception) {
+                Timber.w("$TAG reconnect: TLS ADB failed ($ip:$port) — ${e.message?.take(80)}")
+            }
+
+            // Priority 3: dadb plain TCP (legacy, USB/OTG non-TLS ADB)
             try {
                 val conn = Dadb.create(ip, port, adbKeyPair)
                 val verify = conn.shell("echo ACCU_OK")
@@ -467,7 +521,8 @@ class AccuConnectionManager @Inject constructor(
     }
 
     fun disconnect() {
-        // Close dadb connection first
+        try { wifiConnectClient?.close() } catch (_: Exception) {}
+        wifiConnectClient = null
         try { dadbConnection?.close() } catch (_: Exception) {}
         dadbConnection = null
         // Also try adb disconnect if binary is available
@@ -521,6 +576,11 @@ class AccuConnectionManager @Inject constructor(
             Timber.i("$TAG: root already available — skipping pairing discovery")
             return
         }
+
+        // Reset all discovery state so a fresh attempt doesn't reuse stale ports
+        pairingHost = ""
+        pairingPort = 0
+        sessionPort = 0
 
         _state.value = ConnectionState.DISCOVERING
         ensureNotificationChannel()
@@ -677,25 +737,28 @@ class AccuConnectionManager @Inject constructor(
                 )
             }
 
+        // Use TLS ADB connection — Dadb.create() speaks plain TCP and fails on Android 11+
+        // wireless ADB session ports which require mTLS after SPAKE2 pairing.
         return@withContext try {
-            Timber.i("$TAG dadb connect → $host:$connectPort")
-            val conn = Dadb.create(host, connectPort, adbKeyPair)
+            Timber.i("$TAG TLS ADB connect → $host:$connectPort")
+            val conn   = AdbWifiConnectClient.connect(host, connectPort, adbKey)
             val verify = conn.shell("echo ACCU_OK")
-            if (verify.output.trim() == "ACCU_OK") {
-                dadbConnection = conn
+            if (verify.trim() == "ACCU_OK") {
+                wifiConnectClient = conn
                 _state.value = ConnectionState.CONNECTED_WIRELESS
                 prefs.edit().putString(KEY_LAST_IP, host).putInt(KEY_LAST_PORT, connectPort).apply()
                 showConnectedNotification(host, connectPort)
                 stopPairingDiscovery()
-                Timber.i("$TAG dadb verified live connection to $host:$connectPort ✓")
+                Timber.i("$TAG TLS ADB verified live connection to $host:$connectPort ✓")
                 PairingResult.Success
             } else {
+                conn.close()
                 _state.value = ConnectionState.AWAITING_CODE
                 PairingResult.ConnectionFailed(host, connectPort,
-                    "dadb connected but echo check failed — device may be unreachable")
+                    "TLS ADB connected but echo check returned unexpected output")
             }
         } catch (e: Exception) {
-            Timber.w("$TAG dadb connect failed: ${e.message?.take(100)}")
+            Timber.w("$TAG TLS ADB connect failed: ${e.message?.take(200)}")
             _state.value = ConnectionState.AWAITING_CODE
             PairingResult.ConnectionFailed(host, connectPort, e.message.orEmpty())
         }
