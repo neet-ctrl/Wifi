@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AirKey</string>
+    <string name="scan_qr">Scan QR Code</string>
+    <string name="generate_qr">Generate QR</string>
+    <string name="saved_networks">Saved Networks</string>
+    <string name="home">Home</string>
+    <string name="camera_permission_required">Camera permission is required to scan QR codes</string>
+    <string name="wifi_name">WiFi Name (SSID)</string>
+    <string name="password">Password</string>
+    <string name="security_type">Security Type</string>
+    <string name="share">Share</string>
+    <string name="save">Save</string>
+    <string name="connect">Connect</string>
+    <string name="copy">Copy</string>
+    <string name="delete">Delete</string>
+</resources>

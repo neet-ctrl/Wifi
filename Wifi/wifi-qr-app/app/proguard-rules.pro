@@ -1,0 +1,5 @@
+-keep class com.airkey.wifiqr.** { *; }
+-keepclassmembers class * extends androidx.room.RoomDatabase { *; }
+-keep class com.google.zxing.** { *; }
+-keep class com.google.mlkit.** { *; }
+-dontwarn com.google.mlkit.**

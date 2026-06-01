@@ -1,0 +1,118 @@
+name: AirKey — Build Debug APK
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # ─── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ─── 2. Detect project root (handles push from any folder level) ────────
+      - name: Detect Android project root
+        id: detect
+        run: |
+          if [ -f "wifi-qr-app/settings.gradle" ]; then
+            echo "PROJECT_DIR=wifi-qr-app" >> $GITHUB_OUTPUT
+            echo "Found project at: wifi-qr-app/"
+          elif [ -f "settings.gradle" ]; then
+            echo "PROJECT_DIR=." >> $GITHUB_OUTPUT
+            echo "Found project at: root"
+          else
+            echo "ERROR: Cannot find settings.gradle. Check your project structure."
+            find . -name "settings.gradle" -maxdepth 4
+            exit 1
+          fi
+
+      # ─── 3. Java 17 ─────────────────────────────────────────────────────────
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # ─── 4. Android SDK ─────────────────────────────────────────────────────
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # ─── 5. Gradle 8.4 ──────────────────────────────────────────────────────
+      - name: Setup Gradle 8.4
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
+          cache-read-only: false
+
+      # ─── 6. Gradle wrapper JAR (not committed as binary) ────────────────────
+      - name: Download Gradle Wrapper JAR
+        run: |
+          PROJECT="${{ steps.detect.outputs.PROJECT_DIR }}"
+          mkdir -p "$PROJECT/gradle/wrapper"
+          curl -fsSL -o "$PROJECT/gradle/wrapper/gradle-wrapper.jar" \
+            "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar"
+          chmod +x "$PROJECT/gradlew"
+          echo "Wrapper JAR downloaded"
+
+      # ─── 7. Gradle cache ────────────────────────────────────────────────────
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # ─── 8. Build ───────────────────────────────────────────────────────────
+      - name: Build Debug APK
+        run: |
+          PROJECT="${{ steps.detect.outputs.PROJECT_DIR }}"
+          cd "$PROJECT"
+          gradle assembleDebug --stacktrace --no-daemon
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
+
+      # ─── 9. Show APK info ───────────────────────────────────────────────────
+      - name: Show APK info
+        run: |
+          PROJECT="${{ steps.detect.outputs.PROJECT_DIR }}"
+          echo "=== Build successful! ==="
+          find "$PROJECT/app/build/outputs/apk" -name "*.apk" | while read apk; do
+            echo "APK: $apk"
+            ls -lh "$apk"
+          done
+
+      # ─── 10. Upload APK artifact ─────────────────────────────────────────────
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AirKey-Debug-APK-${{ github.run_number }}
+          path: |
+            wifi-qr-app/app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
+          retention-days: 30
+
+      # ─── 11. Summary ─────────────────────────────────────────────────────────
+      - name: Build Summary
+        if: always()
+        run: |
+          echo "### AirKey Build Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Run # | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Triggered by | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the APK from the **Artifacts** section above ⬆️" >> $GITHUB_STEP_SUMMARY
