@@ -4,3 +4,26 @@ expertMode = true
 [[ports]]
 localPort = 8080
 externalPort = 80
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Build APK"
+
+[[workflows.workflow]]
+name = "Build APK"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "./gradlew assembleDebug"
+
+[workflows.workflow.metadata]
+outputType = "console"
