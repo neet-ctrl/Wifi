@@ -1,0 +1,69 @@
+╔════════════════════════════════════════════════════════════════╗
+║              ACCU TLS Connection Debug Report                  ║
+╚════════════════════════════════════════════════════════════════╝
+
+Generated  : 2026-06-01 14:19:01.289 GMT+05:30
+Target     : 10.104.245.52:36063
+Conn state : AWAITING_CODE
+Pairing IP : 10.104.245.52:44553
+
+── Host Device (running ACCU) ───────────────────────────────────
+Manufacturer : INFINIX
+Model        : Infinix X6857B
+Android      : 15 (SDK 35)
+Build        : X6857B-15.1.2.165SP05(IN001PF001AZ)
+ABI          : arm64-v8a
+
+── Target Device (from last successful refresh) ─────────────────
+Model   : (not queried — connection failed)
+Android : (not queried) (SDK ?)
+
+── Diagnosis ────────────────────────────────────────────────────
+adbd sent close_notify — TLS cert was rejected.
+  Most likely cause: client cert not sent or RSA-PSS signing failed.
+  Fix: rebuild with Conscrypt-provider key fix. If already done, re-pair
+  (target may have revoked the key in Developer Options).
+
+── Full Exception / Stack Trace ─────────────────────────────────
+java.lang.IllegalStateException: TLS handshake failed (connection closed). Check that this device ran a fresh pair before connecting.
+	at com.accu.connection.AdbWifiConnectClient.open(AdbWifiConnectClient.kt:94)
+	at com.accu.connection.AdbWifiConnectClient.access$open(AdbWifiConnectClient.kt:24)
+	at com.accu.connection.AdbWifiConnectClient$Companion.connect(AdbWifiConnectClient.kt:65)
+	at com.accu.connection.AccuConnectionManager$completePairing$2.invokeSuspend(AccuConnectionManager.kt:760)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:101)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:113)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:589)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:823)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:720)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:707)
+Caused by: javax.net.ssl.SSLHandshakeException: connection closed
+	at org.conscrypt.SSLUtils.toSSLHandshakeException(SSLUtils.java:361)
+	at org.conscrypt.ConscryptEngineSocket.doHandshake(ConscryptEngineSocket.java:232)
+	at org.conscrypt.ConscryptEngineSocket.startHandshake(ConscryptEngineSocket.java:209)
+	at com.accu.connection.AdbWifiConnectClient.open(AdbWifiConnectClient.kt:86)
+	... 11 more
+Caused by: java.io.EOFException: connection closed
+	... 14 more
+
+
+── ACCU Session Log (last 6 of 6 entries) ────
+[WARNING] 14:18:43.627  ACCU connection lost
+[WARNING] 14:18:43.641  ACCU not connected — limited functionality
+[INFO   ] 14:18:45.958  Starting auto-discovery for Wireless Debugging pairing service…
+[INFO   ] 14:18:50.251  Pairing service detected at 10.104.245.52:44553 — enter 6-digit code
+[INFO   ] 14:18:57.369  Completing pairing with code 855368
+[INFO   ] 14:19:01.287  Pairing service detected at 10.104.245.52:44553 — enter 6-digit code
+
+── TLS Fix Checklist ────────────────────────────────────────────
+[✓] AdbKey uses Conscrypt provider for KeyFactory + KeyPairGenerator
+[✓] SSLContext uses the same shared conscryptProvider instance
+[✓] chooseClientAlias returns alias unconditionally (RSASSA-PSS fix)
+[✓] Timber.w(e, ...) logs full stack on failure
+[✓] PeerInfo key = dadb .pub file (BoringSSL-identical encoding)
+[✓] Conscrypt installed globally as provider #1 in Application.onCreate
+[✓] Session socket locked to TLSv1.3 explicitly
+[✓] Post-pairing delay increased to 3 s for adbd key persistence
+
+Send the full contents of this report to the ACCU developer.

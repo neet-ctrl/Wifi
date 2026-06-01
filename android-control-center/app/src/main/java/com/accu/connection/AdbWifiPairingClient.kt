@@ -111,18 +111,21 @@ object AdbWifiPairingClient {
                 Timber.d("$TAG SPAKE2 cipher initialised (AES-128-GCM)")
 
                 // ── 5. Exchange PeerInfo — CLIENT SENDS FIRST ────────────────
-                // Our PeerInfo: [type=0][ADB-format public key][zero-pad to 8192 total]
+                // PeerInfo struct (8192 bytes total):
+                //   byte[0]    = type (0 = ADB_RSA_PUB_KEY)
+                //   byte[1..N] = raw 524-byte android_pubkey_encode() binary struct
                 //
-                // CRITICAL: use the caller-supplied pubKeyBytes (dadb's .pub file bytes)
-                // rather than adbKey.adbPublicKey (our hand-rolled android_pubkey_encode).
-                // dadb writes the .pub file via the same algorithm that adbd uses internally
-                // (android_pubkey_encode from BoringSSL). When adbd later computes the key
-                // from our TLS certificate it uses the same algorithm, so the stored key and
-                // the cert-derived key are guaranteed to match byte-for-byte.
-                // Any discrepancy between our Kotlin re-implementation of android_pubkey_encode
-                // and adbd's BoringSSL version would cause adbd to reject our TLS cert with
-                // SSLHandshakeException("connection closed").
-                val keyToSend = pubKeyBytes ?: adbKey.adbPublicKey
+                // AOSP's adb tool (C++):
+                //   android_pubkey_encode(rsa_from_ssl, peer_info.data, sizeof(peer_info.data))
+                //
+                // adbd receives raw 524 bytes, base64-encodes them, writes to adb_keys.
+                // On TLS connect, adbd encodes the cert's public key the same way and
+                // string-matches against adb_keys — so the bytes MUST be raw binary.
+                //
+                // WRONG: base64 string (adbKey.adbPublicKey) — adbd can't parse it as RSA,
+                //        silently ignores the key, SPAKE2 still completes, connect fails.
+                // RIGHT: raw 524 bytes (adbKey.adbPublicKeyRaw / caller-supplied pubKeyBytes)
+                val keyToSend = pubKeyBytes ?: adbKey.adbPublicKeyRaw
                 val peerInfoBuf = ByteBuffer.allocate(MAX_PEER_INFO_SIZE).order(ByteOrder.BIG_ENDIAN)
                 peerInfoBuf.put(PEER_TYPE_RSA_KEY)
                 peerInfoBuf.put(keyToSend, 0, keyToSend.size.coerceAtMost(MAX_PEER_INFO_SIZE - 1))

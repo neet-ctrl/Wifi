@@ -715,14 +715,18 @@ class AccuConnectionManager @Inject constructor(
         // ── Path B: AdbWifiPairingClient — BoringSSL SPAKE2 + Conscrypt TLS ────────────────
         Timber.i("$TAG completePairing (SPAKE2): pairing $host:$port ***")
         _state.value = ConnectionState.CONNECTING
-        // Pass the ADB-format public key bytes as the PeerInfo public key.
-        // adbKey.adbPublicKey is computed from the same RSA private key that dadb uses,
-        // using the identical android_pubkey_encode algorithm (AOSP android_pubkey.c).
-        // When adbd verifies the TLS session cert it runs android_pubkey_encode on the
-        // cert's public key and looks for a match in its trusted-key database — using
-        // the same key for both pairing PeerInfo and TLS cert guarantees that match.
-        val dadbPubKeyBytes: ByteArray = adbKey.adbPublicKey
-        Timber.d("$TAG dadbPubKeyBytes size=${dadbPubKeyBytes.size} " +
+        // PeerInfo.data must contain the RAW 524-byte android_pubkey_encode() struct —
+        // NOT base64.  AOSP's adb tool does:
+        //   android_pubkey_encode(rsa_from_ssl, peer_info.data, sizeof(peer_info.data))
+        // adbd then base64-encodes and writes to adb_keys.  On TLS connect, adbd encodes
+        // the cert's public key the same way and does a string match — so the PeerInfo raw
+        // bytes and the cert's public key bytes MUST be produced by the same algorithm.
+        //
+        // adbKey.adbPublicKeyRaw = raw 524 bytes (matches android_pubkey_encode output).
+        // adbKey.adbPublicKey    = BASE64(raw) + " ACCU\0" — for adb_keys FILE format only,
+        //                          WRONG for PeerInfo (adbd can't parse it as an RSA struct).
+        val dadbPubKeyBytes: ByteArray = adbKey.adbPublicKeyRaw
+        Timber.d("$TAG PeerInfo raw key size=${dadbPubKeyBytes.size} " +
             "first8=${dadbPubKeyBytes.take(8).joinToString(",") { it.toInt().and(0xFF).toString(16) }}")
 
         val pairingOk = AdbWifiPairingClient.pair(host, port, code, adbKey, dadbPubKeyBytes)

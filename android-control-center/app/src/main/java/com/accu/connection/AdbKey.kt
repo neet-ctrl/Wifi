@@ -49,7 +49,31 @@ class AdbKey private constructor(
 
     val certificate: X509Certificate = buildCert(privateKey, publicKey)
 
+    /**
+     * ADB-format public key in the `adb_keys` FILE format:
+     *   BASE64(524_raw_bytes) + " " + name + "\0"
+     *
+     * This is the format stored in /data/misc/adb/adb_keys on the device.
+     * Do NOT use this for PeerInfo during SPAKE2 pairing — adbd expects the
+     * raw 524 bytes there, not base64. Use [adbPublicKeyRaw] for PeerInfo.
+     */
     val adbPublicKey: ByteArray by lazy { publicKey.toAdbEncoded(name) }
+
+    /**
+     * Raw 524-byte binary of the ADB RSA public key struct — for PeerInfo ONLY.
+     *
+     * This is what AOSP's `adb` tool sends in PeerInfo.data during SPAKE2 pairing:
+     *   android_pubkey_encode(rsa_key, peer_info.data, sizeof(peer_info.data))
+     *
+     * adbd receives these raw bytes, base64-encodes them, and writes to adb_keys.
+     * When validating a TLS cert on connect, adbd encodes the cert's public key
+     * the same way and compares — so raw bytes in PeerInfo ↔ raw bytes from cert
+     * will always match, regardless of any base64 encoding details.
+     *
+     * Sending [adbPublicKey] (base64 string) as PeerInfo is WRONG — adbd cannot
+     * parse it as an RSA struct and silently discards the key registration.
+     */
+    val adbPublicKeyRaw: ByteArray by lazy { publicKey.toAdbRaw() }
 
     // ── Conscrypt TLSv1.3 context — presents our cert, enables exportKeyingMaterial ──
 
@@ -219,6 +243,35 @@ class AdbKey private constructor(
 
 private const val MODULUS_SIZE       = 2048 / 8
 private const val MODULUS_SIZE_WORDS = MODULUS_SIZE / 4
+
+/**
+ * Raw 524-byte binary struct matching AOSP android_pubkey_encode() output.
+ *
+ * struct RSAPublicKey {
+ *   uint32_t modulus_size_words;   // = 64 (little-endian)
+ *   uint32_t n0inv;                // -1/n[0] mod 2^32 (little-endian)
+ *   uint32_t n[64];                // modulus, 64 little-endian words
+ *   uint32_t rr[64];               // R^2 mod N (montgomery), 64 words
+ *   uint32_t exponent;             // = 65537 (little-endian)
+ * };  // total = 4+4+256+256+4 = 524 bytes
+ *
+ * This is what adbd expects in PeerInfo.data during SPAKE2 pairing.
+ * adbd then base64-encodes it and writes to adb_keys.
+ * On TLS connect, adbd encodes the cert's public key the same way and compares.
+ */
+private fun RSAPublicKey.toAdbRaw(): ByteArray {
+    val r32   = BigInteger.ZERO.setBit(32)
+    val n0inv = modulus.remainder(r32).modInverse(r32).negate()
+    val r     = BigInteger.ZERO.setBit(MODULUS_SIZE * 8)
+    val rr    = r.modPow(BigInteger.valueOf(2), modulus)
+    return ByteBuffer.allocate(524).order(ByteOrder.LITTLE_ENDIAN).apply {
+        putInt(MODULUS_SIZE_WORDS)
+        putInt(n0inv.toInt())
+        modulus.toAdbWordArray().forEach { putInt(it) }
+        rr.toAdbWordArray().forEach     { putInt(it) }
+        putInt(publicExponent.toInt())
+    }.array()
+}
 
 private fun BigInteger.toAdbWordArray(): IntArray {
     val words = IntArray(MODULUS_SIZE_WORDS)
