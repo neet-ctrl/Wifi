@@ -695,6 +695,42 @@ fun ScannedResultPanel(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // ── PRIMARY: Join Network (native Android system connection) ───
+            Button(
+                onClick = {
+                    val network = WifiNetwork(
+                        ssid = result.ssid,
+                        password = result.password,
+                        securityType = result.securityType,
+                        isHidden = result.isHidden
+                    )
+                    viewModel.connectInstantly(context, network)
+                },
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(listOf(NeonCyan, NeonPurple)),
+                            RoundedCornerShape(18.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Wifi, null, tint = Color.White, modifier = Modifier.size(22.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Column(horizontalAlignment = Alignment.Start) {
+                            Text("Join Network", fontWeight = FontWeight.Bold, color = Color.White, style = MaterialTheme.typography.titleSmall)
+                            Text("Uses Android's native WiFi system", color = Color.White.copy(0.75f), style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
+
             // Toggle save options
             if (!saved) {
                 TextButton(onClick = { showSaveOptions = !showSaveOptions }) {
@@ -760,26 +796,6 @@ fun ScannedResultPanel(
                 Icon(Icons.Rounded.QrCode2, null, tint = NeonCyan)
                 Spacer(Modifier.width(8.dp))
                 Text("Generate Custom QR Code", color = TextPrimary, fontWeight = FontWeight.SemiBold)
-            }
-
-            // Open WiFi Settings (connect directly)
-            OutlinedButton(
-                onClick = {
-                    try {
-                        val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        val intent = Intent(Settings.ACTION_WIRELESS_SETTINGS)
-                        context.startActivity(intent)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().height(54.dp),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, GlassWhite2)
-            ) {
-                Icon(Icons.Rounded.NetworkWifi, null, tint = TextSecondary)
-                Spacer(Modifier.width(8.dp))
-                Text("Open WiFi Settings", color = TextSecondary)
             }
 
             // Scan again
