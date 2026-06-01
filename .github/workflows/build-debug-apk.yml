@@ -85,7 +85,7 @@ jobs:
         run: |
           PROJECT="${{ steps.detect.outputs.PROJECT_DIR }}"
           cd "$PROJECT"
-          gradle assembleDebug --stacktrace --no-daemon
+          ./gradlew assembleDebug --stacktrace --no-daemon
         env:
           JAVA_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=512m"
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
