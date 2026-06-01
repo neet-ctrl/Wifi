@@ -38,7 +38,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.airkey.wifiqr.data.*
 import com.airkey.wifiqr.ui.theme.*
 import com.airkey.wifiqr.viewmodel.WifiViewModel
