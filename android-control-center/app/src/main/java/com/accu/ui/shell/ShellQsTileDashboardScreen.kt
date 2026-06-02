@@ -61,6 +61,8 @@ enum class TileCategory(
     AUDIO        ("Audio",          Color(0xFF9A3412), Icons.Default.VolumeUp),
     NETWORK      ("Network",        Color(0xFF0284C7), Icons.Default.Wifi),
     DIAGNOSTICS  ("Diagnostics",    Color(0xFF374151), Icons.Default.Analytics),
+    PERFORMANCE  ("Performance",    Color(0xFFB45309), Icons.Default.Speed),
+    INPUT        ("Input & UI",     Color(0xFF0F766E), Icons.Default.TouchApp),
     CUSTOM       ("Custom",         Color(0xFF6B7280), Icons.Default.Terminal),
 }
 
@@ -353,6 +355,142 @@ val BUILT_IN_TILES: List<ShellQsTile> = listOf(
     ShellQsTile("bi_battery_reset", "Reset Battery Stats",
         "dumpsys batterystats --reset && echo 'Battery statistics history cleared'",
         "Reset accumulated battery statistics", "battery_unknown", TileCategory.DIAGNOSTICS, isBuiltIn = true),
+
+    // ── Performance (12) ────────────────────────────────────
+    ShellQsTile("bi_perf_max", "Max Performance Mode",
+        "settings put global restricted_networking_mode 0 && settings put system screen_brightness_mode 0 && settings put system screen_brightness 255 && am send-trim-memory all COMPLETE && echo 'Max performance mode applied'",
+        "Max brightness, kill memory pressure, minimal restrictions", "speed", TileCategory.PERFORMANCE, isBuiltIn = true),
+
+    ShellQsTile("bi_perf_anim_off", "Disable All Animations",
+        "settings put global window_animation_scale 0 && settings put global transition_animation_scale 0 && settings put global animator_duration_scale 0 && echo 'All animations disabled — UI is instant'",
+        "Set all animation scales to 0 for fastest UI", "speed", TileCategory.PERFORMANCE, isBuiltIn = true),
+
+    ShellQsTile("bi_perf_anim_on", "Restore Animations",
+        "settings put global window_animation_scale 1 && settings put global transition_animation_scale 1 && settings put global animator_duration_scale 1 && echo 'Animations restored to 1.0×'",
+        "Restore animation scales to default 1.0", "speed", TileCategory.PERFORMANCE, isBuiltIn = true),
+
+    ShellQsTile("bi_perf_anim_half", "Half-Speed Animations",
+        "settings put global window_animation_scale 0.5 && settings put global transition_animation_scale 0.5 && settings put global animator_duration_scale 0.5 && echo 'Animations set to 0.5× (snappy)'",
+        "Set animations to 0.5× for snappy feel", "speed", TileCategory.PERFORMANCE, isBuiltIn = true),
+
+    ShellQsTile("bi_perf_gpu", "Force GPU Rendering",
+        "settings put global hardware_accelerated_rendering 1 && settings put global force_hw_ui 1 && echo 'Force GPU rendering enabled'",
+        "Enable hardware accelerated rendering globally", "speed", TileCategory.PERFORMANCE, isBuiltIn = true),
+
+    ShellQsTile("bi_perf_bg_limit", "Limit Background Processes",
+        "settings put global activity_manager_constants override_max_cached_processes=4 && echo 'Background process limit set to 4'",
+        "Cap background processes at 4 to free RAM", "memory", TileCategory.PERFORMANCE, isBuiltIn = true),
+
+    ShellQsTile("bi_perf_bg_unlimited", "Unlimited Background Processes",
+        "settings put global activity_manager_constants '' && echo 'Background process limit removed'",
+        "Remove any background process cap", "memory", TileCategory.PERFORMANCE, isBuiltIn = true),
+
+    ShellQsTile("bi_perf_usb_high", "USB High Performance",
+        "setprop sys.usb.config mtp,adb && echo 'USB configured for high performance MTP+ADB'",
+        "Set USB to high-performance MTP+ADB mode", "storage", TileCategory.PERFORMANCE, isBuiltIn = true),
+
+    ShellQsTile("bi_perf_trim", "Compact All Memory",
+        "am send-trim-memory all RUNNING_CRITICAL && am send-trim-memory all COMPLETE && echo 'Memory compacted across all apps'",
+        "Send critical trim-memory to all running apps", "memory", TileCategory.PERFORMANCE, isBuiltIn = true),
+
+    ShellQsTile("bi_perf_doze_off", "Disable Doze Mode",
+        "dumpsys deviceidle disable && echo 'Doze mode DISABLED — no battery optimization'",
+        "Disable Android doze/idle battery optimization", "battery_saver", TileCategory.PERFORMANCE, isBuiltIn = true),
+
+    ShellQsTile("bi_perf_doze_on", "Enable Doze Mode",
+        "dumpsys deviceidle enable && echo 'Doze mode ENABLED'",
+        "Re-enable Android doze mode", "battery_full", TileCategory.PERFORMANCE, isBuiltIn = true),
+
+    ShellQsTile("bi_perf_stats", "Performance Stats",
+        "echo '=== CPU ===' && cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null && echo '=== Anim Scales ===' && settings get global window_animation_scale && settings get global transition_animation_scale && echo '=== RAM ===' && cat /proc/meminfo | grep -E 'MemTotal|MemAvailable' | head -2",
+        "Show governor, animation scales, and RAM overview", "analytics", TileCategory.PERFORMANCE, isBuiltIn = true),
+
+    // ── Input & UI (10) ─────────────────────────────────────
+    ShellQsTile("bi_input_tap", "Tap Screen Center",
+        "input tap \$(wm size | grep -o '[0-9]*x[0-9]*' | awk -Fx '{print int(\$1/2), int(\$2/2)}') && echo 'Tapped screen center'",
+        "Simulate a tap at center of screen", "touch_app", TileCategory.INPUT, isBuiltIn = true),
+
+    ShellQsTile("bi_input_swipe_up", "Swipe Up (Home)",
+        "sz=\$(wm size | grep -o '[0-9]*x[0-9]*'); w=\$(echo \$sz | awk -Fx '{print \$1}'); h=\$(echo \$sz | awk -Fx '{print \$2}'); cx=\$((\$w/2)); input swipe \$cx \$((\$h*3/4)) \$cx \$((\$h/4)) 300 && echo 'Swipe-up gesture sent'",
+        "Send upward swipe gesture (navigate home)", "touch_app", TileCategory.INPUT, isBuiltIn = true),
+
+    ShellQsTile("bi_input_back", "Send Back Button",
+        "input keyevent 4 && echo 'Back key sent'",
+        "Send KEYCODE_BACK (back navigation)", "arrow_back", TileCategory.INPUT, isBuiltIn = true),
+
+    ShellQsTile("bi_input_home", "Send Home Button",
+        "input keyevent 3 && echo 'Home key sent'",
+        "Send KEYCODE_HOME (go to launcher)", "home", TileCategory.INPUT, isBuiltIn = true),
+
+    ShellQsTile("bi_input_recents", "Open Recents",
+        "input keyevent 187 && echo 'Recents opened'",
+        "Send KEYCODE_APP_SWITCH (recent apps)", "apps", TileCategory.INPUT, isBuiltIn = true),
+
+    ShellQsTile("bi_density_get", "Get Screen Density",
+        "echo 'Physical:' && wm density && echo 'Override:' && wm density",
+        "Show current display density (DPI)", "info", TileCategory.INPUT, isBuiltIn = true),
+
+    ShellQsTile("bi_density_reset", "Reset Density",
+        "wm density reset && echo 'Display density reset to default'",
+        "Reset display density to device default", "settings", TileCategory.INPUT, isBuiltIn = true),
+
+    ShellQsTile("bi_font_large", "Font Size Large",
+        "settings put system font_scale 1.15 && echo 'Font scale → 1.15 (large)'",
+        "Set system font size to large (1.15×)", "text_fields", TileCategory.INPUT, isBuiltIn = true),
+
+    ShellQsTile("bi_font_normal", "Font Size Normal",
+        "settings put system font_scale 1.0 && echo 'Font scale → 1.0 (normal)'",
+        "Reset font size to normal (1.0×)", "text_fields", TileCategory.INPUT, isBuiltIn = true),
+
+    ShellQsTile("bi_dark_mode_on", "Dark Mode On",
+        "cmd uimode night yes && echo 'Dark mode ENABLED'",
+        "Force system-wide dark mode", "dark_mode", TileCategory.INPUT, isBuiltIn = true),
+
+    ShellQsTile("bi_dark_mode_off", "Dark Mode Off",
+        "cmd uimode night no && echo 'Dark mode DISABLED (light theme)'",
+        "Force system-wide light mode", "light_mode", TileCategory.INPUT, isBuiltIn = true),
+
+    // ── Additional Media Capture (6) ──────────────────────
+    ShellQsTile("bi_ss_portrait", "Screenshot Portrait Path",
+        "screencap /sdcard/DCIM/Screenshots/\$(date +%Y%m%d_%H%M%S).png && echo 'Screenshot saved to Screenshots folder'",
+        "Capture to default Screenshots folder", "screenshot", TileCategory.MEDIA_CAPTURE, isBuiltIn = true),
+
+    ShellQsTile("bi_rec_1080", "Screen Record 1080p",
+        "mkdir -p /sdcard/DCIM/ACCU && screenrecord --size 1920x1080 --time-limit 30 /sdcard/DCIM/ACCU/rec1080_\$(date +%Y%m%d_%H%M%S).mp4 && echo '1080p Recording (30s) saved'",
+        "Full HD 1080p 30s screen recording", "videocam", TileCategory.MEDIA_CAPTURE, isBuiltIn = true),
+
+    ShellQsTile("bi_rec_low", "Screen Record Low Bitrate",
+        "mkdir -p /sdcard/DCIM/ACCU && screenrecord --bit-rate 2000000 --time-limit 60 /sdcard/DCIM/ACCU/reclq_\$(date +%Y%m%d_%H%M%S).mp4 && echo 'Low-bitrate Recording (60s) saved'",
+        "2Mbps 60s recording for small file size", "videocam", TileCategory.MEDIA_CAPTURE, isBuiltIn = true),
+
+    ShellQsTile("bi_launch_camera", "Open Camera App",
+        "am start -a android.media.action.IMAGE_CAPTURE && echo 'Camera app launched'",
+        "Launch device camera app for photo capture", "camera_alt", TileCategory.MEDIA_CAPTURE, isBuiltIn = true),
+
+    ShellQsTile("bi_launch_video", "Open Video Camera",
+        "am start -a android.media.action.VIDEO_CAPTURE && echo 'Video camera launched'",
+        "Launch camera app in video recording mode", "videocam", TileCategory.MEDIA_CAPTURE, isBuiltIn = true),
+
+    ShellQsTile("bi_media_scan_all", "Scan Media Library",
+        "am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE --receiver-foreground -d file:///sdcard/DCIM/ACCU && echo 'Media scan triggered for ACCU folder'",
+        "Force gallery to re-index ACCU media folder", "refresh", TileCategory.MEDIA_CAPTURE, isBuiltIn = true),
+
+    // ── Additional Audio (4) ─────────────────────────────
+    ShellQsTile("bi_vol_ring_max", "Ringtone Volume Max",
+        "media volume --set 15 --stream 2 && echo 'Ringtone volume → MAX'",
+        "Set ringtone volume to maximum", "notifications_active", TileCategory.AUDIO, isBuiltIn = true),
+
+    ShellQsTile("bi_vol_alarm_max", "Alarm Volume Max",
+        "media volume --set 15 --stream 4 && echo 'Alarm volume → MAX'",
+        "Set alarm volume to maximum", "alarm", TileCategory.AUDIO, isBuiltIn = true),
+
+    ShellQsTile("bi_vol_all_mute", "Mute All Streams",
+        "media volume --set 0 --stream 2 && media volume --set 0 --stream 3 && media volume --set 0 --stream 4 && media volume --set 0 --stream 5 && echo 'All audio streams muted'",
+        "Mute ringtone, media, alarm, and notification streams", "volume_off", TileCategory.AUDIO, isBuiltIn = true),
+
+    ShellQsTile("bi_bluetooth_media", "Connect Bluetooth Media",
+        "am start -a android.bluetooth.adapter.action.REQUEST_ENABLE && echo 'Bluetooth media connection prompt sent'",
+        "Open Bluetooth settings to connect audio device", "bluetooth_audio", TileCategory.AUDIO, isBuiltIn = true),
 )
 
 // ═══════════════════════════════════════════════════════════════
@@ -617,6 +755,20 @@ private val TILE_ICON_OPTIONS = listOf(
     "info" to Icons.Default.Info,
     "analytics" to Icons.Default.Analytics,
     "notifications" to Icons.Default.Notifications,
+    // New icons for Performance + Input categories
+    "touch_app" to Icons.Default.TouchApp,
+    "dark_mode" to Icons.Default.DarkMode,
+    "light_mode" to Icons.Default.LightMode,
+    "alarm" to Icons.Default.Alarm,
+    "bluetooth_audio" to Icons.Default.BluetoothAudio,
+    "text_fields" to Icons.Default.TextFields,
+    "home" to Icons.Default.Home,
+    "apps" to Icons.Default.Apps,
+    "camera_alt" to Icons.Default.CameraAlt,
+    "refresh" to Icons.Default.Refresh,
+    "notifications_active" to Icons.Default.NotificationsActive,
+    "battery_saver" to Icons.Default.BatterySaver,
+    "vibration" to Icons.Default.Vibration,
 )
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)

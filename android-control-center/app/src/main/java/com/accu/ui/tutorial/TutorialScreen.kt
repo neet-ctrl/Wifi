@@ -308,36 +308,70 @@ Deep inspection of any app: APK manifest, signing certificate, native libraries,
         navTarget = "app_manager"
     ),
     TutorialStep(
-        title = "Audio Center",
-        subtitle = "System-wide DSP effects without root",
-        body = """The Audio Center brings RootlessJamesDSP to your fingertips:
+        title = "Sound Master",
+        subtitle = "Per-app volume, EQ, balance & audio routing",
+        body = """Sound Master gives you granular control over every audio stream on your device — no root required.
+
+PER-APP VOLUME:
+• Set volume from 0–200% independently for each app
+• Override the system limit and push quiet apps louder
+• Real-time sliders update without restarting audio
 
 EQUALIZER:
-• Parametric EQ with 5 bands — set frequency, gain, Q factor
-• Graphic EQ with 31 bands for a visual approach
-• One-tap presets: Flat, Rock, Pop, Classical, Vocal, Bass
+• 3-band EQ (Bass / Mid / Treble) per app or globally
+• Presets: Flat, Bass Boost, Vocal Clarity, Treble Boost
+• LoudnessEnhancer for quiet content
 
-EFFECTS:
-• Bass Boost: 0–1000 strength
-• Virtualizer/Stereo Widener
-• Reverb with room presets (Small Room, Large Hall, etc.)
-• Loudness Enhancer for low volumes
+BALANCE & ROUTING:
+• Left/right stereo balance slider (−100 to +100)
+• Route specific apps to earpiece, loudspeaker, or Bluetooth
+• Mono audio toggle for accessibility
 
-ADVANCED:
-• Convolver: load .wav impulse response files for headphone profiles
-• AutoEQ: search and download tuning profiles for your headphones
-• Liveprog: run custom Faust DSP scripts
-• Per-app blocklist: exclude specific apps from DSP
-
-The DSP runs as a foreground service — keep it enabled for all audio apps.""",
+SERVICE:
+• Runs as a foreground service bound to your ACCU session
+• Volume settings persist across app restarts via saved presets
+• Batch-apply a preset to all running apps at once""",
         tips = listOf(
-            "Start with the AutoEQ search to find a scientifically tuned profile for your headphones",
-            "Use the blocklist to exclude phone calls and voice assistants from DSP",
-            "Convolver impulse files (.wav) can simulate famous speakers and room acoustics"
+            "Set navigation/notification apps to 80% and music apps to 130% for a balanced experience",
+            "Use the stereo balance slider if one ear of your headphones sounds louder",
+            "Save a preset before calls so you can restore your listening profile after"
         ),
-        icon = Icons.Outlined.GraphicEq,
-        accentColor = Color(0xFF3F51B5),
-        navTarget = "audio"
+        icon = Icons.Outlined.VolumeUp,
+        accentColor = Color(0xFFE91E63),
+        navTarget = "sound_master"
+    ),
+    TutorialStep(
+        title = "Mixed Audio",
+        subtitle = "Audio focus control & app muting",
+        body = """Mixed Audio lets you control which apps can produce sound and who wins audio focus conflicts.
+
+AUDIO FOCUS:
+• Force an app to abandon audio focus (silence it instantly)
+• Lock focus to one app so nothing else can steal it
+• Set focus behavior: transient, permanent, or gain with duck
+
+APP MUTING:
+• Mute any app individually without touching system volume
+• Batch mute all background apps in one tap
+• Mute persists through orientation changes and re-launches
+
+PROFILES:
+• Save a mix profile (which apps are muted/unmuted) as a preset
+• Load profiles by name — switch from "Gaming" to "Podcast" in one tap
+• Schedule profiles via Automation triggers
+
+USE CASES:
+• Silence social media notifications during a call
+• Keep navigation audio while muting music
+• Auto-mute everything except your alarm app at night""",
+        tips = listOf(
+            "Combine with Sound Master presets for a complete audio profile switch",
+            "Use batch-mute before a call and one-tap restore after",
+            "Automation can trigger a Mixed Audio profile when headphones connect"
+        ),
+        icon = Icons.Outlined.Tune,
+        accentColor = Color(0xFF9C27B0),
+        navTarget = "mixed_audio"
     ),
     TutorialStep(
         title = "Quick Settings Tiles",

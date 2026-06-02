@@ -353,36 +353,39 @@ Component Manager → Online Rules → search for your app to download community
         "Audio & Calls",
         listOf(
             LearningArticle(
-                title = "Setting Up the Audio DSP",
-                summary = "System-wide equalizer and effects without root",
-                content = """The Audio DSP runs as a foreground service that processes all audio output system-wide. No root or Xposed required.
+                title = "Sound Master & Mixed Audio",
+                summary = "Per-app volume, EQ, focus control — all in one place",
+                content = """ACCU ships two audio modules. Use them together for a complete audio setup.
 
-HOW IT WORKS:
-RootlessJamesDSP uses Android's AudioEffect API at the global session (session ID 0), which affects all audio output. Some manufacturers restrict this — if effects don't work, try root mode.
+SOUND MASTER:
+• Set volume per-app from 0–200% (beyond the system cap)
+• 3-band EQ (Bass / Mid / Treble) with one-tap presets
+• LoudnessEnhancer for quiet content
+• Left/right stereo balance slider for hearing comfort
+• Audio routing per-app (speaker, earpiece, Bluetooth)
+• Save named presets and load with one tap
 
-QUICK SETUP:
-1. Audio Center → toggle DSP On
-2. Select an EQ preset or use AutoEQ to find your headphone's profile
-3. Adjust bass boost if needed
-4. Enable any other effects (reverb, virtualizer)
+QUICK SETUP (Sound Master):
+1. Dashboard → Sound Master
+2. Adjust individual app volumes with the sliders
+3. Tap EQ → pick a preset or tune manually
+4. Save as a preset (e.g. "Night", "Gaming")
 
-AUTOEQ PROFILES:
-AutoEQ is a database of thousands of headphone measurement-based correction profiles. These flatten the frequency response of your headphones to neutral (Harman target).
-• Search by headphone model name
-• Download and apply in one tap
-• Significantly improves audio accuracy on most headphones
+MIXED AUDIO:
+• See which app holds audio focus right now
+• Mute any app without touching its volume
+• Batch-mute all background apps at once
+• Save named mute profiles and switch between them
 
-CONVOLVER (Advanced):
-Load .wav impulse response files to simulate headphone speakers, or famous speaker systems.
-• Great for making headphones sound like speakers
-• Free IR files available from various audio communities
-
-PER-APP BLOCKLIST:
-Some apps (phone dialer, voice assistant) sound better without DSP. Add them to the blocklist:
-Audio Center → DSP Blocklist → Add app""",
-                icon = Icons.Outlined.GraphicEq,
-                accentColor = Color(0xFF3F51B5),
-                readTimeMin = 4
+QUICK SETUP (Mixed Audio):
+1. Dashboard → Mixed Audio
+2. See active audio sources listed
+3. Tap an app to mute or revoke its focus
+4. Use batch-mute before calls or recordings
+5. Save a profile for your current setup""",
+                icon = Icons.Outlined.VolumeUp,
+                accentColor = Color(0xFFE91E63),
+                readTimeMin = 3
             ),
             LearningArticle(
                 title = "Call Recording Setup & Legality",

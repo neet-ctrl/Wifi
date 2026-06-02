@@ -45,9 +45,9 @@ val onboardingPages = listOf(
         Icons.Default.Apps, listOf(Color(0xFFFF6D00), Color(0xFFE91E63)),
     ),
     OnboardingPage(
-        "Audio DSP Engine", "JamesDSP Inside",
-        "Full RootlessJamesDSP audio processing with 10-band EQ, bass boost, reverb, surround sound, AutoEQ, Convolver, and Liveprog scripting.",
-        Icons.Default.Equalizer, listOf(Color(0xFFE91E63), Color(0xFF9C27B0)),
+        "Sound Master & Mixed Audio", "Total Audio Control",
+        "Set per-app volume up to 200%, tune with 3-band EQ, control stereo balance and routing — plus manage audio focus and batch-mute apps instantly.",
+        Icons.Default.VolumeUp, listOf(Color(0xFFE91E63), Color(0xFF9C27B0)),
     ),
     OnboardingPage(
         "Network & Privacy", "Stay in Control",

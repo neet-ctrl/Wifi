@@ -411,10 +411,11 @@ fun ShellScreen(
                     )
                 }
             }
-            items(outputGroups, key = { it.first.id }) { (cmd, outLines) ->
+            itemsIndexed(outputGroups, key = { _, pair -> pair.first.id }) { index, (cmd, outLines) ->
                 ShellCommandCard(
                     command = cmd,
                     outputLines = outLines,
+                    colorIndex = index,
                     onCopyAll = {
                         val txt = buildString {
                             append("$ "); appendLine(cmd.text)
@@ -587,21 +588,37 @@ private fun ShellWelcomeBanner(mode: ShellMode, onSuggestionSelected: (String) -
     }
 }
 
+private val SHELL_CARD_PALETTE = listOf(
+    Color(0xFF6366F1), // indigo
+    Color(0xFF0EA5E9), // sky blue
+    Color(0xFF10B981), // emerald
+    Color(0xFFF59E0B), // amber
+    Color(0xFFEF4444), // red
+    Color(0xFF8B5CF6), // violet
+    Color(0xFF06B6D4), // cyan
+    Color(0xFFF97316), // orange
+    Color(0xFF14B8A6), // teal
+    Color(0xFFEC4899), // pink
+    Color(0xFF84CC16), // lime
+    Color(0xFFA78BFA), // purple
+)
+
 @Composable
 private fun ShellCommandCard(
     command: OutputLine?,
     outputLines: List<OutputLine>,
+    colorIndex: Int = 0,
     onCopyAll: () -> Unit,
     onBookmark: () -> Unit,
     onAiAnalyze: () -> Unit,
 ) {
-    val hasError   = outputLines.any { it.isError }
-    val successGreen = Color(0xFF16A34A)
-    val accentColor  = when {
-        command == null     -> MaterialTheme.colorScheme.onSurfaceVariant
-        hasError            -> MaterialTheme.colorScheme.error
-        outputLines.isEmpty() -> MaterialTheme.colorScheme.onSurfaceVariant
-        else                -> successGreen
+    val hasError     = outputLines.any { it.isError }
+    val cardAccent   = SHELL_CARD_PALETTE[colorIndex % SHELL_CARD_PALETTE.size]
+    val statusColor  = when {
+        command == null       -> MaterialTheme.colorScheme.onSurfaceVariant
+        hasError              -> MaterialTheme.colorScheme.error
+        outputLines.isEmpty() -> cardAccent.copy(alpha = 0.6f)
+        else                  -> cardAccent
     }
 
     Card(
@@ -610,89 +627,100 @@ private fun ShellCommandCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
-        Column {
-            // ── Command header bar (dark terminal style) ──────────────
+        Row(Modifier.height(IntrinsicSize.Min)) {
+            // ── Colored left border accent ─────────────────────────
             if (command != null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.88f))
-                        .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    // $ prompt
-                    Text(
-                        "$",
-                        fontFamily = FontFamily.Monospace, fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold,
-                    )
-                    // Command text
-                    Text(
-                        command.text,
-                        modifier = Modifier.weight(1f),
-                        fontFamily = FontFamily.Monospace, fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.inverseOnSurface,
-                        maxLines = 4, overflow = TextOverflow.Ellipsis,
-                    )
-                    // Status dot
-                    Box(
-                        Modifier.size(8.dp).clip(CircleShape).background(accentColor)
-                    )
-                    // Action buttons
-                    IconButton(onClick = onBookmark, modifier = Modifier.size(30.dp)) {
-                        Icon(Icons.Outlined.Bookmark, "Bookmark", Modifier.size(15.dp),
-                            tint = MaterialTheme.colorScheme.inverseOnSurface.copy(0.55f))
-                    }
-                    IconButton(onClick = onAiAnalyze, modifier = Modifier.size(30.dp)) {
-                        Icon(Icons.Outlined.AutoAwesome, "AI analyze", Modifier.size(15.dp),
-                            tint = MaterialTheme.colorScheme.inverseOnSurface.copy(0.55f))
-                    }
-                    IconButton(onClick = onCopyAll, modifier = Modifier.size(30.dp)) {
-                        Icon(Icons.Outlined.ContentCopy, "Copy", Modifier.size(15.dp),
-                            tint = MaterialTheme.colorScheme.inverseOnSurface.copy(0.55f))
-                    }
-                }
+                Box(
+                    Modifier
+                        .width(3.dp)
+                        .fillMaxHeight()
+                        .background(cardAccent)
+                )
             }
-
-            // ── Output body ──────────────────────────────────────────
-            if (outputLines.isNotEmpty()) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = when {
-                        hasError -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.18f)
-                        command == null -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                        else -> successGreen.copy(alpha = 0.05f)
-                    },
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
+            Column(Modifier.weight(1f)) {
+                // ── Command header bar (dark terminal style) ──────────
+                if (command != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.88f))
+                            .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        outputLines.forEach { line ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                if (line.isError) {
-                                    Text("!", fontFamily = FontFamily.Monospace, fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                                }
-                                Text(
-                                    line.text,
-                                    fontFamily = FontFamily.Monospace, fontSize = 11.sp,
-                                    color = if (line.isError) MaterialTheme.colorScheme.error
-                                            else MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
+                        // Colored prompt glyph
+                        Text(
+                            "$",
+                            fontFamily = FontFamily.Monospace, fontSize = 13.sp,
+                            color = cardAccent, fontWeight = FontWeight.Bold,
+                        )
+                        // Command text
+                        Text(
+                            command.text,
+                            modifier = Modifier.weight(1f),
+                            fontFamily = FontFamily.Monospace, fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.inverseOnSurface,
+                            maxLines = 4, overflow = TextOverflow.Ellipsis,
+                        )
+                        // Status dot
+                        Box(
+                            Modifier.size(8.dp).clip(CircleShape).background(statusColor)
+                        )
+                        // Action buttons
+                        IconButton(onClick = onBookmark, modifier = Modifier.size(30.dp)) {
+                            Icon(Icons.Outlined.Bookmark, "Bookmark", Modifier.size(15.dp),
+                                tint = MaterialTheme.colorScheme.inverseOnSurface.copy(0.55f))
+                        }
+                        IconButton(onClick = onAiAnalyze, modifier = Modifier.size(30.dp)) {
+                            Icon(Icons.Outlined.AutoAwesome, "AI analyze", Modifier.size(15.dp),
+                                tint = MaterialTheme.colorScheme.inverseOnSurface.copy(0.55f))
+                        }
+                        IconButton(onClick = onCopyAll, modifier = Modifier.size(30.dp)) {
+                            Icon(Icons.Outlined.ContentCopy, "Copy", Modifier.size(15.dp),
+                                tint = MaterialTheme.colorScheme.inverseOnSurface.copy(0.55f))
                         }
                     }
                 }
-            } else if (command != null) {
-                Text(
-                    "(no output)",
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    fontFamily = FontFamily.Monospace, fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+
+                // ── Output body ──────────────────────────────────────
+                if (outputLines.isNotEmpty()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = when {
+                            hasError    -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.18f)
+                            command == null -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            else        -> cardAccent.copy(alpha = 0.04f)
+                        },
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            outputLines.forEach { line ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    if (line.isError) {
+                                        Text("!", fontFamily = FontFamily.Monospace, fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                                    }
+                                    Text(
+                                        line.text,
+                                        fontFamily = FontFamily.Monospace, fontSize = 11.sp,
+                                        color = if (line.isError) MaterialTheme.colorScheme.error
+                                                else MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else if (command != null) {
+                    Text(
+                        "(no output)",
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        fontFamily = FontFamily.Monospace, fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
